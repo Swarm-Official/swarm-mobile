@@ -27,8 +27,9 @@ wallet only — mining happens on a PC with the SWARM Node app.
 | Android package | `green.swarm.wallet` |
 
 The app speaks **only** SwarmTestnet. There is no mainnet, no ZEC, no fiat
-price, no exchange or swap, and no public server registry: the app never asks a
-third party which server to trust.
+price, no currency picker, no donation toggle, no exchange or swap, and no
+public server registry: the app never asks a third party which server to
+trust.
 
 ---
 
@@ -54,10 +55,10 @@ You need an Android **8.0 (API 26) or newer** phone with an `arm64-v8a` or
    sha256sum -c SHA256SUMS
    ```
 
-   Open `release-manifest.json` and confirm `network.genesis` is the genesis
-   hash you expect and `network.genesis_is_placeholder` is `false`. If it is
-   `true`, this build cannot verify which chain a server is on — see
-   "The genesis gate" below.
+   Open `release-manifest.json` and confirm `network.genesis` is
+   `045993f5c91ea160c7ebda573dd97b0016816bca68d395bfff202779b88e2a28` and
+   `network.genesis_is_placeholder` is `false`. If it is `true`, that build
+   cannot verify which chain a server is on — see "The genesis gate" below.
 
 3. **Move the APK to the phone** — USB cable, or upload it somewhere you
    control and download it on the device. Do not pass it through a chat app
@@ -122,26 +123,40 @@ than no wallet.
 ## The genesis gate
 
 SwarmTestnet's genesis hash lives in exactly **one** constant in the SDK,
-`SWARM_TESTNET_GENESIS` in `zingolib/src/config.rs`. Until the real genesis
-exists, that constant holds `SWARM_TESTNET_GENESIS_PLACEHOLDER` — a value no
-block can hash to — and `swarm_testnet_genesis_is_placeholder()` reports it.
+`SWARM_TESTNET_GENESIS` in `zingolib/src/config.rs`. It now holds the real
+hash:
 
-While the placeholder is in place the app can still reach an indexer and sync,
-but it **cannot prove** a server is on the right chain, and it says so rather
-than implying a verified connection. Setting the real hash is a one-line change
-to that constant; nothing else moves.
+```
+045993f5c91ea160c7ebda573dd97b0016816bca68d395bfff202779b88e2a28
+```
 
-Every build records the state it was made with, in `release-manifest.json`:
+which is the value in `network/swarm-testnet/manifest.json`. An earlier
+candidate, `06b0b56c…`, was superseded because its header timestamp was in the
+future, and is not used by any build here.
+
+That constant is what lets the app **prove** a server is on SwarmTestnet: the
+SDK asks the indexer for its chain label and its genesis block, and refuses a
+server that answers with anything else. A wallet opened against the wrong
+chain is how coins get lost, so this is a refusal, not a warning.
+
+The gate that guarded the placeholder is still in place.
+`SWARM_TESTNET_GENESIS_PLACEHOLDER` and
+`swarm_testnet_genesis_is_placeholder()` remain in the SDK, and the app
+reports their answer rather than assuming it — see `swarm_network_identity()`
+in `rust/lib/src/lib.rs`, which is covered by tests. If a future build ever
+ships with the stand-in again, it will say so.
+
+Every build records what it was made with, in `release-manifest.json`:
 
 ```json
 "network": {
-  "genesis": "…",
-  "genesis_is_placeholder": true
+  "genesis": "045993f5c91ea160c7ebda573dd97b0016816bca68d395bfff202779b88e2a28",
+  "genesis_is_placeholder": false
 }
 ```
 
-Read from the SDK revision the APK was actually built against, so it cannot
-drift from the binary.
+read out of the SDK revision the APK was actually built against, so the
+manifest cannot drift from the binary.
 
 ---
 

@@ -259,7 +259,7 @@ jobs:
         run: |
           set -euxo pipefail
           bash ios/scripts/generate-ios-art.sh
-          ls -la ios/Zingo/Images.xcassets/AppIcon-Prod.appiconset/ | head -8
+          ls -la ios/Zingo/Images.xcassets/AppIcon-Prod.appiconset/
           sips -g pixelWidth -g pixelHeight -g hasAlpha \
             ios/Zingo/Images.xcassets/AppIcon-Prod.appiconset/Icon-1024.png
 
@@ -317,7 +317,10 @@ jobs:
             if [ "$d" = "$PREFERRED_SIM_DEVICE_TYPE" ]; then DT="$d"; fi
           done
           if [ -z "$DT" ]; then
-            DT=$(echo "$avail_types" | head -1)
+            # `| head -1` would be a pipefail hazard here: head exits after
+            # one line and the writer dies of SIGPIPE. Take the first word
+            # instead.
+            DT=$(echo "$avail_types" | sed -n '1p')
             echo "::warning::preferred device type $PREFERRED_SIM_DEVICE_TYPE not present, falling back to $DT"
           fi
 
@@ -367,7 +370,9 @@ jobs:
           set -euo pipefail
           UDID="${{ steps.sim.outputs.udid }}"
 
-          APP=$(find ios/build/DerivedData/Build/Products -maxdepth 2 -name '*.app' -type d | head -1)
+          # No `| head`: under pipefail the writer dying of SIGPIPE would
+          # fail the step for no reason. sed -n 1p reads to the end.
+          APP=$(find ios/build/DerivedData/Build/Products -maxdepth 2 -name '*.app' -type d | sed -n '1p')
           test -n "$APP"
           echo "app bundle: $APP"
           BID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")
@@ -394,7 +399,11 @@ jobs:
           xcrun simctl io "$UDID" screenshot artifacts/02-launch-40s.png
 
           # Still alive 40 s after launch? A crash-on-start would be gone.
-          if xcrun simctl spawn "$UDID" launchctl list | grep -q "$BID"; then
+          # Captured first and matched in the shell: piping into `grep -q`
+          # kills the writer with SIGPIPE on the first match, and under
+          # pipefail that reads as "not running" when it IS running.
+          RUNNING=$(xcrun simctl spawn "$UDID" launchctl list || true)
+          if [[ "$RUNNING" == *"$BID"* ]]; then
             echo "STILL RUNNING after 40s: $BID"
             echo "alive=true" >> "$GITHUB_OUTPUT"
           else
@@ -622,7 +631,7 @@ jobs:
           mkdir -p "$HOME/.appstoreconnect/private_keys"
           echo -n "$APPLE_APP_STORE_CONNECT_KEY_P8" | base64 --decode \
             > "$HOME/.appstoreconnect/private_keys/AuthKey_${APPLE_APP_STORE_CONNECT_KEY_ID}.p8"
-          IPA=$(find "$RUNNER_TEMP/export" -name '*.ipa' | head -1)
+          IPA=$(find "$RUNNER_TEMP/export" -name '*.ipa' | sed -n '1p')
           xcrun altool --upload-app -f "$IPA" -t ios \
             --apiKey "$APPLE_APP_STORE_CONNECT_KEY_ID" \
             --apiIssuer "$APPLE_APP_STORE_CONNECT_ISSUER_ID"

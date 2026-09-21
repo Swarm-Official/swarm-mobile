@@ -64,6 +64,11 @@ You need an Android **8.0 (API 26) or newer** phone with an `arm64-v8a` or
    control and download it on the device. Do not pass it through a chat app
    that re-compresses attachments.
 
+   It is a large file. The wallet's Rust library is about 60 MB per processor
+   type and the APK carries all three, uncompressed, so expect roughly 200 MB.
+   That is the price of one APK that installs on any phone without you having
+   to know which chip it has.
+
 4. **Allow this one installer.** Android blocks sideloading per-app, not
    globally. Open the APK from your file manager or browser; Android will say
    the app is not allowed to install unknown apps and offer a Settings
@@ -101,6 +106,15 @@ than no wallet.
   This is asserted by `scripts/swarm_smoke_test.sh` on every CI run.
 - The app is pinned to the SWARM SDK, not upstream's. CI fails the build if the
   pin points back at `zingolabs/zingolib`.
+- No upstream branding reaches a user. `scripts/check_no_upstream_branding.mjs`
+  reads the shipped translations and then the built APK — the bundled JS
+  string table and the app label — and fails the build on anything outside the
+  attribution allow-list. The About screen credits Zingo Mobile and carries its
+  MIT notice, which is required and deliberate.
+- The APK contains what it claims: the eight bundled typefaces, the native
+  wallet library for all three ABIs, `applicationId green.swarm.wallet`, no
+  `zcash:` scheme, and a real genesis rather than the placeholder. CI unzips
+  the APK and asserts each one.
 
 ### Not proven
 

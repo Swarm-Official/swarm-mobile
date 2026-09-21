@@ -1,0 +1,63 @@
+name: SWARM iOS
+
+# SWARM Wallet — iOS simulator pipeline.
+#
+# Phones do not mine: Apple App Review guideline 3.1.5 forbids on-device
+# mining, so this is a wallet only. The device/TestFlight path needs an Apple
+# Developer Program ORGANISATION account (guideline 3.1.5(b)); see
+# docs/SWARM-IOS.md. Until the owner has one, the iOS deliverable is a
+# SIMULATOR build and nothing here signs anything.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [swarm-ios]
+
+concurrency:
+  group: swarm-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Inventory of the hosted runner. Cheap, always runs, and is the evidence
+  # behind every version pinned further down this file.
+  preflight:
+    name: Runner inventory
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - name: Runner image
+        run: |
+          set -x
+          sw_vers
+          uname -m
+          sysctl -n hw.ncpu hw.memsize
+          cat /System/Volumes/Data/Users/runner/image-info.json 2>/dev/null || \
+            cat ~/image-info.json 2>/dev/null || echo "(no image-info.json)"
+
+      - name: Xcode versions installed
+        run: |
+          set -x
+          ls -1 /Applications | grep -i '^Xcode' || true
+          xcodebuild -version
+          xcode-select -p
+
+      - name: Simulator runtimes and device types
+        run: |
+          set -x
+          xcrun simctl list runtimes
+          xcrun simctl list devicetypes | grep -i iphone || true
+
+      - name: Toolchain versions
+        run: |
+          set -x
+          node --version || true
+          yarn --version || true
+          ruby --version || true
+          pod --version || true
+          rustup --version || true
+          rustc --version || true
+          protoc --version || true
+          bindgen --version || true

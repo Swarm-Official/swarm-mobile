@@ -1,0 +1,442 @@
+name: SWARM Android
+
+# Builds the SWARM Wallet Android app end to end on GitHub-hosted runners:
+# JS checks, the Rust wallet library for the three device ABIs, and a
+# debug-signed APK the owner can sideload.
+#
+# Upstream's own Android workflows target self-hosted runners
+# (`zingo-android-native-16`, `zingo-android-gradle-16`) that this project does
+# not have, so this workflow stands beside them rather than replacing them. It
+# reuses upstream's builder image, which carries the Android NDK.
+#
+# No signing key is ever committed or passed in. The release variant's signing
+# config falls back to the checked-in `android/app/debug.keystore`, so the APK
+# this produces is DEBUG-SIGNED: installable by sideloading, never publishable.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-emulator-smoke:
+        description: 'Run the emulator smoke test'
+        required: false
+        type: boolean
+        default: true
+  push:
+    branches: [swarm-mobile]
+
+concurrency:
+  group: swarm-android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The SWARM app version for this testnet round.
+  SWARM_VERSION: 0.1.0-testnet.1
+  # The SDK commit rust/Cargo.toml pins. Kept here only so the manifest job can
+  # report it; the build itself reads rust/Cargo.toml.
+  BUILDER_IMAGE: zingodevops/android_builder:018
+  NODE_VERSION: 22.18.0
+  CARGO_TERM_COLOR: always
+  # SwarmTestnet has three device ABIs. Upstream also ships 32-bit x86; no
+  # current phone or emulator image needs it, and dropping it is a third of the
+  # native build time.
+  RN_ARCHS: armeabi-v7a,arm64-v8a,x86_64
+
+jobs:
+  js:
+    name: JS lint, types and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Yarn install
+        run: yarn install --frozen-lockfile --network-timeout 600000
+
+      - name: Lint
+        run: yarn lint:check
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Jest
+        run: yarn test --ci
+
+  rust:
+    name: Rust ${{ matrix.abi }}
+    runs-on: ubuntu-latest
+    container:
+      image: zingodevops/android_builder:018
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            target: aarch64-linux-android
+            cc: aarch64-linux-android
+            std: 'true'
+            # One ABI generates the Kotlin bindings; they are ABI-independent.
+            bindings: 'true'
+          - abi: armeabi-v7a
+            target: armv7-linux-androideabi
+            cc: armv7a-linux-androideabi
+            std: 'false'
+            bindings: 'false'
+          - abi: x86_64
+            target: x86_64-linux-android
+            cc: x86_64-linux-android
+            std: 'false'
+            bindings: 'false'
+    env:
+      RUSTUP_HOME: ${{ github.workspace }}/.rustup
+      CARGO_HOME: ${{ github.workspace }}/.cargo
+      TARGET: ${{ matrix.target }}
+      LIBCLANG_PATH: /usr/lib/llvm-18/lib
+      CARGO_NDK_PLATFORM: 26
+      CARGO_NDK_ANDROID_PLATFORM: 26
+      AR: llvm-ar
+      LD: ld
+      RANLIB: llvm-ranlib
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends --no-install-suggests \
+            build-essential cmake golang clang-18 libclang-18-dev \
+            protobuf-compiler gcc g++
+
+      - uses: actions/checkout@v4
+
+      - name: Cargo and rustup cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/.cargo/bin
+            ${{ github.workspace }}/.cargo/registry/index
+            ${{ github.workspace }}/.cargo/registry/cache
+            ${{ github.workspace }}/.cargo/git/db
+          key: swarm-cargo-${{ matrix.abi }}-${{ hashFiles('rust/Cargo.lock') }}
+          restore-keys: |
+            swarm-cargo-${{ matrix.abi }}-
+            swarm-cargo-
+
+      - name: Rust target cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            rust/target
+            rust/nym-proxy-ffi/target
+          key: swarm-target-${{ matrix.abi }}-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            swarm-target-${{ matrix.abi }}-${{ hashFiles('rust/Cargo.lock') }}-
+            swarm-target-${{ matrix.abi }}-
+
+      - name: Toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add "$TARGET"
+
+      - name: Tools (bindgen-cli, cargo-ndk)
+        run: |
+          # aws-lc-sys needs bindgen-cli on the PATH.
+          command -v bindgen  >/dev/null 2>&1 || cargo install --locked bindgen-cli
+          command -v cargo-ndk >/dev/null 2>&1 || cargo install --locked --version 4.0.1 cargo-ndk
+
+      - name: Confirm the SWARM SDK pin
+        run: |
+          set -eu
+          echo "--- rust/Cargo.toml SDK pins ---"
+          grep -E '^(zingolib|pepper-sync|zingolib_testutils) *=' rust/Cargo.toml
+          # This app must not build against the upstream SDK: that one has no
+          # SwarmTestnet profile, and the resulting wallet would be on the
+          # wrong chain while looking correct.
+          if grep -qE '^(zingolib|pepper-sync|zingolib_testutils) *=.*zingolabs/zingolib' rust/Cargo.toml; then
+            echo "ERROR: the SDK pin still points at zingolabs/zingolib" >&2
+            exit 1
+          fi
+          grep -q 'brs-holding/privacy-zingolib' rust/Cargo.toml
+
+      - name: Build the wallet library
+        working-directory: ./rust/lib
+        env:
+          CC: ${{ matrix.cc }}26-clang
+          CARGO_FEATURE_STD: ${{ matrix.std }}
+          CFLAGS_aarch64_linux_android: -mno-outline-atomics
+          CXXFLAGS_aarch64_linux_android: -mno-outline-atomics
+        run: cargo ndk --target "$TARGET" build --release
+
+      - name: Build the Nym proxy shim
+        working-directory: ./rust/nym-proxy-ffi
+        env:
+          CC: ${{ matrix.cc }}26-clang
+          CARGO_FEATURE_STD: ${{ matrix.std }}
+        run: cargo ndk --target "$TARGET" build --release --package zingo-nym-proxy-ffi
+
+      # Library mode reads UniFFI metadata from the symbol table, so this must
+      # run before the strip below.
+      - name: Kotlin UniFFI bindings
+        if: matrix.bindings == 'true'
+        working-directory: ./rust
+        run: |
+          set -eu
+          OUT="$GITHUB_WORKSPACE/android/app/build/generated/source/uniffi/release/java"
+          mkdir -p "$OUT"
+          cargo build --release --package zingo-uniffi-bindgen
+          ./target/release/zingo-wallet-uniffi-bindgen generate \
+            lib/src/zingo.udl --language kotlin --no-format --out-dir "$OUT"
+          cd nym-proxy-ffi
+          "$GITHUB_WORKSPACE/rust/target/release/zingo-uniffi-bindgen" generate \
+            --library "target/$TARGET/release/libzingo_nym_proxy_ffi.so" \
+            --language kotlin --no-format --metadata-no-deps --out-dir "$OUT"
+          find "$OUT" -name '*.kt' -print
+
+      - name: Upload Kotlin UniFFI bindings
+        if: matrix.bindings == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-kotlin-uniffi
+          path: android/app/build/generated/source/uniffi/release/java/uniffi
+          retention-days: 7
+
+      - name: Strip and stage
+        run: |
+          set -eu
+          llvm-strip --strip-all "rust/target/$TARGET/release/libzingo.so"
+          llvm-objcopy --remove-section .comment "rust/target/$TARGET/release/libzingo.so"
+          llvm-strip --strip-all "rust/nym-proxy-ffi/target/$TARGET/release/libzingo_nym_proxy_ffi.so"
+          llvm-objcopy --remove-section .comment "rust/nym-proxy-ffi/target/$TARGET/release/libzingo_nym_proxy_ffi.so"
+          mkdir -p native-out
+          # UniFFI loads the wallet library under its uniffi name.
+          cp "rust/target/$TARGET/release/libzingo.so" "native-out/libuniffi_zingo.so"
+          cp "rust/nym-proxy-ffi/target/$TARGET/release/libzingo_nym_proxy_ffi.so" native-out/
+          sha256sum native-out/*.so
+
+      - name: Upload native libraries
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-native-${{ matrix.abi }}
+          path: native-out/
+          retention-days: 7
+
+  apk:
+    name: Debug-signed APK
+    needs: [rust]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    outputs:
+      sdk-rev: ${{ steps.sdk.outputs.rev }}
+      genesis: ${{ steps.sdk.outputs.genesis }}
+      genesis-placeholder: ${{ steps.sdk.outputs.placeholder }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk \
+                      /opt/ghc /usr/local/share/boost /usr/local/.ghcup \
+                      /opt/hostedtoolcache/CodeQL || true
+          df -h /
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Yarn install
+        run: yarn install --frozen-lockfile --network-timeout 600000
+
+      - name: Download native libraries (arm64-v8a)
+        uses: actions/download-artifact@v4
+        with:
+          name: swarm-native-arm64-v8a
+          path: android/app/src/main/jniLibs/arm64-v8a
+
+      - name: Download native libraries (armeabi-v7a)
+        uses: actions/download-artifact@v4
+        with:
+          name: swarm-native-armeabi-v7a
+          path: android/app/src/main/jniLibs/armeabi-v7a
+
+      - name: Download native libraries (x86_64)
+        uses: actions/download-artifact@v4
+        with:
+          name: swarm-native-x86_64
+          path: android/app/src/main/jniLibs/x86_64
+
+      - name: Download Kotlin UniFFI bindings
+        uses: actions/download-artifact@v4
+        with:
+          name: swarm-kotlin-uniffi
+          path: android/app/build/generated/source/uniffi/release/java/uniffi
+
+      - name: Verify native and binding inputs
+        run: |
+          set -eu
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            test -f "android/app/src/main/jniLibs/$abi/libuniffi_zingo.so"
+            test -f "android/app/src/main/jniLibs/$abi/libzingo_nym_proxy_ffi.so"
+          done
+          test -f android/app/build/generated/source/uniffi/release/java/uniffi/zingo/zingo.kt
+          test -f android/app/build/generated/source/uniffi/release/java/uniffi/zingo_nym_proxy_ffi/zingo_nym_proxy_ffi.kt
+
+      - name: Read the SWARM SDK identity
+        id: sdk
+        run: |
+          set -eu
+          REV="$(grep -m1 -oE 'privacy-zingolib", rev = "[0-9a-f]+' rust/Cargo.toml | grep -oE '[0-9a-f]{40}')"
+          echo "rev=$REV" >> "$GITHUB_OUTPUT"
+          # The genesis hash is one constant in the SDK. Read it from the exact
+          # revision this APK is built against, so the manifest cannot drift.
+          curl -fsSL "https://raw.githubusercontent.com/brs-holding/privacy-zingolib/$REV/zingolib/src/config.rs" -o /tmp/config.rs
+          GEN="$(grep -A4 'pub const SWARM_TESTNET_GENESIS:' /tmp/config.rs | grep -oE '"[0-9a-fA-F]{64}"' | head -1 | tr -d '"')"
+          PLACEHOLDER_NAME="$(grep -A4 'pub const SWARM_TESTNET_GENESIS:' /tmp/config.rs | grep -c 'SWARM_TESTNET_GENESIS_PLACEHOLDER' || true)"
+          if [ -z "${GEN:-}" ]; then
+            GEN="$(grep -A4 'pub const SWARM_TESTNET_GENESIS_PLACEHOLDER:' /tmp/config.rs | grep -oE '"[0-9a-fA-F]{64}"' | head -1 | tr -d '"')"
+          fi
+          echo "genesis=$GEN" >> "$GITHUB_OUTPUT"
+          if [ "$PLACEHOLDER_NAME" -gt 0 ]; then
+            echo "placeholder=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "placeholder=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "SDK rev $REV genesis $GEN placeholder=$PLACEHOLDER_NAME"
+
+      - name: Gradle setup
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+
+      # The release build type is what bundles the JS and runs R8. With no
+      # release keystore configured, its signing config falls back to the
+      # checked-in debug keystore, so the output is a debug-signed APK: exactly
+      # what sideloading for a private test needs, and nothing that could be
+      # mistaken for a published build.
+      - name: Assemble the APK
+        working-directory: android
+        run: ./gradlew assembleProdRelease -PreactNativeArchitectures=${{ env.RN_ARCHS }} --no-daemon --stacktrace
+
+      - name: Assemble the AAB
+        working-directory: android
+        continue-on-error: true
+        run: ./gradlew bundleProdRelease -PreactNativeArchitectures=${{ env.RN_ARCHS }} --no-daemon
+
+      - name: Collect artifacts, checksums and the release manifest
+        run: |
+          set -eu
+          mkdir -p dist
+          find android/app/build/outputs -name '*.apk' -exec cp {} dist/ \;
+          find android/app/build/outputs -name '*.aab' -exec cp {} dist/ \; || true
+          ls -l dist
+          APK="$(ls dist/*.apk | head -1)"
+          mv "$APK" "dist/swarm-wallet-${SWARM_VERSION}-android.apk"
+          if ls dist/*.aab >/dev/null 2>&1; then
+            mv "$(ls dist/*.aab | head -1)" "dist/swarm-wallet-${SWARM_VERSION}-android.aab"
+          fi
+          node -e '
+            const fs = require("fs");
+            const manifest = {
+              app: "SWARM Wallet (Android)",
+              version: process.env.SWARM_VERSION,
+              network: {
+                name: "SwarmTestnet",
+                light_wallet_chain_label: "swarm-testnet",
+                ticker: "SWM",
+                default_server: "https://lwd.swarm.green:443",
+                genesis: process.env.GENESIS,
+                genesis_is_placeholder: process.env.GENESIS_PLACEHOLDER === "true",
+              },
+              source: {
+                app_repo: "https://github.com/brs-holding/swarm-mobile",
+                app_sha: process.env.GITHUB_SHA,
+                app_ref: process.env.GITHUB_REF,
+                sdk_repo: "https://github.com/brs-holding/privacy-zingolib",
+                sdk_sha: process.env.SDK_REV,
+                upstream: "https://github.com/zingolabs/zingo-mobile (MIT)",
+              },
+              build: {
+                workflow_run: process.env.GITHUB_RUN_ID,
+                abis: ["arm64-v8a", "armeabi-v7a", "x86_64"],
+                signing: "debug keystore (android/app/debug.keystore) - sideload only, not publishable",
+                built_at: new Date().toISOString(),
+              },
+            };
+            fs.writeFileSync("dist/release-manifest.json", JSON.stringify(manifest, null, 2) + "\n");
+          '
+          cd dist
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+          cat release-manifest.json
+        env:
+          SDK_REV: ${{ steps.sdk.outputs.rev }}
+          GENESIS: ${{ steps.sdk.outputs.genesis }}
+          GENESIS_PLACEHOLDER: ${{ steps.sdk.outputs.placeholder }}
+
+      - name: Upload the APK bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-wallet-android-${{ env.SWARM_VERSION }}
+          path: dist/
+          retention-days: 30
+
+  smoke:
+    name: Emulator smoke test
+    needs: [apk]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.run-emulator-smoke }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download the APK
+        uses: actions/download-artifact@v4
+        with:
+          name: swarm-wallet-android-${{ env.SWARM_VERSION }}
+          path: dist
+
+      # The APK carries an x86_64 slice, so a stock x86_64 emulator image runs
+      # it. The test asserts the app installs, launches, stays up and renders
+      # its first screen. It does NOT assert any wallet behaviour: the indexer
+      # at lwd.swarm.green is not reachable from CI, so the only network
+      # outcome available here is the unreachable-server path.
+      - name: Install and launch
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          ram-size: 4096M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/swarm_smoke_test.sh "$(ls dist/*.apk | head -1)"
+
+      - name: Upload smoke test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-smoke-evidence
+          path: smoke-out/
+          retention-days: 7
+          if-no-files-found: ignore

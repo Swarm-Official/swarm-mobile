@@ -118,11 +118,20 @@ android {
     }
 
     defaultConfig {
-        applicationId = "org.ZingoLabs.Zingo" // Real
+        // SWARM: the install identity, and the only thing Android keys an app's
+        // private storage on. It differs from Zingo's, so this app can never
+        // open, overwrite or be confused with a Zingo wallet on the same phone,
+        // and the two can be installed side by side.
+        //
+        // `namespace` above stays org.ZingoLabs.Zingo on purpose: it is the
+        // Kotlin package and R class of the forked sources, it is invisible to
+        // users, and renaming it would move every Kotlin source directory and
+        // every test for no behavioural gain.
+        applicationId = "green.swarm.wallet" // Real
         minSdk = rootProject.extra["minSdkVersion"] as Int
         targetSdk = rootProject.extra["targetSdkVersion"] as Int
-        versionCode = 317 // Real (prod baseline; beta flavor overrides below)
-        versionName = "2.0.23" // Real
+        versionCode = 1 // Real (prod baseline; beta flavor overrides below)
+        versionName = "0.1.0-testnet.1" // Real
         testBuildType = System.getProperty("testBuildType", "debug")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
@@ -150,14 +159,14 @@ android {
     productFlavors {
         create("prod") {
             dimension = "channel"
-            resValue("string", "app_name", "Zingo")
+            resValue("string", "app_name", "SWARM Wallet")
         }
         create("beta") {
             dimension = "channel"
             applicationIdSuffix = ".Beta"
-            versionCode = 331 // beta override
-            versionName = "2.0.23" // beta override
-            resValue("string", "app_name", "Zingo Beta")
+            versionCode = 1 // beta override
+            versionName = "0.1.0-testnet.1" // beta override
+            resValue("string", "app_name", "SWARM Wallet Beta")
         }
     }
 

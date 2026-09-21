@@ -504,6 +504,11 @@ jobs:
           arch: x86_64
           profile: pixel_5
           ram-size: 4096M
+          # The APK is ~200 MB: three uncompressed copies of a 60 MB Rust
+          # library. The default userdata partition on some system images is
+          # smaller than that, and the install fails with INSUFFICIENT_STORAGE
+          # rather than anything that points at the real cause.
+          disk-size: 8G
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           script: bash scripts/swarm_smoke_test.sh "$(ls dist/*.apk | head -1)"

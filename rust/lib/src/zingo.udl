@@ -117,6 +117,11 @@ namespace zingo {
   [Throws=ZingolibError]
   string info_server();
 
+  // SWARM: the network identity this build was compiled with, including
+  // whether the genesis hash is still the placeholder.
+  [Throws=ZingolibError]
+  string swarm_network_identity();
+
   [Throws=ZingolibError]
   string get_seed();
 

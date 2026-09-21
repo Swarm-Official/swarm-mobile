@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SWARM Wallet iOS app icon (and launch-screen mark) — source artwork.
+
+  A full-bleed warm-black square with the hive bee from swarm-mark.svg
+  centred on it. Every PNG in ios/Zingo/Images.xcassets/*.appiconset and
+  LaunchMark.imageset is rendered from THIS file in CI by
+  ios/scripts/generate-ios-art.sh. No PNG here is drawn by hand and no
+  third-party icon service is involved.
+
+  Composition: the mark's ink spans x 9.98 … 54.02 and y 8.96 … 56.00 in
+  its own 64-unit space, so its centre is (32.00, 32.48) and its height is
+  47.04 units. Scaled by 13.2 it is 621 px tall inside a 1024 px square —
+  about 61 % — which keeps the wings well clear of the corner radius iOS
+  masks onto the icon. The square is opaque: iOS icons carry no
+  transparency.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <rect x="0" y="0" width="1024" height="1024" fill="#0A0908"/>
+  <g transform="translate(512 512) scale(13.2) translate(-32 -32.48)">
+    <ellipse cx="21" cy="17" rx="12" ry="6.5" transform="rotate(-28 21 17)" fill="#FFB020"/>
+    <ellipse cx="43" cy="17" rx="12" ry="6.5" transform="rotate(28 43 17)" fill="#FFB020"/>
+    <path d="M32 22 L46 30 L46 48 L32 56 L18 48 L18 30 Z" fill="#FF8A1F"/>
+    <rect x="18" y="35" width="28" height="4" fill="#0A0908"/>
+    <rect x="18" y="44" width="28" height="4" fill="#0A0908"/>
+  </g>
+</svg>

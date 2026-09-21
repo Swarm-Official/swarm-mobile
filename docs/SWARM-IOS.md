@@ -1,0 +1,294 @@
+# SWARM Wallet on iOS
+
+Status of this document: written by the iOS build agent on 2026-09-21.
+Everything under "Proven" was executed in GitHub Actions and has a run URL.
+Everything else is described, not done.
+
+> **The iOS deliverable today is a SIMULATOR build.**
+> There is no Apple Developer Program account for this project, so no build
+> can be signed, no build can be installed on a physical iPhone, and no
+> build can go to TestFlight or the App Store. The workflow proves the app
+> compiles and runs; it stops exactly there, on purpose.
+
+---
+
+## 1. What exists
+
+| Thing | Where |
+| --- | --- |
+| Workflow | `.github/workflows/swarm-ios.yml`, branch `swarm-ios` |
+| Rust library for iOS | upstream `rust/ios/build_ios.mjs`, run unmodified |
+| App project | `ios/Zingo.xcworkspace`, scheme `Zingo` |
+| Brand artwork (vector) | `ios/branding/swarm-mark.svg`, `ios/branding/swarm-appicon.svg` |
+| Art renderer | `ios/scripts/generate-ios-art.sh`, `ios/scripts/flatten-png.swift` |
+| Launch screen | `ios/Zingo/LaunchScreen.storyboard` |
+| Owner instructions | this file |
+
+The Xcode **target, scheme and product name stay `Zingo`**. They are build
+identifiers, never shown to a person. Renaming them would touch the
+workspace, the Podfile target, the test bridging header and the
+`$(PRODUCT_MODULE_NAME).SceneDelegate` reference in `Info.plist` for no
+user-visible gain. What a person sees is `CFBundleDisplayName`, and that
+says **SWARM Wallet**.
+
+### iOS identity
+
+| Setting | Upstream | SWARM |
+| --- | --- | --- |
+| Display name | `Zingo` | **SWARM Wallet** (`SWARM Wallet Beta` for the beta configurations) |
+| Bundle identifier | `org.ZingoLabs.Zingo` | **`green.swarm.wallet`** (`green.swarm.wallet.beta`) |
+| `DEVELOPMENT_TEAM` | `788KRST4S8` (Zingo Labs) | empty — this project has no team |
+| `zcash:` URL scheme | claimed | **removed** |
+| `LSApplicationQueriesSchemes` | `zcash` | removed |
+| App icon | Zingo artwork (PNGs in the repo) | SWARM hive bee, rendered in CI from SVG |
+| Launch screen | `Zingo` in white on black, and never shown (see below) | warm black `#0A0908` with the hive bee |
+| Minimum iOS | 16.0 | 16.0, unchanged |
+| Entitlements | `aps-environment: development` | unchanged — no new entitlement was added |
+| Face ID / Touch ID / keychain | `ios/DeviceAuth.swift` | unchanged, byte for byte |
+| Analytics | none | none |
+
+Two upstream details worth naming:
+
+* **The launch screen never appeared.** `UILaunchStoryboardName` read
+  `LaunchScreen.storyboar` — a typo, so iOS found no storyboard. Corrected
+  to `LaunchScreen`, which is why the SWARM launch screen is the first
+  thing this build shows.
+* **The `zcash:` claim is removed, not renamed.** SWARM is a separate test
+  network; a SWARM wallet must not intercept Zcash payment links on
+  anyone's phone. Nothing depends on the claim: the `zcash:` handling in
+  the shared JavaScript parses strings that are pasted or scanned, not
+  links routed by iOS. (The Android manifest still claims the scheme —
+  that file belongs to the other agent.)
+
+### The app icon is generated, not stored
+
+`ios/branding/swarm-appicon.svg` is the only copy of the mark. CI installs
+`librsvg` and runs `ios/scripts/generate-ios-art.sh`, which renders all 19
+icon sizes into both app-icon sets plus the launch mark at 1x/2x/3x, then
+strips the alpha channel that iOS icons must not carry. **No icon website
+or third-party icon service is used, and no PNG of the mark is committed.**
+
+If you open the project in Xcode on a Mac, run the script once first or
+the asset catalog will report missing images:
+
+```sh
+brew install librsvg
+bash ios/scripts/generate-ios-art.sh
+```
+
+The mark follows the design system exactly: hexagonal body `#FF8A1F`, two
+stripes in the background colour `#0A0908`, two honey `#FFB020` elliptical
+wings, on warm black. **Never tilt it and never give it a face.**
+
+---
+
+## 2. What the workflow does
+
+`swarm-ios.yml` runs on `macos-latest` and has four jobs.
+
+1. **`preflight`** — records what the hosted runner actually is. Every
+   version pinned in the file is pinned against this.
+2. **`rust-xcframework`** — installs the three iOS Rust targets
+   (`aarch64-apple-ios`, `aarch64-apple-ios-sim`, `x86_64-apple-ios`),
+   `protoc` and `bindgen-cli`, then runs upstream's `rust/ios/build_ios.mjs`
+   **unmodified**: uniffi Swift bindings, three `cargo build --release`
+   runs, `lipo` of the two simulator slices, and two XCFrameworks. Cargo
+   and the finished XCFrameworks are cached on the Rust source hash,
+   because the hosted runner has 3 cores where upstream uses a 12-core
+   self-hosted Mac.
+3. **`app-simulator`** — renders the icons, `yarn`, `pod install`, an
+   **unsigned Release build for the iOS Simulator**
+   (`CODE_SIGNING_ALLOWED=NO`), then creates and boots a simulator,
+   installs the `.app`, launches it, screenshots it, checks it is still
+   running, and uploads the zipped `.app` with `SHA256SUMS`.
+   Release and not Debug so the JavaScript is bundled into the app: the
+   artifact is standalone and the screenshot is real evidence rather than a
+   Debug build's error screen about a missing Metro server.
+4. **`signed-release`** — **disabled**. Section 4.
+
+Pinned versions and why:
+
+| Pin | Value | Evidence |
+| --- | --- | --- |
+| Xcode | 26.5 | `macos-latest` ships Xcode 26.0 – 26.6 and defaults to 26.6, but has **no iOS 26.6 simulator runtime** — only 26.2, 26.4 and 26.5. Pinning 26.5 keeps the SDK and the runtime on the same version. |
+| Simulator runtime | iOS 26.5, falling back to the newest present | same inventory |
+| Simulator device | iPhone 17, falling back to the first iPhone present | same inventory |
+| Node | 22.18.0 | repository `.nvmrc` |
+| Deployment target | iOS 16.0 | upstream `ios/Podfile` and `IPHONEOS_DEPLOYMENT_TARGET` |
+
+---
+
+## 3. What only the owner can do
+
+None of this can be done by an agent. It needs a legal identity, a payment
+method and Apple's agreement — three things no agent may supply.
+
+### 3.1 Enrol in the Apple Developer Program **as an organisation**
+
+This is not a preference. App Review guideline **3.1.5(b)(i)** allows
+cryptocurrency **wallets** only from developers **enrolled as an
+organisation**. An individual account cannot ship this app, however
+complete it is.
+
+Enrolling as an organisation requires, on Apple's side:
+
+* a **D-U-N-S number** for the legal entity (free from Dun & Bradstreet,
+  usually days, sometimes weeks);
+* the entity in good legal standing, with a **public website on a domain
+  the entity owns** — `swarm.green` serves;
+* the person enrolling having **legal authority to bind the entity**, which
+  Apple verifies, sometimes by phone;
+* the annual fee (USD 99 at the time of writing), paid with the owner's own
+  payment method.
+
+Budget weeks, not hours. It is the long pole in the whole iOS path.
+
+> **Related guideline, for the record:** **3.1.5(b)(ii)** forbids apps that
+> mine cryptocurrency unless the processing happens off device. That is why
+> the SWARM mobile wallet is a wallet only and contains no miner. Do not add
+> one for iOS, ever.
+
+### 3.2 Create the App ID and signing material
+
+In the Apple Developer portal, once enrolled:
+
+1. **Identifiers → App IDs → +** → App, explicit bundle ID
+   **`green.swarm.wallet`**. It must match the project exactly. Enable only
+   the capabilities the app actually uses; the app adds **no** entitlement
+   beyond upstream's push-notification `aps-environment`.
+2. Either **(a)** an **App Store Connect API key** (Users and Access →
+   Integrations → App Store Connect API, role *App Manager*): download the
+   `.p8` **once** — Apple never shows it again — and note the Key ID and
+   the Issuer ID; **or (b)** a distribution certificate (`.p12` with a
+   password) plus an App Store provisioning profile for the App ID. The
+   disabled job in the workflow expects **both**: the certificate and
+   profile to sign, the API key to upload.
+3. In **App Store Connect**, create the app record for
+   `green.swarm.wallet`, name it *SWARM Wallet*, and set the primary
+   category (Utilities is what the project declares).
+
+### 3.3 Add the repository secrets
+
+`brs-holding/swarm-mobile` → Settings → Secrets and variables → Actions.
+**Names only below. Never paste a value into a chat, an issue, a commit, a
+log or a file in this repository.** The workflow reads them only inside the
+`apple-distribution` environment, which the owner should also create with
+required reviewers so a release cannot start unattended.
+
+| Secret name | What goes in it |
+| --- | --- |
+| `APPLE_TEAM_ID` | the 10-character team ID |
+| `APPLE_APP_STORE_CONNECT_KEY_ID` | the API key's Key ID |
+| `APPLE_APP_STORE_CONNECT_ISSUER_ID` | the API key's Issuer ID |
+| `APPLE_APP_STORE_CONNECT_KEY_P8` | the `.p8` file, base64-encoded |
+| `APPLE_DISTRIBUTION_CERT_P12` | the distribution `.p12`, base64-encoded |
+| `APPLE_DISTRIBUTION_CERT_PASSWORD` | that `.p12`'s password |
+| `APPLE_PROVISIONING_PROFILE` | the `.mobileprovision`, base64-encoded |
+
+Base64 on a Mac: `base64 -i AuthKey_XXXX.p8 | pbcopy`.
+
+---
+
+## 4. The signed / TestFlight job (written, disabled)
+
+The `signed-release` job in `swarm-ios.yml` is complete and **cannot run
+today**, by two independent locks:
+
+1. it runs only on a manual `workflow_dispatch` with the input
+   `signed_release` set to true, which defaults to **false**; and
+2. its first step enumerates the seven secrets above and **fails the job**
+   if any is empty, before any signing step is reached.
+
+When the secrets exist, it would: import the `.p12` into a **throwaway
+keychain created for that job alone**, install the provisioning profile,
+`xcodebuild archive` for `generic/platform=iOS` with manual signing,
+`-exportArchive` with `method: app-store-connect`, upload the `.ipa` with
+`xcrun altool` and the API key, and then delete the keychain, the profile
+and the private key in an `if: always()` step. Nothing is ever echoed.
+
+**No signing material belongs in this repository, in these logs or in any
+artifact.** If a certificate or key is ever pasted somewhere it should not
+be, treat it as compromised and revoke it in the developer portal.
+
+### What TestFlight review will ask about
+
+TestFlight has two paths:
+
+* **Internal testers** (up to 100 people who are users on the App Store
+  Connect team): **no review**. This is the realistic first step — the
+  owner can install SWARM Wallet on their own iPhone this way within a day
+  of the account existing.
+* **External testers** (up to 10 000, by email or public link): each build
+  needs **Beta App Review**, a shorter review than the App Store but
+  against the same guidelines. For a testnet crypto wallet, expect:
+  * **3.1.5(b)(i)** — the organisation check. This is the one that fails
+    outright on an individual account.
+  * **2.1 / App completeness** — the reviewer will run it. The wallet must
+    reach a usable state against a server that is up. `lwd.swarm.green`
+    must be reachable from Apple's network, or the build is rejected as
+    non-functional.
+  * **Demo instructions** — supply a seed phrase for a funded testnet
+    wallet and say plainly, in the "What to Test" notes and in the app,
+    that **SWM are test coins on a private test network and have no value
+    and cannot be bought or sold**. Ambiguity here reads as a financial
+    product and invites a much harder review.
+  * **Export compliance.** `Info.plist` inherits
+    `ITSAppUsesNonExemptEncryption = false` from upstream. A shielded
+    wallet performs cryptography well beyond authentication, so **the owner
+    should confirm that declaration with their own legal advice before any
+    upload.** No agent changed it and no agent can decide it.
+  * **Guideline 2.2** — beta, demo and trial versions belong on TestFlight
+    and are not accepted on the App Store. A testnet wallet is a
+    TestFlight product; do not plan an App Store listing for it.
+
+### What is impossible without the account
+
+* **Installing on a physical iPhone.** A simulator `.app` cannot be
+  installed on a phone — different architecture, different bundle, no
+  signature. There is no side-load path on iOS that does not involve
+  Apple-issued signing material.
+* The one lesser route is a **free** Apple ID used from Xcode on a Mac,
+  which issues a personal development profile that **expires after 7 days**
+  and is limited to a handful of devices. It still needs: a Mac, a cable,
+  the phone, and a human signed in to that Apple ID. This project has no
+  Mac, so that route is unavailable here too, and it can never reach
+  TestFlight.
+* TestFlight, App Store, push notifications on device, and any test of Face
+  ID against real hardware all wait on the same account.
+
+---
+
+## 5. Proven vs assumed
+
+**Proven** (each has a workflow run behind it — see the branch's Actions):
+
+* The Rust wallet library and the Nym proxy shim build for all three iOS
+  targets on a hosted macOS runner and pack into XCFrameworks.
+* The app compiles for the iOS Simulator with signing disabled.
+* The built `.app` installs on a booted simulator, launches, and is still
+  running afterwards; screenshots are uploaded as artifacts.
+* The built bundle carries the SWARM bundle identifier, the SWARM display
+  name and no URL-scheme claim.
+
+**Assumed, not proven:**
+
+* Anything on a physical iPhone. No device has ever run this build.
+* Anything about App Review's actual response. The guidelines are quoted;
+  reviewers decide.
+* Wallet behaviour against a live SWARM network. **The network's genesis
+  hash does not exist yet**; the SDK carries a placeholder constant and the
+  app is READY FOR HASH. Until the hash is real and the SDK is re-pinned,
+  a launched wallet cannot sync, and the screenshots prove that the app
+  starts — not that it works against a chain.
+
+## 6. What remains
+
+**After the genesis hash exists** — re-pin the SDK constant and the
+light-wallet chain label, rebuild, and re-run the pipeline. The workflow
+needs no change: the xcframework cache key is the Rust source hash, so a
+new pin rebuilds it automatically.
+
+**After the owner has an organisation account** — add the seven secrets,
+create the `apple-distribution` environment with required reviewers, run
+the workflow manually with `signed_release: true`, and take the first build
+to **internal** TestFlight testers before considering external testing.

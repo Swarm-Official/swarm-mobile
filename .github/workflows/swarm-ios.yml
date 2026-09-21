@@ -246,6 +246,33 @@ jobs:
       - name: Yarn install
         run: yarn install --frozen-lockfile
 
+      # The app icon and the launch mark are rendered here, from the SVG
+      # committed at ios/branding/swarm-appicon.svg. No PNG of the SWARM
+      # mark is stored in the repository and no icon website is involved.
+      - name: Install librsvg (SVG renderer)
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+          HOMEBREW_NO_INSTALL_CLEANUP: '1'
+        run: brew install librsvg
+
+      - name: Render the app icon and launch mark from SVG
+        run: |
+          set -euxo pipefail
+          bash ios/scripts/generate-ios-art.sh
+          ls -la ios/Zingo/Images.xcassets/AppIcon-Prod.appiconset/ | head -8
+          sips -g pixelWidth -g pixelHeight -g hasAlpha \
+            ios/Zingo/Images.xcassets/AppIcon-Prod.appiconset/Icon-1024.png
+
+      - name: Upload the rendered icon set
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-ios-appicon
+          path: |
+            ios/branding/*.svg
+            ios/Zingo/Images.xcassets/AppIcon-Prod.appiconset/*.png
+            ios/Zingo/Images.xcassets/LaunchMark.imageset/*.png
+          retention-days: 30
+
       - name: Cache Pods
         uses: actions/cache@v4
         with:
@@ -347,12 +374,21 @@ jobs:
           NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist" 2>/dev/null || echo '(none)')
           echo "bundle identifier: $BID"
           echo "display name:      $NAME"
+          echo "--- URL schemes claimed by this build (expect none) ---"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes' "$APP/Info.plist" \
+            2>/dev/null || echo "(no CFBundleURLTypes — the zcash: claim is gone)"
+          echo "--- app icons compiled into the bundle ---"
+          ls "$APP" | grep -i '^AppIcon' || echo "(none)"
 
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl launch --terminate-running-process "$UDID" "$BID"
 
           mkdir -p artifacts
-          sleep 15
+          # Immediately: the SWARM launch screen, before React Native has
+          # drawn anything of its own.
+          sleep 1
+          xcrun simctl io "$UDID" screenshot artifacts/00-launchscreen-1s.png
+          sleep 14
           xcrun simctl io "$UDID" screenshot artifacts/01-launch-15s.png
           sleep 25
           xcrun simctl io "$UDID" screenshot artifacts/02-launch-40s.png
@@ -365,6 +401,11 @@ jobs:
             echo "::error::$BID is not running 40 s after launch"
             echo "alive=false" >> "$GITHUB_OUTPUT"
           fi
+
+          # Home screen, where the app icon and the display name show.
+          xcrun simctl terminate "$UDID" "$BID" || true
+          sleep 4
+          xcrun simctl io "$UDID" screenshot artifacts/03-home-screen.png
 
           xcrun simctl spawn "$UDID" log show --last 3m --style compact \
             --predicate "processImagePath CONTAINS[c] 'Zingo'" \

@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Background task identifiers are internal, never shown to anyone,
+	     and are matched literally by ios/AppDelegate.swift. Left exactly
+	     as upstream on purpose: renaming them changes behaviour and
+	     brands nothing. -->
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.transistorsoft.fetch</string>
@@ -27,23 +31,17 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>zcash</string>
-			</array>
-		</dict>
-	</array>
+	<!-- No CFBundleURLTypes and no LSApplicationQueriesSchemes.
+	     Upstream claims the public `zcash:` URL scheme; SWARM is a
+	     separate test network and must not intercept Zcash payment links
+	     on anyone's phone, so the claim is removed rather than renamed.
+	     Nothing in the app depends on it: the `zcash:` handling in the
+	     shared JavaScript parses strings that are pasted or scanned, not
+	     links routed by iOS. -->
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<key>LSApplicationQueriesSchemes</key>
-	<string>zcash</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0.0</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -56,13 +54,13 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Zingo needs access to the camera to scan address QRCodes</string>
+	<string>SWARM Wallet uses the camera only to scan a SWARM address or payment QR code. Nothing is photographed, stored or sent.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Allow Zingo to use FaceID to improve the security and privacy?</string>
+	<string>SWARM Wallet uses Face ID or Touch ID to unlock your wallet on this device. Your wallet never leaves the phone.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Zingo does not use any Location Features</string>
+	<string>SWARM Wallet does not use location. It never asks for your position and records none.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Zingo export/share address QRCodes as images</string>
+	<string>SWARM Wallet saves a receive-address QR code to your photos when you ask it to. It reads nothing else from your library.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
@@ -88,8 +86,11 @@
 		<string>processing</string>
 		<string>remote-notification</string>
 	</array>
+	<!-- Upstream reads "LaunchScreen.storyboar": a typo, so iOS finds no
+	     launch storyboard and shows a blank one. Corrected here so the
+	     SWARM launch screen in LaunchScreen.storyboard is actually used. -->
 	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen.storyboar</string>
+	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>

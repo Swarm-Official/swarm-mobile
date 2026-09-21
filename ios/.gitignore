@@ -1,0 +1,10 @@
+# Raster art is BUILD OUTPUT, not source.
+#
+# Every PNG below is rendered from ios/branding/swarm-appicon.svg by
+# ios/scripts/generate-ios-art.sh, which the SWARM iOS workflow runs
+# before xcodebuild. The repository carries the vector; the build carries
+# the raster. Run the script once after cloning if you open the project in
+# Xcode, or the asset catalog will report missing images.
+Zingo/Images.xcassets/AppIcon-Prod.appiconset/*.png
+Zingo/Images.xcassets/AppIcon-Beta.appiconset/*.png
+Zingo/Images.xcassets/LaunchMark.imageset/*.png

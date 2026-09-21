@@ -949,6 +949,79 @@ pub fn save_wallet_bytes() -> Result<Option<Vec<u8>>, ZingolibError> {
 /// refusal is never-retry; the excluded-indexer exhaustion is a
 /// server-topology problem where switching servers genuinely changes
 /// eligibility, so it must NOT carry the mixnet marker.
+/// SWARM: the network identity this build ships is the SDK's, and the release
+/// gate can see whether the genesis hash is still the stand-in.
+#[cfg(test)]
+mod swarm_identity_tests {
+    use super::*;
+
+    fn identity() -> serde_json::Value {
+        serde_json::from_str(&swarm_network_identity().expect("the identity is reportable"))
+            .expect("the identity is JSON")
+    }
+
+    /// The app holds no second copy of the network identity: every field it
+    /// reports comes from the SDK it is pinned to.
+    #[test]
+    fn identity_is_the_sdk_profile() {
+        let value = identity();
+        assert_eq!(value["chain_name"], SWARM_TESTNET_NAME);
+        assert_eq!(value["chain_name"], SWARM_CHAIN_HINT);
+        assert_eq!(value["coin_ticker"], "SWM");
+        assert_eq!(value["genesis"], SWARM_TESTNET_GENESIS);
+        assert_eq!(
+            value["birthday"],
+            zingolib::config::SWARM_TESTNET_BIRTHDAY
+        );
+    }
+
+    /// The placeholder gate is reported honestly in both directions, so a
+    /// release check can refuse a build that still carries the stand-in and
+    /// the app can avoid implying a verified connection while it does.
+    #[test]
+    fn placeholder_state_is_reported_not_assumed() {
+        let value = identity();
+        assert_eq!(
+            value["genesis_is_placeholder"],
+            swarm_testnet_genesis_is_placeholder(),
+            "the reported placeholder state must be the SDK's own answer"
+        );
+        assert_eq!(
+            swarm_testnet_genesis_is_placeholder(),
+            SWARM_TESTNET_GENESIS == zingolib::config::SWARM_TESTNET_GENESIS_PLACEHOLDER,
+        );
+    }
+
+    /// The chain hint the app sends round-trips to the SwarmTestnet profile,
+    /// and a wallet built from it is on that chain and no other.
+    #[test]
+    fn the_chain_hint_resolves_to_swarm_testnet() {
+        let params = build_connection_params(
+            String::new(),
+            SWARM_CHAIN_HINT.to_string(),
+            "Medium".to_string(),
+            1,
+        )
+        .expect("the SWARM chain hint is accepted");
+        assert!(params.chain_type == ChainType::CustomTestnet);
+        assert_eq!(chain_name_short(params.chain_type), SWARM_CHAIN_HINT);
+    }
+
+    /// SwarmTestnet uses the standard Zcash TESTNET address encodings, so a
+    /// MAINNET address is not a destination this app can pay and must be
+    /// refused rather than reported as some other chain's address.
+    #[test]
+    fn a_mainnet_address_is_not_a_destination() {
+        let mainnet_transparent = "t1dUDJ3AJ1bqeq2q5oxdggApbFaqjEZ8u2y";
+        let parsed = parse_address(mainnet_transparent.to_string())
+            .expect("parsing reports a verdict rather than failing");
+        assert!(
+            parsed.contains("Invalid address"),
+            "a mainnet address must be refused, not accepted on another chain: {parsed}"
+        );
+    }
+}
+
 #[cfg(test)]
 mod ffi_error_routing_tests {
     use super::*;

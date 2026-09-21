@@ -249,13 +249,23 @@ const ValueTransferDetail: React.FunctionComponent<
       server.chainName,
       blockExplorer,
     );
-    const supported = await Linking.canOpenURL(url);
-    if (supported) {
+    if (!url) {
+      addLastSnackbar(translate('history.explorer-unavailable') as string);
+      return;
+    }
+    // The SWARM explorer is not live yet, so this link can legitimately fail
+    // to open. Both the capability check and the open itself are guarded, and
+    // either failure tells the user in one sentence instead of throwing.
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        addLastSnackbar(translate('history.explorer-unavailable') as string);
+        return;
+      }
       await Linking.openURL(url);
-    } else {
+    } catch {
       // Audit Issue K — do not log the URL (contains the txid in the path).
-      // The diagnostic message itself is enough to flag a Linking failure.
-      console.log('Cannot open block explorer URL for this transaction');
+      addLastSnackbar(translate('history.explorer-unavailable') as string);
     }
   };
 
@@ -807,7 +817,7 @@ const ValueTransferDetail: React.FunctionComponent<
                     >
                       {valueTransfer.txid}
                     </RegText>
-                    {server.chainName !== ChainNameEnum.regtestChainName &&
+                    {server.chainName === ChainNameEnum.swarmChainName &&
                       blockExplorer !== BlockExplorerEnum.None &&
                       valueTransfer.status !==
                         RPCValueTransfersStatusEnum.failed && (

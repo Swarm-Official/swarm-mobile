@@ -1,4 +1,12 @@
 export enum ChainNameEnum {
+  // SwarmTestnet — the only chain a normal user of this wallet can reach.
+  // The chain hint string the Rust FFI accepts, and what `chain_name_short`
+  // returns. SWARM is a private Zcash-derived proof-of-work TEST network using
+  // the standard Zcash testnet address encodings; its coins have no value.
+  swarmChainName = 'swarm-testnet',
+  // The upstream Zcash chains are kept so the shared zingo-mobile code below
+  // still type-checks, but no user-facing selector offers them any more. They
+  // are unreachable for a normal user.
   mainChainName = 'main',
   testChainName = 'test',
   regtestChainName = 'regtest',

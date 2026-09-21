@@ -238,7 +238,7 @@ export default function LoadedApp(props: LoadedAppProps) {
   const [performanceLevel, setPerformanceLevel] =
     useState<RPCPerformanceLevelEnum>(RPCPerformanceLevelEnum.Medium);
   const [blockExplorer, setBlockExplorer] = useState<BlockExplorerEnum>(
-    BlockExplorerEnum.Zcashexplorer,
+    BlockExplorerEnum.Swarmexplorer,
   );
   const [nym, setNym] = useState<boolean>(false);
   const [zenniesDonationAddress, setZenniesDonationAddress] =
@@ -473,9 +473,7 @@ export default function LoadedApp(props: LoadedAppProps) {
         );
       }
       if (
-        settings.blockExplorer === BlockExplorerEnum.Cipherscan ||
-        settings.blockExplorer === BlockExplorerEnum.Zcashexplorer ||
-        settings.blockExplorer === BlockExplorerEnum.Zexplorer ||
+        settings.blockExplorer === BlockExplorerEnum.Swarmexplorer ||
         settings.blockExplorer === BlockExplorerEnum.None
       ) {
         setBlockExplorer(settings.blockExplorer);

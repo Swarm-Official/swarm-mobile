@@ -43,7 +43,10 @@ import {
 import { useFullSheetSnapPoints } from '@app/hooks/useFullSheetSnapPoints';
 import { useKeyboardHeight } from '@app/hooks/useKeyboardHeight';
 
+// Lowest legal wallet birthday per chain. SwarmTestnet activated Sapling at
+// its first block, so any birthday >= 1 is valid.
 const activationHeight = {
+  'swarm-testnet': 1,
   main: 419200,
   test: 280000,
   regtest: 1,

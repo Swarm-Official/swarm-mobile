@@ -151,82 +151,39 @@ describe('Utils.splitZecAmountIntoBigSmall', () => {
 describe('Utils.getBlockExplorerTxIDURL', () => {
   const txid = 'abc123';
 
-  test('Zcashexplorer mainnet', () => {
+  test('the SWARM explorer links a SwarmTestnet transaction', () => {
     expect(
       Utils.getBlockExplorerTxIDURL(
         txid,
-        ChainNameEnum.mainChainName,
-        BlockExplorerEnum.Zcashexplorer,
+        ChainNameEnum.swarmChainName,
+        BlockExplorerEnum.Swarmexplorer,
       ),
-    ).toBe(`https://mainnet.zcashexplorer.app/transactions/${txid}`);
-  });
-
-  test('Zcashexplorer testnet', () => {
-    expect(
-      Utils.getBlockExplorerTxIDURL(
-        txid,
-        ChainNameEnum.testChainName,
-        BlockExplorerEnum.Zcashexplorer,
-      ),
-    ).toBe(`https://testnet.zcashexplorer.app/transactions/${txid}`);
-  });
-
-  test('Cipherscan mainnet', () => {
-    expect(
-      Utils.getBlockExplorerTxIDURL(
-        txid,
-        ChainNameEnum.mainChainName,
-        BlockExplorerEnum.Cipherscan,
-      ),
-    ).toBe(`https://cipherscan.app/tx/${txid}`);
-  });
-
-  test('Cipherscan testnet', () => {
-    expect(
-      Utils.getBlockExplorerTxIDURL(
-        txid,
-        ChainNameEnum.testChainName,
-        BlockExplorerEnum.Cipherscan,
-      ),
-    ).toBe(`https://testnet.cipherscan.app/tx/${txid}`);
-  });
-
-  test('Zexplorer mainnet', () => {
-    expect(
-      Utils.getBlockExplorerTxIDURL(
-        txid,
-        ChainNameEnum.mainChainName,
-        BlockExplorerEnum.Zexplorer,
-      ),
-    ).toBe(`https://zexplorer.app/mainnet/tx/${txid}`);
-  });
-
-  test('Zexplorer testnet', () => {
-    expect(
-      Utils.getBlockExplorerTxIDURL(
-        txid,
-        ChainNameEnum.testChainName,
-        BlockExplorerEnum.Zexplorer,
-      ),
-    ).toBe(`https://zexplorer.app/testnet/tx/${txid}`);
+    ).toBe(`https://explore.swarm.green/tx/${txid}`);
   });
 
   test('None returns empty string', () => {
     expect(
       Utils.getBlockExplorerTxIDURL(
         txid,
-        ChainNameEnum.mainChainName,
+        ChainNameEnum.swarmChainName,
         BlockExplorerEnum.None,
       ),
     ).toBe('');
   });
 
-  test('regtest returns empty string for any explorer', () => {
+  // The SWARM explorer only indexes SwarmTestnet. A transaction from any
+  // other chain has no page there, so no link may be offered for it.
+  test.each([
+    ChainNameEnum.mainChainName,
+    ChainNameEnum.testChainName,
+    ChainNameEnum.regtestChainName,
+    ChainNameEnum.noneChainName,
+  ])('chain %s has no SWARM explorer page', chainName => {
     expect(
       Utils.getBlockExplorerTxIDURL(
         txid,
-        ChainNameEnum.regtestChainName,
-        BlockExplorerEnum.Zcashexplorer,
+        chainName,
+        BlockExplorerEnum.Swarmexplorer,
       ),
     ).toBe('');
   });
@@ -235,7 +192,7 @@ describe('Utils.getBlockExplorerTxIDURL', () => {
     expect(
       Utils.getBlockExplorerTxIDURL(
         txid,
-        ChainNameEnum.mainChainName,
+        ChainNameEnum.swarmChainName,
         'unknown' as BlockExplorerEnum,
       ),
     ).toBe('');

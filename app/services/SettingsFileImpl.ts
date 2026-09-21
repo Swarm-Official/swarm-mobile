@@ -68,7 +68,7 @@ export default class SettingsFileImpl {
         if (typeof settings.server === 'string') {
           const ss: ServerType = {
             uri: settings.server,
-            chainName: ChainNameEnum.mainChainName,
+            chainName: ChainNameEnum.swarmChainName,
           };
           const standard = serverUris(() => {}).find((s: ServerUrisType) =>
             isEqual(
@@ -91,11 +91,10 @@ export default class SettingsFileImpl {
             // Only repair a REAL server (non-empty uri) that is missing its
             // chain. An offline server (uri '') legitimately has an empty
             // chainName — Offline has no chain; the real one is derived from
-            // the wallet at open time. Forcing mainnet here broke testnet
-            // wallets going Offline.
+            // the wallet at open time.
             settings.server = {
               uri: settings.server.uri,
-              chainName: ChainNameEnum.mainChainName,
+              chainName: ChainNameEnum.swarmChainName,
             } as ServerType;
           }
         }
@@ -234,8 +233,18 @@ export default class SettingsFileImpl {
         settings.performanceLevel = RPCPerformanceLevelEnum.Medium;
       }
       if (!settings.hasOwnProperty(SettingsNameEnum.blockExplorer)) {
-        // by default medium
-        settings.blockExplorer = BlockExplorerEnum.Zcashexplorer;
+        // by default the SWARM explorer — the only one that can index this chain.
+        settings.blockExplorer = BlockExplorerEnum.Swarmexplorer;
+      }
+      // Migration: settings written by a build that still offered the Zcash
+      // explorers carry a value this enum no longer has. Those links are dead
+      // on SwarmTestnet, so rewrite them to the SWARM explorer. `None` is a
+      // deliberate user choice and is left alone.
+      if (
+        settings.blockExplorer !== BlockExplorerEnum.Swarmexplorer &&
+        settings.blockExplorer !== BlockExplorerEnum.None
+      ) {
+        settings.blockExplorer = BlockExplorerEnum.Swarmexplorer;
       }
       if (!settings.hasOwnProperty(SettingsNameEnum.nym)) {
         settings.nym = false;

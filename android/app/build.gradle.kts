@@ -445,6 +445,12 @@ dependencies {
 // React Native looks for `fonts/<family>.ttf` among the packaged assets, which
 // is why the staging directory has a `fonts` subdirectory and the source set
 // above points at its parent.
+// The Android plugin resolves asset source directories while it configures the
+// variants, and quietly ignores one that is not there yet. The staging
+// directory is produced by a task, so it would not exist at that point on a
+// clean checkout - which is the case that matters, because that is CI.
+layout.buildDirectory.dir("swarmFonts/fonts").get().asFile.mkdirs()
+
 val stageSwarmFonts by tasks.registering(Copy::class) {
     description = "Stages assets/fonts/*.ttf into the APK assets as fonts/."
     from(rootProject.file("../assets/fonts")) { include("*.ttf") }

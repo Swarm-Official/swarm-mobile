@@ -180,22 +180,10 @@ const Settings: React.FunctionComponent<SettingsProps> = ({
     setLastError,
   } = context;
 
-  const currenciesArray = translate('settings.currencies');
-  let CURRENCIES: Options[] = [];
-  if (typeof currenciesArray === 'object') {
-    CURRENCIES = currenciesArray as Options[];
-  }
-
   const languagesArray = translate('settings.languages');
   let LANGUAGES: Options[] = [];
   if (typeof languagesArray === 'object') {
     LANGUAGES = languagesArray as Options[];
-  }
-
-  const donationsArray = translate('settings.donations');
-  let DONATIONS: Options[] = [];
-  if (typeof donationsArray === 'object') {
-    DONATIONS = donationsArray as Options[];
   }
 
   const sendAllsArray = translate('settings.sendalls');
@@ -1668,94 +1656,9 @@ const Settings: React.FunctionComponent<SettingsProps> = ({
                 </TouchableOpacity>
               </View>
 
-              <View style={{ marginHorizontal: 25, marginVertical: 15 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    marginBottom: 16,
-                  }}
-                >
-                  <BoldText>
-                    {translate('settings.currency-title') as string}
-                  </BoldText>
-                  <TouchableOpacity
-                    onPress={() =>
-                      setOpenInfoSection(
-                        openInfoSection === 'currency' ? null : 'currency',
-                      )
-                    }
-                    style={{ marginLeft: 6 }}
-                  >
-                    <FontAwesomeIcon
-                      icon={faInfoCircle}
-                      size={14}
-                      color={colors.fgDefault}
-                    />
-                  </TouchableOpacity>
-                </View>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: colors.borderAccent,
-                    borderRadius: 8,
-                  }}
-                >
-                  {CURRENCIES.map(c => {
-                    const selected = String(currency) === String(c.value);
-                    return (
-                      <TouchableOpacity
-                        key={String(c.value)}
-                        onPress={() =>
-                          setCurrency(c.value as unknown as CurrencyEnum)
-                        }
-                        style={{
-                          flex: 1,
-                          paddingVertical: 8,
-                          alignItems: 'center',
-                          backgroundColor: selected
-                            ? colors.bgAccent
-                            : 'transparent',
-                          borderRadius: 8,
-                          borderWidth: selected ? 1 : 0,
-                          borderColor: colors.borderAccent,
-                        }}
-                      >
-                        <RegText
-                          style={{
-                            color: selected ? colors.bgCanvas : colors.fgAccent,
-                            fontSize: 12,
-                          }}
-                        >
-                          {
-                            translate(
-                              `settings.value-currency-${c.value}`,
-                            ) as string
-                          }
-                        </RegText>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                {openInfoSection === 'currency' && (
-                  <View
-                    style={{
-                      backgroundColor: '#040E1D',
-                      borderRadius: 8,
-                      padding: 10,
-                      marginTop: 8,
-                    }}
-                  >
-                    <FadeText style={{ textAlign: 'center' }}>
-                      {CURRENCIES.find(
-                        d => String(d.value) === CurrencyEnum.USDCurrency,
-                      )?.text ?? ''}
-                    </FadeText>
-                  </View>
-                )}
-              </View>
+              {/* SWARM: the fiat-currency picker stood here. This wallet has
+                  no price feed and SWM is a test coin with no value, so the
+                  only honest currency setting is none at all. */}
 
               {/* SECTION: Privacy & Security */}
               {mode !== ModeEnum.basic &&
@@ -2271,59 +2174,11 @@ const Settings: React.FunctionComponent<SettingsProps> = ({
               {/* SECTION: Other */}
               {sectionHeader('settings.section-other')}
 
-              {!readOnly && (
-                <View style={{ marginHorizontal: 25, marginVertical: 15 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        flex: 1,
-                      }}
-                    >
-                      <BoldText>
-                        {translate('settings.donation-title') as string}
-                      </BoldText>
-                      <TouchableOpacity
-                        onPress={() =>
-                          setOpenInfoSection(
-                            openInfoSection === 'donation' ? null : 'donation',
-                          )
-                        }
-                        style={{ marginLeft: 6 }}
-                      >
-                        <FontAwesomeIcon
-                          icon={faInfoCircle}
-                          size={14}
-                          color={colors.fgDefault}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                    <TouchableOpacity onPress={() => setDonation(!donation)}>
-                      {donation ? (
-                        <SettingSwitchOn width={40} height={19} />
-                      ) : (
-                        <SwitchOff width={40} height={19} />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                  {openInfoSection === 'donation' && (
-                    <View
-                      style={{
-                        backgroundColor: '#040E1D',
-                        borderRadius: 8,
-                        padding: 10,
-                        marginTop: 8,
-                      }}
-                    >
-                      <FadeText style={{ textAlign: 'center' }}>
-                        {DONATIONS.find(d => String(d.value) === 'true')
-                          ?.text ?? ''}
-                      </FadeText>
-                    </View>
-                  )}
-                </View>
-              )}
+              {/* SWARM: upstream's "Zennies for Zingo" donation toggle stood
+                  here. It appended an extra recipient to every send, to a Zcash
+                  MAINNET address, so on this network it could only ever be a
+                  switch that does nothing - or worse, looks like it does
+                  something. Removed rather than hidden. */}
 
               <TouchableOpacity
                 testID="settings.about"

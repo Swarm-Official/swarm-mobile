@@ -279,14 +279,16 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                     style={
                       {
                         "color": "#c3c3c3",
+                        "fontFamily": "JetBrainsMono-Medium",
                         "fontSize": 36,
-                        "fontWeight": "700",
+                        "letterSpacing": 1.56,
                         "margin": 0,
                         "padding": 0,
                       }
                     }
+                    testID="undefined.masked"
                   >
-                     -.----
+                     ⬢⬢⬢.⬢⬢
                   </Text>
                 </View>
               </View>
@@ -1226,14 +1228,16 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                               style={
                                 {
                                   "color": "#FFB972",
+                                  "fontFamily": "JetBrainsMono-Medium",
                                   "fontSize": 14,
-                                  "fontWeight": "700",
+                                  "letterSpacing": 1.56,
                                   "margin": 0,
                                   "padding": 0,
                                 }
                               }
+                              testID="undefined.masked"
                             >
-                               -.----
+                               ⬢⬢⬢.⬢⬢
                             </Text>
                           </View>
                         </View>

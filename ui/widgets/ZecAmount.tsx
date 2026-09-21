@@ -13,6 +13,10 @@ import { getNumberFormatSettings } from 'react-native-localize';
 import Utils from '@app/utils';
 import { SvgXml } from 'react-native-svg';
 import { CurrencyNameEnum, GlobalConst } from '@app/AppState';
+import {
+  fontFamily,
+  MASKED_LETTER_SPACING,
+} from '@app/theme/typography';
 
 type ZecAmountProps = {
   color?: string;
@@ -113,15 +117,20 @@ const ZecAmount: React.FunctionComponent<ZecAmountProps> = ({
           )}
           {privacyHigh ? (
             <Text
+              testID={`${testID}.masked`}
               style={{
                 fontSize: size,
-                fontWeight: '700',
+                // U+2B22 BLACK HEXAGON: one cell of the hive per hidden
+                // digit, set in mono and tracked wide so a mask can never be
+                // mistaken for an unfamiliar number. The design system's form.
+                fontFamily: fontFamily.monoMedium,
+                letterSpacing: MASKED_LETTER_SPACING,
                 color,
                 margin: 0,
                 padding: 0,
               }}
             >
-              {' -' + decimalSeparator + '----'}
+              {' ⬢⬢⬢' + decimalSeparator + '⬢⬢'}
             </Text>
           ) : (
             <Text

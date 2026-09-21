@@ -420,14 +420,16 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
                 style={
                   {
                     "color": "#c3c3c3",
+                    "fontFamily": "JetBrainsMono-Medium",
                     "fontSize": 14,
-                    "fontWeight": "700",
+                    "letterSpacing": 1.56,
                     "margin": 0,
                     "padding": 0,
                   }
                 }
+                testID="undefined.masked"
               >
-                 -.----
+                 ⬢⬢⬢.⬢⬢
               </Text>
             </View>
           </View>
@@ -726,14 +728,16 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
                   style={
                     {
                       "color": "#c3c3c3",
+                      "fontFamily": "JetBrainsMono-Medium",
                       "fontSize": 14,
-                      "fontWeight": "700",
+                      "letterSpacing": 1.56,
                       "margin": 0,
                       "padding": 0,
                     }
                   }
+                  testID="undefined.masked"
                 >
-                   -.----
+                   ⬢⬢⬢.⬢⬢
                 </Text>
               </View>
             </View>

@@ -89,15 +89,18 @@ describe('Component Components - test', () => {
   });
 
   // ZecAmount tests
-  test('ZecAmount - High Privacy should display privacy placeholder', () => {
+  // A hidden amount is masked with U+2B22 BLACK HEXAGON - one cell of the hive
+  // per digit - not with dashes. The point of the glyph is that a mask cannot
+  // be misread as a number, so this asserts the exact characters.
+  test('ZecAmount - High Privacy should display the hexagon mask', () => {
     render(
       <ZecAmount
         amtZec={-1.123456789}
-        currencyName={CurrencyNameEnum.ZEC}
+        currencyName={CurrencyNameEnum.SWM}
         privacy={true}
       />,
     );
-    expect(screen.getByText('-.----')).toBeTruthy();
+    expect(screen.getByText('⬢⬢⬢.⬢⬢')).toBeTruthy();
   });
 
   test('ZecAmount - no props should display placeholder', () => {

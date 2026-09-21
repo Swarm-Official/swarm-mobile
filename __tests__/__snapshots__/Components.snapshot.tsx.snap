@@ -187,14 +187,16 @@ exports[`Component Components - test ZecAmount High Privacy - snapshot 1`] = `
         style={
           {
             "color": "red",
+            "fontFamily": "JetBrainsMono-Medium",
             "fontSize": 20,
-            "fontWeight": "700",
+            "letterSpacing": 1.56,
             "margin": 0,
             "padding": 0,
           }
         }
+        testID="undefined.masked"
       >
-         -.----
+         ⬢⬢⬢.⬢⬢
       </Text>
     </View>
   </View>

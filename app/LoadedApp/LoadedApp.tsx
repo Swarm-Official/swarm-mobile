@@ -67,7 +67,6 @@ import {
   NetInfoType,
   ValueTransferType,
   ValueTransferKindEnum,
-  CurrencyNameEnum,
   UnifiedAddressClass,
   TransparentAddressClass,
   AddressKindEnum,
@@ -142,6 +141,7 @@ import Confirm from '@screens/Confirm';
 import { AppStackParamList } from '@app/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RPCValueTransfersStatusEnum } from '@app/walletBackend/enums/RPCValueTransfersStatusEnum';
+import { currencyNameForChain } from '@app/AppState/enums/CurrencyNameEnum';
 
 const About = React.lazy(() => import('@screens/About'));
 const MixnetDoctor = React.lazy(() => import('@screens/MixnetDoctor'));
@@ -1576,10 +1576,7 @@ export class LoadedAppClass extends Component<
         if (this.state.info.currencyName) {
           newInfo.currencyName = this.state.info.currencyName;
         } else {
-          newInfo.currencyName =
-            fallbackChain === ChainNameEnum.mainChainName
-              ? CurrencyNameEnum.ZEC
-              : CurrencyNameEnum.TAZ;
+          newInfo.currencyName = currencyNameForChain(fallbackChain);
         }
       }
       if (!newInfo.chainName) {

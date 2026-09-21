@@ -64,7 +64,6 @@ import {
   CurrencyEnum,
   SelectServerEnum,
   ChainNameEnum,
-  CurrencyNameEnum,
   InfoType,
   GlobalConst,
   RouteEnum,
@@ -103,6 +102,7 @@ import NymOff from '../../assets/img/nym-off.svg';
 import NymSwitchOn from '../../assets/img/nym-switch-on.svg';
 import SwitchOff from '../../assets/img/switch-off.svg';
 import SettingSwitchOn from '../../assets/img/setting-switch-on.svg';
+import { currencyNameForChain } from '@app/AppState/enums/CurrencyNameEnum';
 
 type SettingsProps = NativeStackScreenProps<
   AppDrawerParamList,
@@ -544,10 +544,7 @@ const Settings: React.FunctionComponent<SettingsProps> = ({
     chainName: chainName as ChainNameEnum,
     latestBlock,
     version: '',
-    currencyName:
-      chainName === ChainNameEnum.mainChainName
-        ? CurrencyNameEnum.ZEC
-        : CurrencyNameEnum.TAZ,
+    currencyName: currencyNameForChain(chainName),
     // Only the native layer knows this, and this info is for a server we may
     // not have connected to. Display-only, so nothing here reads it.
     ironwoodActivationHeight: null,

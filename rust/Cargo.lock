@@ -2310,7 +2310,7 @@ dependencies = [
 [[package]]
 name = "pepper-sync"
 version = "0.5.0"
-source = "git+https://github.com/brs-holding/privacy-zingolib?rev=508136111b879fa5917ef25ae94784504eef3256#508136111b879fa5917ef25ae94784504eef3256"
+source = "git+https://github.com/brs-holding/privacy-zingolib?rev=8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f#8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f"
 dependencies = [
  "bip32",
  "byteorder",
@@ -5028,7 +5028,7 @@ source = "git+https://github.com/zingolabs/infrastructure.git?rev=89cf104a241614
 [[package]]
 name = "zingo-memo"
 version = "0.1.1"
-source = "git+https://github.com/brs-holding/privacy-zingolib?rev=508136111b879fa5917ef25ae94784504eef3256#508136111b879fa5917ef25ae94784504eef3256"
+source = "git+https://github.com/brs-holding/privacy-zingolib?rev=8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f#8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f"
 dependencies = [
  "zcash_address",
  "zcash_encoding",
@@ -5039,7 +5039,7 @@ dependencies = [
 [[package]]
 name = "zingo-net-diag"
 version = "0.1.0"
-source = "git+https://github.com/brs-holding/privacy-zingolib?rev=508136111b879fa5917ef25ae94784504eef3256#508136111b879fa5917ef25ae94784504eef3256"
+source = "git+https://github.com/brs-holding/privacy-zingolib?rev=8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f#8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f"
 dependencies = [
  "serde",
 ]
@@ -5047,7 +5047,7 @@ dependencies = [
 [[package]]
 name = "zingo-netutils"
 version = "5.0.1"
-source = "git+https://github.com/brs-holding/privacy-zingolib?rev=508136111b879fa5917ef25ae94784504eef3256#508136111b879fa5917ef25ae94784504eef3256"
+source = "git+https://github.com/brs-holding/privacy-zingolib?rev=8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f#8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f"
 dependencies = [
  "http",
  "hyper-util",
@@ -5069,7 +5069,7 @@ dependencies = [
 [[package]]
 name = "zingo-price"
 version = "0.1.0"
-source = "git+https://github.com/brs-holding/privacy-zingolib?rev=508136111b879fa5917ef25ae94784504eef3256#508136111b879fa5917ef25ae94784504eef3256"
+source = "git+https://github.com/brs-holding/privacy-zingolib?rev=8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f#8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f"
 dependencies = [
  "byteorder",
  "serde",
@@ -5083,7 +5083,7 @@ dependencies = [
 [[package]]
 name = "zingo-status"
 version = "0.2.1"
-source = "git+https://github.com/brs-holding/privacy-zingolib?rev=508136111b879fa5917ef25ae94784504eef3256#508136111b879fa5917ef25ae94784504eef3256"
+source = "git+https://github.com/brs-holding/privacy-zingolib?rev=8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f#8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f"
 dependencies = [
  "byteorder",
  "zcash_protocol",
@@ -5114,7 +5114,7 @@ source = "git+https://github.com/zingolabs/infrastructure.git?rev=89cf104a241614
 [[package]]
 name = "zingolib"
 version = "6.0.0"
-source = "git+https://github.com/brs-holding/privacy-zingolib?rev=508136111b879fa5917ef25ae94784504eef3256#508136111b879fa5917ef25ae94784504eef3256"
+source = "git+https://github.com/brs-holding/privacy-zingolib?rev=8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f#8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f"
 dependencies = [
  "append-only-vec",
  "bech32",
@@ -5174,7 +5174,7 @@ dependencies = [
 [[package]]
 name = "zingolib_testutils"
 version = "0.1.0"
-source = "git+https://github.com/brs-holding/privacy-zingolib?rev=508136111b879fa5917ef25ae94784504eef3256#508136111b879fa5917ef25ae94784504eef3256"
+source = "git+https://github.com/brs-holding/privacy-zingolib?rev=8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f#8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f"
 dependencies = [
  "http",
  "nonempty",

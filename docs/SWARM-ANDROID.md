@@ -104,10 +104,11 @@ than no wallet.
 
 ### Not proven
 
-- **Nothing on a real chain.** At the time of writing the indexer at
-  `lwd.swarm.green` is not live, so no sync, no balance, no send and no receive
-  has ever been exercised against SwarmTestnet from this app. The only network
-  behaviour that has been exercised is the failure path.
+- **Nothing on a real chain.** `lwd.swarm.green:443` answers and speaks gRPC,
+  but no sync, no balance, no send and no receive has been exercised against
+  SwarmTestnet *from this app*. That the endpoint is up is not the same as the
+  app working against it — and it is the app's behaviour that is unproven
+  here, not the server's.
 - **Nothing on real hardware.** The emulator smoke test runs on x86_64. The
   `arm64-v8a` and `armeabi-v7a` libraries are built and packaged but have not
   been executed on a phone.
@@ -164,14 +165,13 @@ manifest cannot drift from the binary.
 
 The app fails with one plain sentence rather than a stack trace:
 
-- **The server cannot be reached.** Expected right now — the indexer is not
-  live. Check the server address in Settings; the default is
-  `https://lwd.swarm.green:443`.
+- **The server cannot be reached.** Check the server address in Settings; the
+  default is `https://lwd.swarm.green:443`.
 - **The server is on a different chain.** The app refuses it. A server that
   does not report `swarm-testnet` is not a SwarmTestnet server, and opening a
   wallet against the wrong chain is how coins get lost.
-- **The explorer does not open.** `explore.swarm.green` is not live yet. The
-  app checks before opening a link and reports it instead of throwing.
+- **The explorer does not open.** The app checks whether the link can be
+  opened before opening it, and reports it instead of throwing.
 
 ---
 

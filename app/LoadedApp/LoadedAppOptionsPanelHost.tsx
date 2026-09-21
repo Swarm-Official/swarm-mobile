@@ -10,7 +10,7 @@ import { ContextAppLoaded } from '@app/context';
 import { MenuItemEnum, ModeEnum, SelectServerEnum } from '@app/AppState';
 import { sendEmail } from '@app/services/sendEmail';
 import { walletBackupExists } from '@app/walletBackend';
-import { getZingoLogo, getZingoName } from '@app/utils/ZingoAppData';
+import { getZingoName } from '@app/utils/ZingoAppData';
 import { advancedTokens, basicTokens } from '@app/theme';
 
 import AddressBookIcon from '../../assets/img/options/address-book.svg';
@@ -287,7 +287,6 @@ const LoadedAppOptionsPanelHost: React.FC<LoadedAppOptionsPanelHostProps> = ({
       walletName: getZingoName(),
       targetModeLabel: translate(`settings.value-mode-${target}`) as string,
       targetModeColor: isBasic ? advancedTokens.fgAccent : basicTokens.fgAccent,
-      logoSource: getZingoLogo(),
       // Intentionally NOT closing the panel — staying open lets the user
       // see the action grid change as it re-filters by the new mode.
       onToggle: () => setModeOption(target),

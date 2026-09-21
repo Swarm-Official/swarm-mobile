@@ -1,8 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Image,
-  ImageSourcePropType,
   Linking,
   Pressable,
   ScrollView,
@@ -21,6 +19,7 @@ import XSocial from '../../assets/img/options/x.svg';
 import Github from '../../assets/img/options/github.svg';
 import Mail from '../../assets/img/options/mail.svg';
 import Refresh from '../../assets/img/options/refresh.svg';
+import SwarmBee from '../../assets/img/swarm-bee.svg';
 
 export type OptionsPanelAction = {
   /** Unique key for the action (typically a MenuItemEnum value). */
@@ -59,13 +58,12 @@ export type OptionsPanelProps = {
    * Mode pill at the bottom. Shows the wallet brand + the mode that will
    * become active when tapped (so the user reads the destination, mirroring
    * the legacy drawer's switch). `logoColor` tints the rounded background
-   * behind the logo image when present.
+   * behind the mark.
    */
   mode?: {
     walletName: string;
     targetModeLabel: string;
     targetModeColor: string;
-    logoSource: ImageSourcePropType;
     onToggle: () => void;
   };
   /** Triggered by the triple-chevron close button at top-left. */
@@ -185,7 +183,7 @@ const OptionsPanel: React.FC<OptionsPanelProps> = ({
                   width: 56,
                   height: 56,
                   borderRadius: 12,
-                  backgroundColor: '#111c2c',
+                  backgroundColor: colors.bgSurface,
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginBottom: 6,
@@ -269,15 +267,14 @@ const OptionsPanel: React.FC<OptionsPanelProps> = ({
               alignItems: 'center',
             }}
           >
-            <Image
-              source={mode.logoSource}
-              style={{
-                width: 32,
-                height: 32,
-                resizeMode: 'contain',
-                borderRadius: 7,
-                marginRight: 12,
-              }}
+            {/* The SWARM hive-bee, drawn rather than rasterised so it stays
+                sharp at any density. Its stripes are painted in the canvas
+                colour, which is what the design system means by "stripes
+                always take the background colour". */}
+            <SwarmBee
+              width={32}
+              height={32}
+              style={{ marginRight: 12 }}
             />
             <Pressable
               onPress={mode.onToggle}

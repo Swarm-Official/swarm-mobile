@@ -3,13 +3,29 @@ name: SWARM iOS
 # SWARM Wallet — iOS simulator pipeline.
 #
 # Phones do not mine: Apple App Review guideline 3.1.5 forbids on-device
-# mining, so this is a wallet only. The device/TestFlight path needs an Apple
-# Developer Program ORGANISATION account (guideline 3.1.5(b)); see
-# docs/SWARM-IOS.md. Until the owner has one, the iOS deliverable is a
-# SIMULATOR build and nothing here signs anything.
+# mining, so this is a wallet only. The physical-device / TestFlight path
+# needs an Apple Developer Program ORGANISATION account (guideline
+# 3.1.5(b)) that this project does not have; see docs/SWARM-IOS.md. Until
+# then the iOS deliverable is a SIMULATOR build and nothing here signs
+# anything: every xcodebuild invocation runs with CODE_SIGNING_ALLOWED=NO.
+#
+# Versions below are pinned against the inventory recorded by the
+# `preflight` job (run 35626872504): macos-latest is macOS 26.6.2 on
+# arm64 with 3 cores / 7 GB, ships Xcode 26.0 … 26.6, and has iOS
+# simulator runtimes 26.2 / 26.4 / 26.5 only — there is no iOS 26.6
+# runtime, which is why Xcode is pinned to 26.5 and not to the image
+# default.
 
 on:
   workflow_dispatch:
+    inputs:
+      signed_release:
+        description: >-
+          Build a SIGNED device archive and upload to TestFlight. Requires
+          an Apple Developer Program organisation account and the repository
+          secrets listed in docs/SWARM-IOS.md. Leave false.
+        type: boolean
+        default: false
   push:
     branches: [swarm-ios]
 
@@ -20,9 +36,22 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Pinned explicitly. See the header for the evidence.
+  XCODE_VERSION: '26.5'
+  PREFERRED_SIM_RUNTIME: com.apple.CoreSimulator.SimRuntime.iOS-26-5
+  PREFERRED_SIM_DEVICE_TYPE: com.apple.CoreSimulator.SimDeviceType.iPhone-17
+  NODE_VERSION: '22.18.0'
+  # Keep cargo lean on a 3-core runner.
+  CARGO_INCREMENTAL: '0'
+  CARGO_NET_RETRY: '10'
+  CARGO_TERM_COLOR: always
+
 jobs:
+  # ---------------------------------------------------------------------
   # Inventory of the hosted runner. Cheap, always runs, and is the evidence
-  # behind every version pinned further down this file.
+  # behind every version pinned in this file.
+  # ---------------------------------------------------------------------
   preflight:
     name: Runner inventory
     runs-on: macos-latest
@@ -34,8 +63,6 @@ jobs:
           sw_vers
           uname -m
           sysctl -n hw.ncpu hw.memsize
-          cat /System/Volumes/Data/Users/runner/image-info.json 2>/dev/null || \
-            cat ~/image-info.json 2>/dev/null || echo "(no image-info.json)"
 
       - name: Xcode versions installed
         run: |
@@ -59,5 +86,507 @@ jobs:
           pod --version || true
           rustup --version || true
           rustc --version || true
-          protoc --version || true
-          bindgen --version || true
+
+  # ---------------------------------------------------------------------
+  # The Rust wallet library + the Nym proxy shim, built for
+  # aarch64-apple-ios (device), aarch64-apple-ios-sim and x86_64-apple-ios
+  # (simulator, lipo'd into one fat slice) and packed into two
+  # XCFrameworks with uniffi Swift bindings — exactly the way upstream's
+  # rust/ios/build_ios.mjs does it. Upstream runs this on a self-hosted
+  # 12-core Mac; here it runs on a 3-core hosted runner, so the result is
+  # cached on the source hash and normally never rebuilt.
+  # ---------------------------------------------------------------------
+  rust-xcframework:
+    name: Rust xcframework (device + simulator)
+    runs-on: macos-latest
+    timeout-minutes: 340
+    outputs:
+      cache-key: ${{ steps.key.outputs.key }}
+    env:
+      RUSTUP_HOME: ${{ github.workspace }}/.rustup
+      CARGO_HOME: ${{ github.workspace }}/.cargo
+    steps:
+      - name: Pin Xcode ${{ env.XCODE_VERSION }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute xcframework cache key
+        id: key
+        run: |
+          set -euo pipefail
+          KEY="swarm-ios-xcframework-v1-${{ runner.os }}-xc${XCODE_VERSION}-${{ hashFiles('rust/Cargo.toml', 'rust/Cargo.lock', 'rust/lib/**', 'rust/uniffi-bindgen/**', 'rust/zingomobile_utils/**', 'rust/ios/build_ios.mjs', 'rust/nym-proxy-ffi/Cargo.toml', 'rust/nym-proxy-ffi/Cargo.lock', 'rust/nym-proxy-ffi/src/**', 'rust/nym-proxy-ffi/uniffi.toml') }}"
+          echo "key=$KEY" >> "$GITHUB_OUTPUT"
+          echo "xcframework cache key: $KEY"
+
+      - name: Restore / save xcframework
+        id: xcf
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/Zingolib.xcframework
+            ios/zingo.swift
+            ios/ZingoNymProxyFFI.xcframework
+            ios/zingo_nym_proxy_ffi.swift
+          key: ${{ steps.key.outputs.key }}
+
+      - name: Rust toolchain + iOS targets
+        if: steps.xcf.outputs.cache-hit != 'true'
+        run: |
+          set -euxo pipefail
+          rustup default stable
+          rustup update stable
+          rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+          rustc --version
+
+      # After the toolchain step on purpose: rust-cache reads `rustc -vV`
+      # into its key and RUSTUP_HOME is workspace-relative here, so it has
+      # no default toolchain until the step above installs one. Two
+      # workspaces: the Nym shim is excluded from the main one and has its
+      # own lockfile, so its target dir needs listing separately.
+      - name: Cargo cache (registry, git, iOS targets)
+        if: steps.xcf.outputs.cache-hit != 'true'
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            rust
+            rust/nym-proxy-ffi
+          cache-on-failure: true
+
+      - name: Install protoc
+        if: steps.xcf.outputs.cache-hit != 'true'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+          HOMEBREW_NO_INSTALL_CLEANUP: '1'
+        run: brew install protobuf
+
+      - name: Install bindgen-cli (needed by aws-lc-sys, ring etc.)
+        if: steps.xcf.outputs.cache-hit != 'true'
+        run: |
+          set -euxo pipefail
+          command -v bindgen >/dev/null || cargo install --locked bindgen-cli
+          bindgen --version
+
+      # bindgen 0.69 (pulled in transitively) does not pass an iOS
+      # simulator sysroot by itself; upstream works around it the same way.
+      - name: Cargo env for the iOS simulator target
+        if: steps.xcf.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p .cargo
+          SDKROOT="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+          {
+            echo '[env]'
+            echo "BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios_sim = \"--target=arm64-apple-ios-simulator -isysroot $SDKROOT\""
+            echo "CFLAGS_aarch64_apple_ios_sim = \"--target=arm64-apple-ios-simulator -isysroot $SDKROOT\""
+            echo "CXXFLAGS_aarch64_apple_ios_sim = \"--target=arm64-apple-ios-simulator -isysroot $SDKROOT\""
+          } > .cargo/config.toml
+          cat .cargo/config.toml
+
+      - name: Setup Node.js
+        if: steps.xcf.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Build the iOS xcframeworks (upstream script, unmodified)
+        if: steps.xcf.outputs.cache-hit != 'true'
+        run: node rust/ios/build_ios.mjs
+
+      - name: Show what was produced
+        run: |
+          set -euxo pipefail
+          ls -la ios/Zingolib.xcframework ios/ZingoNymProxyFFI.xcframework
+          lipo -info ios/Zingolib.xcframework/*/libzingo.a
+          lipo -info ios/ZingoNymProxyFFI.xcframework/*/libzingo_nym_proxy_ffi.a
+
+  # ---------------------------------------------------------------------
+  # The app itself: pods, an unsigned Release build for the iOS Simulator,
+  # then boot a simulator, install the .app, launch it and photograph it.
+  # ---------------------------------------------------------------------
+  app-simulator:
+    name: Simulator build, launch and screenshot
+    needs: rust-xcframework
+    runs-on: macos-latest
+    timeout-minutes: 120
+    steps:
+      - name: Pin Xcode ${{ env.XCODE_VERSION }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: First launch
+        run: xcodebuild -runFirstLaunch || true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore xcframework
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ios/Zingolib.xcframework
+            ios/zingo.swift
+            ios/ZingoNymProxyFFI.xcframework
+            ios/zingo_nym_proxy_ffi.swift
+          key: ${{ needs.rust-xcframework.outputs.cache-key }}
+          fail-on-cache-miss: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Yarn install
+        run: yarn install --frozen-lockfile
+
+      - name: Cache Pods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/Pods
+            ios/vendor/hermes-dsyms
+            ~/Library/Caches/CocoaPods
+          key: swarm-ios-pods-v1-${{ hashFiles('ios/Podfile', 'yarn.lock', 'package.json') }}
+          restore-keys: |
+            swarm-ios-pods-v1-
+
+      - name: Pod install
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 25
+          max_attempts: 3
+          retry_wait_seconds: 20
+          command: cd ios && pod install
+
+      - name: Create and boot the simulator
+        id: sim
+        run: |
+          set -euo pipefail
+
+          avail_runtimes=$(xcrun simctl list runtimes -j \
+            | jq -r '[.runtimes[] | select(.isAvailable == true) | select(.identifier | contains("SimRuntime.iOS-")) | .identifier] | join("\n")')
+          echo "available iOS runtimes:"; echo "$avail_runtimes"
+
+          RT=""
+          for r in $avail_runtimes; do
+            if [ "$r" = "$PREFERRED_SIM_RUNTIME" ]; then RT="$r"; fi
+          done
+          if [ -z "$RT" ]; then
+            RT=$(echo "$avail_runtimes" | sort -V | tail -1)
+            echo "::warning::preferred runtime $PREFERRED_SIM_RUNTIME not present, falling back to $RT"
+          fi
+
+          avail_types=$(xcrun simctl list devicetypes -j \
+            | jq -r '[.devicetypes[] | select(.identifier | contains("SimDeviceType.iPhone")) | .identifier] | join("\n")')
+          DT=""
+          for d in $avail_types; do
+            if [ "$d" = "$PREFERRED_SIM_DEVICE_TYPE" ]; then DT="$d"; fi
+          done
+          if [ -z "$DT" ]; then
+            DT=$(echo "$avail_types" | head -1)
+            echo "::warning::preferred device type $PREFERRED_SIM_DEVICE_TYPE not present, falling back to $DT"
+          fi
+
+          echo "runtime=$RT"
+          echo "device type=$DT"
+
+          UDID=$(xcrun simctl create "swarm-ci" "$DT" "$RT")
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override \
+            --time "09:41" --batteryState charged --batteryLevel 100 \
+            --cellularMode active --cellularBars 4 --wifiMode active --wifiBars 3 || true
+
+          {
+            echo "udid=$UDID"
+            echo "runtime=$RT"
+            echo "devicetype=$DT"
+          } >> "$GITHUB_OUTPUT"
+
+      # Release, not Debug: a Release build bundles the JavaScript into the
+      # .app, so the artifact is standalone and the launch below is real
+      # evidence rather than a red "No bundle URL present" screen from a
+      # Debug build looking for a Metro server that is not running.
+      - name: Build for the simulator (unsigned)
+        working-directory: ios
+        run: |
+          set -euxo pipefail
+          mkdir -p build/reports build/DerivedData
+          xcodebuild build \
+            -workspace Zingo.xcworkspace \
+            -scheme Zingo \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build/DerivedData \
+            -resultBundlePath build/reports/SwarmWallet-simulator.xcresult \
+            ONLY_ACTIVE_ARCH=YES \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            DEVELOPMENT_TEAM="" \
+            -quiet
+
+      - name: Install, launch and screenshot
+        id: launch
+        run: |
+          set -euo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+
+          APP=$(find ios/build/DerivedData/Build/Products -maxdepth 2 -name '*.app' -type d | head -1)
+          test -n "$APP"
+          echo "app bundle: $APP"
+          BID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")
+          NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist" 2>/dev/null || echo '(none)')
+          echo "bundle identifier: $BID"
+          echo "display name:      $NAME"
+
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch --terminate-running-process "$UDID" "$BID"
+
+          mkdir -p artifacts
+          sleep 15
+          xcrun simctl io "$UDID" screenshot artifacts/01-launch-15s.png
+          sleep 25
+          xcrun simctl io "$UDID" screenshot artifacts/02-launch-40s.png
+
+          # Still alive 40 s after launch? A crash-on-start would be gone.
+          if xcrun simctl spawn "$UDID" launchctl list | grep -q "$BID"; then
+            echo "STILL RUNNING after 40s: $BID"
+            echo "alive=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::$BID is not running 40 s after launch"
+            echo "alive=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          xcrun simctl spawn "$UDID" log show --last 3m --style compact \
+            --predicate "processImagePath CONTAINS[c] 'Zingo'" \
+            > artifacts/app-log.txt 2>&1 || true
+
+          {
+            echo "app_path=$APP"
+            echo "bundle_id=$BID"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Package the simulator app
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent \
+            "${{ steps.launch.outputs.app_path }}" \
+            dist/SwarmWallet-simulator.app.zip
+          cd dist
+          shasum -a 256 SwarmWallet-simulator.app.zip > SHA256SUMS
+          cat SHA256SUMS
+          ls -la
+
+      - name: Build summary
+        if: always()
+        run: |
+          {
+            echo "### SWARM iOS simulator build"
+            echo
+            echo "| item | value |"
+            echo "| --- | --- |"
+            echo "| Xcode | \`$(xcodebuild -version | head -1)\` |"
+            echo "| simulator runtime | \`${{ steps.sim.outputs.runtime }}\` |"
+            echo "| simulator device | \`${{ steps.sim.outputs.devicetype }}\` |"
+            echo "| bundle identifier | \`${{ steps.launch.outputs.bundle_id }}\` |"
+            echo "| running 40 s after launch | \`${{ steps.launch.outputs.alive }}\` |"
+            echo "| code signing | \`CODE_SIGNING_ALLOWED=NO\` |"
+            if [ -f dist/SHA256SUMS ]; then
+              echo
+              echo '```'
+              cat dist/SHA256SUMS
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload simulator app + checksums
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-ios-simulator-app
+          path: dist/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload launch screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-ios-simulator-screenshot
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload xcresult bundle
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-ios-xcresult
+          path: ios/build/reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ---------------------------------------------------------------------
+  # DISABLED. Signed device archive + TestFlight upload.
+  #
+  # This job cannot run today and is not meant to: it needs an Apple
+  # Developer Program ORGANISATION account (App Review guideline 3.1.5(b)
+  # accepts crypto wallets only from organisation accounts), an App ID
+  # green.swarm.wallet, a distribution certificate and provisioning
+  # profile or an App Store Connect API key, and the repository secrets
+  # named below. It is gated behind a manual input that defaults to false
+  # AND hard-fails on the first step when the secrets are absent, so it
+  # cannot run by accident. No signing material belongs in this
+  # repository or in these logs. Full instructions: docs/SWARM-IOS.md.
+  # ---------------------------------------------------------------------
+  signed-release:
+    name: Signed archive + TestFlight (DISABLED — needs an Apple account)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.signed_release }}
+    needs: app-simulator
+    runs-on: macos-latest
+    timeout-minutes: 120
+    environment: apple-distribution
+    steps:
+      - name: Refuse to run without the Apple Developer Program secrets
+        env:
+          APPLE_APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_ID }}
+          APPLE_APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
+          APPLE_APP_STORE_CONNECT_KEY_P8: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_P8 }}
+          APPLE_DISTRIBUTION_CERT_P12: ${{ secrets.APPLE_DISTRIBUTION_CERT_P12 }}
+          APPLE_DISTRIBUTION_CERT_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for v in APPLE_APP_STORE_CONNECT_KEY_ID APPLE_APP_STORE_CONNECT_ISSUER_ID \
+                   APPLE_APP_STORE_CONNECT_KEY_P8 APPLE_DISTRIBUTION_CERT_P12 \
+                   APPLE_DISTRIBUTION_CERT_PASSWORD APPLE_PROVISIONING_PROFILE APPLE_TEAM_ID; do
+            if [ -z "${!v:-}" ]; then echo "missing secret: $v"; missing=1; fi
+          done
+          if [ "$missing" = "1" ]; then
+            echo "::error::This job needs an Apple Developer Program organisation account. See docs/SWARM-IOS.md."
+            exit 1
+          fi
+
+      - name: Pin Xcode ${{ env.XCODE_VERSION }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore xcframework
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ios/Zingolib.xcframework
+            ios/zingo.swift
+            ios/ZingoNymProxyFFI.xcframework
+            ios/zingo_nym_proxy_ffi.swift
+          key: ${{ needs.rust-xcframework.outputs.cache-key }}
+          fail-on-cache-miss: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Yarn install
+        run: yarn install --frozen-lockfile
+
+      - name: Pod install
+        run: cd ios && pod install
+
+      # A throwaway keychain that exists only for this job. The p12, the
+      # profile and the API key are written to files outside the checkout
+      # and deleted in the cleanup step; nothing is ever echoed.
+      - name: Import signing material into a temporary keychain
+        env:
+          APPLE_DISTRIBUTION_CERT_P12: ${{ secrets.APPLE_DISTRIBUTION_CERT_P12 }}
+          APPLE_DISTRIBUTION_CERT_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/swarm-signing.keychain-db"
+          KEYCHAIN_PW="$(uuidgen)"
+          security create-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
+          echo -n "$APPLE_DISTRIBUTION_CERT_P12" | base64 --decode > "$RUNNER_TEMP/dist.p12"
+          security import "$RUNNER_TEMP/dist.p12" -k "$KEYCHAIN" \
+            -P "$APPLE_DISTRIBUTION_CERT_PASSWORD" -T /usr/bin/codesign -f pkcs12
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PW" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo -n "$APPLE_PROVISIONING_PROFILE" | base64 --decode \
+            > "$HOME/Library/MobileDevice/Provisioning Profiles/swarm.mobileprovision"
+          rm -f "$RUNNER_TEMP/dist.p12"
+
+      - name: Archive for a physical device
+        working-directory: ios
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -workspace Zingo.xcworkspace \
+            -scheme Zingo \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/SwarmWallet.xcarchive" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Manual
+
+      - name: Export a signed .ipa
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>uploadSymbols</key><true/>
+            <key>signingStyle</key><string>manual</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/SwarmWallet.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+
+      - name: Upload to TestFlight
+        env:
+          APPLE_APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_ID }}
+          APPLE_APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
+          APPLE_APP_STORE_CONNECT_KEY_P8: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          echo -n "$APPLE_APP_STORE_CONNECT_KEY_P8" | base64 --decode \
+            > "$HOME/.appstoreconnect/private_keys/AuthKey_${APPLE_APP_STORE_CONNECT_KEY_ID}.p8"
+          IPA=$(find "$RUNNER_TEMP/export" -name '*.ipa' | head -1)
+          xcrun altool --upload-app -f "$IPA" -t ios \
+            --apiKey "$APPLE_APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APPLE_APP_STORE_CONNECT_ISSUER_ID"
+
+      - name: Destroy the temporary keychain and key material
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/swarm-signing.keychain-db" || true
+          rm -rf "$HOME/.appstoreconnect/private_keys" || true
+          rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/swarm.mobileprovision" || true

@@ -102,9 +102,10 @@ jobs:
     timeout-minutes: 340
     outputs:
       cache-key: ${{ steps.key.outputs.key }}
-    env:
-      RUSTUP_HOME: ${{ github.workspace }}/.rustup
-      CARGO_HOME: ${{ github.workspace }}/.cargo
+    # Deliberately NOT overriding RUSTUP_HOME / CARGO_HOME the way
+    # upstream's self-hosted runner does. A workspace-local CARGO_HOME
+    # puts `cargo install`ed binaries somewhere that is not on PATH, and
+    # the bindgen this build needs then cannot be found.
     steps:
       - name: Pin Xcode ${{ env.XCODE_VERSION }}
         uses: maxim-lobanov/setup-xcode@v1
@@ -141,6 +142,7 @@ jobs:
           rustup update stable
           rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
           rustc --version
+          echo "${CARGO_HOME:-$HOME/.cargo}/bin" >> "$GITHUB_PATH"
 
       # After the toolchain step on purpose: rust-cache reads `rustc -vV`
       # into its key and RUSTUP_HOME is workspace-relative here, so it has

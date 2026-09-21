@@ -59,6 +59,7 @@ exports[`Component SingleAddress - test SingleAddress - snapshot 1`] = `
               style={
                 {
                   "color": "#c3c3c3",
+                  "fontFamily": "Manrope-Regular",
                   "fontSize": 15,
                   "fontWeight": "bold",
                   "marginRight": 10,
@@ -364,7 +365,7 @@ exports[`Component SingleAddress - test SingleAddress - snapshot 1`] = `
               style={
                 {
                   "color": "#c3c3c3",
-                  "fontFamily": "monospace",
+                  "fontFamily": "JetBrainsMono-Regular",
                   "fontSize": 16,
                   "fontWeight": "600",
                   "opacity": 0.8,
@@ -586,7 +587,7 @@ exports[`Component SingleAddress UFVK - test SingleAddress UFVK - snapshot 1`] =
             style={
               {
                 "color": "#c3c3c3",
-                "fontFamily": "monospace",
+                "fontFamily": "JetBrainsMono-Regular",
                 "fontSize": 16,
                 "fontWeight": "600",
                 "opacity": 0.8,

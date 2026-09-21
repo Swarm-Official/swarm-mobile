@@ -214,8 +214,8 @@ exports[`Component ShowUfvk - test ShowUfvk Backup - snapshot 1`] = `
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "marginTop": 12,
               "opacity": 1,
               "textAlign": "center",
@@ -473,8 +473,8 @@ exports[`Component ShowUfvk - test ShowUfvk Change - snapshot 1`] = `
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "marginTop": 12,
               "opacity": 1,
               "textAlign": "center",
@@ -732,8 +732,8 @@ exports[`Component ShowUfvk - test ShowUfvk Server - snapshot 1`] = `
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "marginTop": 12,
               "opacity": 1,
               "textAlign": "center",
@@ -991,8 +991,8 @@ exports[`Component ShowUfvk - test ShowUfvk View - snapshot 1`] = `
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "marginTop": 12,
               "opacity": 1,
               "textAlign": "center",

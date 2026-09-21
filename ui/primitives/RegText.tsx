@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, TextStyle } from 'react-native';
 import { useTheme } from '@app/theme';
+import { fontFamily } from '@app/theme/typography';
 
 type RegTextProps = {
   style?: TextStyle;
@@ -27,8 +28,10 @@ const RegText: React.FunctionComponent<RegTextProps> = ({
 
   const styleSum: TextStyle = {
     color: color || colors.fgDefault,
+    // Manrope 400 is the design system's body face. The weight travels with
+    // the family name: a custom family on Android ignores `fontWeight`.
+    fontFamily: fontFamily.bodyRegular,
     fontSize: 15,
-    fontWeight: '400',
     opacity: 1,
     ...style,
   };

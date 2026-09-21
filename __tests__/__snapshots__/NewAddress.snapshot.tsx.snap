@@ -21,8 +21,8 @@ exports[`NewAddress - snapshots NewAddress transparent kind 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 15,
-          "fontWeight": "400",
           "marginTop": 10,
           "opacity": 1,
           "paddingHorizontal": 10,
@@ -292,6 +292,7 @@ exports[`NewAddress - snapshots NewAddress transparent kind 1`] = `
       style={
         {
           "color": "#18bd18",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 16,
           "fontWeight": "600",
           "opacity": 1,
@@ -366,6 +367,7 @@ exports[`NewAddress - snapshots NewAddress transparent kind 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 16,
           "fontWeight": "400",
           "opacity": 1,
@@ -420,6 +422,7 @@ exports[`NewAddress - snapshots NewAddress transparent kind 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 16,
           "fontWeight": "400",
           "opacity": 1,
@@ -453,8 +456,8 @@ exports[`NewAddress - snapshots NewAddress unified kind 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 15,
-          "fontWeight": "400",
           "marginTop": 10,
           "opacity": 1,
           "paddingHorizontal": 10,
@@ -514,8 +517,8 @@ exports[`NewAddress - snapshots NewAddress unified kind 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 15,
-          "fontWeight": "400",
           "marginTop": 30,
           "opacity": 1,
           "paddingHorizontal": 10,
@@ -594,6 +597,7 @@ exports[`NewAddress - snapshots NewAddress unified kind 1`] = `
               {
                 "backgroundColor": "transparent",
                 "color": "#c3c3c3",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 15,
                 "fontWeight": "600",
                 "marginLeft": 20,
@@ -842,6 +846,7 @@ exports[`NewAddress - snapshots NewAddress unified kind 1`] = `
       style={
         {
           "color": "#18bd18",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 16,
           "fontWeight": "600",
           "opacity": 1,
@@ -916,6 +921,7 @@ exports[`NewAddress - snapshots NewAddress unified kind 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 16,
           "fontWeight": "400",
           "opacity": 1,
@@ -970,6 +976,7 @@ exports[`NewAddress - snapshots NewAddress unified kind 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 16,
           "fontWeight": "400",
           "opacity": 1,

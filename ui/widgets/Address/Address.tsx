@@ -2,6 +2,7 @@
 import React from 'react';
 import { TextStyle } from 'react-native';
 import Button, { ButtonTypeEnum } from '@ui/primitives/Button';
+import { fontFamily } from '@app/theme/typography';
 
 type AddressProps = {
   address: string;
@@ -35,7 +36,7 @@ const Address: React.FunctionComponent<AddressProps> = ({
       textStyle={{
         ...style,
         fontSize: 16,
-        fontFamily: 'monospace',
+        fontFamily: fontFamily.monoRegular,
       }}
     />
   );

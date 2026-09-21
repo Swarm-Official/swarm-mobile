@@ -140,12 +140,21 @@ jobs:
           rustup toolchain install stable --profile minimal
           rustup default stable
           rustup target add "$TARGET"
+          # CARGO_HOME is redirected into the workspace so it can be cached,
+          # which takes its bin directory off the image's PATH. Without this
+          # the cached `bindgen` is invisible to `command -v`, and the install
+          # below then fails on the binary it cannot see.
+          echo "$CARGO_HOME/bin" >> "$GITHUB_PATH"
 
       - name: Tools (bindgen-cli, cargo-ndk)
         run: |
+          # $GITHUB_PATH only affects later steps, so export it here too.
+          export PATH="$CARGO_HOME/bin:$PATH"
           # aws-lc-sys needs bindgen-cli on the PATH.
-          command -v bindgen  >/dev/null 2>&1 || cargo install --locked bindgen-cli
-          command -v cargo-ndk >/dev/null 2>&1 || cargo install --locked --version 4.0.1 cargo-ndk
+          command -v bindgen   >/dev/null 2>&1 || cargo install --locked --force bindgen-cli
+          command -v cargo-ndk >/dev/null 2>&1 || cargo install --locked --force --version 4.0.1 cargo-ndk
+          bindgen --version
+          cargo ndk --version
 
       - name: Confirm the SWARM SDK pin
         run: |

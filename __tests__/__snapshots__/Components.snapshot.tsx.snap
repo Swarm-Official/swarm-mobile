@@ -6,8 +6,8 @@ exports[`Component Components - test BoldText - snapshot 1`] = `
     {
       "backgroundColor": "red",
       "color": "#c3c3c3",
+      "fontFamily": "Sora-SemiBold",
       "fontSize": 16,
-      "fontWeight": "bold",
       "opacity": 0.87,
     }
   }
@@ -89,7 +89,8 @@ exports[`Component Components - test ErrorText - snapshot 1`] = `
   style={
     {
       "backgroundColor": "white",
-      "color": "#18bd18",
+      "color": "#FFB972",
+      "fontFamily": "Manrope-Medium",
     }
   }
 >
@@ -102,8 +103,8 @@ exports[`Component Components - test FadeText - snapshot 1`] = `
   style={
     {
       "backgroundColor": "red",
-      "color": "#c3c3c3",
-      "opacity": 0.65,
+      "color": "#888888",
+      "fontFamily": "Manrope-Regular",
     }
   }
 >
@@ -118,8 +119,8 @@ exports[`Component Components - test RegText - snapshot 1`] = `
     {
       "backgroundColor": "white",
       "color": "red",
+      "fontFamily": "Manrope-Regular",
       "fontSize": 15,
-      "fontWeight": "400",
       "opacity": 1,
     }
   }

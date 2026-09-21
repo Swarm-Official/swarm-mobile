@@ -21,8 +21,8 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 15,
-          "fontWeight": "400",
           "marginTop": 10,
           "opacity": 1,
           "paddingHorizontal": 10,
@@ -43,8 +43,8 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
         style={
           {
             "color": "#c3c3c3",
+            "fontFamily": "Manrope-Regular",
             "fontSize": 15,
-            "fontWeight": "400",
             "opacity": 1,
           }
         }
@@ -56,8 +56,8 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 15,
-          "fontWeight": "400",
           "marginTop": 18,
           "opacity": 1,
           "paddingHorizontal": 10,
@@ -126,8 +126,8 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "opacity": 1,
             }
           }
@@ -198,6 +198,7 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
               {
                 "color": "#c3c3c3",
                 "flex": 1,
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 14,
                 "fontWeight": "600",
                 "opacity": 1,
@@ -260,8 +261,8 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
                   {
                     "color": "#c3c3c3",
                     "flex": 1,
+                    "fontFamily": "Sora-SemiBold",
                     "fontSize": 16,
-                    "fontWeight": "bold",
                     "opacity": 0.87,
                     "textAlign": "center",
                   }
@@ -475,6 +476,7 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
                 style={
                   {
                     "color": "#18bd18",
+                    "fontFamily": "Manrope-Regular",
                     "fontSize": 16,
                     "fontWeight": "600",
                     "opacity": 1,
@@ -486,9 +488,9 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
               <Text
                 style={
                   {
-                    "color": "#c3c3c3",
+                    "color": "#888888",
+                    "fontFamily": "Manrope-Regular",
                     "fontSize": 12,
-                    "opacity": 0.65,
                   }
                 }
               >

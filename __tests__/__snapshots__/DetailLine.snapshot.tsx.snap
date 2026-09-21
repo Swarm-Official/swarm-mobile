@@ -12,8 +12,8 @@ exports[`Component DetailLine - test DetailLine children - snapshot 1`] = `
   <Text
     style={
       {
-        "color": "#c3c3c3",
-        "opacity": 0.65,
+        "color": "#888888",
+        "fontFamily": "Manrope-Regular",
       }
     }
   >
@@ -23,8 +23,8 @@ exports[`Component DetailLine - test DetailLine children - snapshot 1`] = `
     style={
       {
         "color": "#c3c3c3",
+        "fontFamily": "Manrope-Regular",
         "fontSize": 15,
-        "fontWeight": "400",
         "opacity": 1,
       }
     }
@@ -46,8 +46,8 @@ exports[`Component DetailLine - test DetailLine value - snapshot 1`] = `
   <Text
     style={
       {
-        "color": "#c3c3c3",
-        "opacity": 0.65,
+        "color": "#888888",
+        "fontFamily": "Manrope-Regular",
       }
     }
   >
@@ -91,8 +91,8 @@ exports[`Component DetailLine - test DetailLine value - snapshot 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 15,
-          "fontWeight": "400",
           "opacity": 1,
         }
       }

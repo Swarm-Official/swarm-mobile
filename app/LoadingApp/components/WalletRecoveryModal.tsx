@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Dimensions, Platform, View } from 'react-native';
+import { Dimensions, View } from 'react-native';
 import {
   BottomSheetBackdrop,
   BottomSheetBackdropProps,
@@ -13,6 +13,7 @@ import { TranslateType } from '@app/AppState/types/TranslateType';
 import BoldText from '@ui/primitives/BoldText';
 import RegText from '@ui/primitives/RegText';
 import Button, { ButtonTypeEnum } from '@ui/primitives/Button';
+import { fontFamily } from '@app/theme/typography';
 
 type WalletRecoveryModalProps = {
   visible: boolean;
@@ -35,7 +36,11 @@ type WalletRecoveryModalProps = {
 };
 
 const VERTICAL_LIFT = Math.round(Dimensions.get('window').height * 0.22);
-const MONO = Platform.select({ ios: 'Courier', default: 'monospace' });
+// JetBrains Mono ships in the app, so both platforms get the same face here
+// rather than falling back to Courier or the system monospace. This modal
+// shows salvaged seed words: the face they are read in is the face they must
+// be transcribed from, and the family is bundled so it cannot fail to load.
+const MONO = fontFamily.monoRegular;
 
 const WalletRecoveryModal: React.FunctionComponent<
   WalletRecoveryModalProps

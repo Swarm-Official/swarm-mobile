@@ -115,9 +115,9 @@ exports[`Component ImportUfvk - test ImportUfvk - snapshot 1`] = `
     <Text
       style={
         {
-          "color": "#c3c3c3",
+          "color": "#888888",
+          "fontFamily": "Manrope-Regular",
           "marginTop": 0,
-          "opacity": 0.65,
           "padding": 20,
           "textAlign": "center",
         }
@@ -235,16 +235,16 @@ exports[`Component ImportUfvk - test ImportUfvk - snapshot 1`] = `
       <Text
         style={
           {
-            "color": "#c3c3c3",
-            "opacity": 0.65,
+            "color": "#888888",
+            "fontFamily": "Manrope-Regular",
           }
         }
       />
       <Text
         style={
           {
-            "color": "#c3c3c3",
-            "opacity": 0.65,
+            "color": "#888888",
+            "fontFamily": "Manrope-Regular",
             "textAlign": "center",
           }
         }
@@ -295,8 +295,8 @@ exports[`Component ImportUfvk - test ImportUfvk - snapshot 1`] = `
         style={
           {
             "color": "#c3c3c3",
+            "fontFamily": "Manrope-Regular",
             "fontSize": 15,
-            "fontWeight": "400",
             "margin": 20,
             "marginBottom": 30,
             "opacity": 1,

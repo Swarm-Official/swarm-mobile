@@ -65,6 +65,11 @@ jobs:
       - name: Jest
         run: yarn test --ci
 
+      # Cheap, and it runs here rather than after the ~40 minutes it takes to
+      # produce an APK, so a branding regression is caught in two minutes.
+      - name: No upstream branding in the shipped text
+        run: node scripts/check_no_upstream_branding.mjs --sources
+
   rust:
     name: Rust ${{ matrix.abi }}
     runs-on: ubuntu-latest
@@ -385,6 +390,13 @@ jobs:
           else
             echo "  note: aapt2 unavailable, skipped the manifest assertions"
           fi
+
+          echo "--- no upstream branding reaches a user ---"
+          # Reads the bundled JS (Hermes bytecode, whose string table is still
+          # plain ASCII) and the app label, because the sources are not what
+          # ships. The desktop wallet reached its owner saying "Zingo PC is
+          # locked"; this is the check that would have caught it.
+          PATH="$(dirname "$AAPT"):$PATH" node scripts/check_no_upstream_branding.mjs "$APK"
 
           echo "--- the genesis is real, not the placeholder ---"
           test "${GENESIS_PLACEHOLDER}" = "false" || {

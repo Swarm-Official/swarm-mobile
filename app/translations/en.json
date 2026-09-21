@@ -14,9 +14,9 @@
   "biometricsfailed-body": "For security, the application is locked.",
   "biometricsfailed-footer": "Use the authentication method to unlock.",
   "biometricsfailed-button": "Unlock",
-  "price-ring-live": "The ZEC price is current",
-  "price-ring-stale": "The ZEC price is stale",
-  "price-ring-paused": "Price refresh paused",
+  "price-ring-live": "Not used in this build.",
+  "price-ring-stale": "Not used in this build.",
+  "price-ring-paused": "Not used in this build.",
   "biometrics-message": "Please authenticate",
   "biometrics-error": "For security you need to authenticate again to perform this action. You Always can change this in Settings",
   "biometrics-failure-declined": "The authentication was cancelled or failed.",
@@ -32,7 +32,7 @@
   "support": "Send Email",
   "view-error": "View/Report Error",
   "menudrawer-acc": "Open Menu Drawer",
-  "donation": "Donation to Zingo!\nThanks for supporting ZingoLabs!",
+  "donation": "Not used in this build.",
   "zenny-tips-ab": "Zenny Tips",
   "restarting": "Error connecting to the Server, the App will restart in a few seconds.",
   "change-privacy": "New privacy policy: ",
@@ -129,7 +129,7 @@
     "offline-message": "In offline mode you can create a new wallet or restore one from seed or viewing key. It won't sync or show balances until you choose a server.",
     "advancedmode": "Change to Advanced Mode",
     "noopenwallet-message": "An error occurred while the App was trying to open the active wallet.",
-    "walletrepair-body": "Your wallet file looks encrypted twice, a known issue in Zingo 2.0.21. Your funds are safe. Do not uninstall the app and do not reset the wallet. Tap Repair to fix the file.",
+    "walletrepair-body": "Your wallet file looks encrypted twice. Your funds are safe. Do not uninstall the app and do not reset the wallet. Tap Repair to fix the file in place.",
     "walletrepair-button": "Repair",
     "walletrepair-success": "Wallet file repaired. Opening the wallet.",
     "walletrepair-failed": "The repair did not succeed. Do not uninstall the app and do not reset the wallet. Send this report to support.",
@@ -155,8 +155,8 @@
     "alert-newwallet-body": "Can you confirm that you really want to create a new wallet and lose access to the current wallet.",
     "serverfirsttry": "An error occurred while trying to connect to the above server, currently checking the servers on the list.",
     "serversecondtry": "It doesn't seem to be a problem with the server. Someting else is happening.",
-    "alert-donation-title": "TIP ZINGOLABS",
-    "alert-donation-body": "Do you want to help ZingoLabs make Zcash more useful? Opt in to tip one Zenny (0.01 ZEC) to ZingoLabs with each transaction! If so, press confirm, otherwise press Cancel.",
+    "alert-donation-title": "Not used in this build.",
+    "alert-donation-body": "Not used in this build.",
     "recoverkeys": "Recover last Keys used",
     "recoverkeysinstall": "Recovered the last Keys used in this device:",
     "customserver-unreachable": "Your custom server didn't respond and the wallet returned an error. Open Settings to choose a different one or retry later.",
@@ -179,7 +179,7 @@
     "insight": "Financial Insight",
     "loadwalletfromseed-basic": "Restore another wallet",
     "addressbook": "Address Book",
-    "tipzingolabs-basic": "Tip ZingoLabs",
+    "tipzingolabs-basic": "Not used in this build.",
     "support": "{name} support email",
     "changeservernew-error": "Error trying to change the server to the new one: ",
     "readingwallet-error": "Error trying to read the wallet with the new server:",
@@ -246,11 +246,11 @@
     "currencies": [
       {
         "value": "",
-        "text": "No fetching any price for any currency, only ZEC."
+        "text": "Not used in this build."
       },
       {
         "value": "USD",
-        "text": "You can fetch the price for US Dollars from internet."
+        "text": "Not used in this build."
       }
     ],
     "languages": [
@@ -288,11 +288,11 @@
     "donations": [
       {
         "value": true,
-        "text": "Tip ZingoLabs a Zenny (0.01 ZEC) in every transaction."
+        "text": "Not used in this build."
       },
       {
         "value": false,
-        "text": "Don't pay to incentivize a more secure system."
+        "text": "Not used in this build."
       }
     ],
     "privacys": [
@@ -355,16 +355,8 @@
     ],
     "blockexplorers": [
       {
-        "value": "Zcashexplorer",
-        "text": "ZcashExplorer.App"
-      },
-      {
-        "value": "Cipherscan",
-        "text": "CipherScan.App"
-      },
-      {
-        "value": "Zexplorer",
-        "text": "ZExplorer.App"
+        "value": "Swarmexplorer",
+        "text": "explore.swarm.green"
       },
       {
         "value": "None",
@@ -397,16 +389,16 @@
     "value-memo-none": "none",
     "value-memo-wallet": "wallet",
     "value-memo-all": "all",
-    "currency-title": "Currency Price",
+    "currency-title": "Not used in this build.",
     "language-title": "Language",
     "islanguage": "You need to choose a language to save.",
     "sendall-title": "Enable sending all funds",
-    "donation-title": "Tip ZingoLabs",
+    "donation-title": "Not used in this build.",
     "privacy-title": "High Privacy",
     "mode-title": "Switch between Basic or Advanced Mode",
     "rescanmenu-title": "Show Rescan Button",
     "recoverywalletinfoondevice-title": "Store Wallet Recovery Info",
-    "performancelevel-title": "Zingolib Performance Level",
+    "performancelevel-title": "Wallet performance level",
     "blockexplorer-title": "Block Explorer",
     "value-currency-": "No currency",
     "value-currency-USD": "US Dollar",
@@ -438,9 +430,6 @@
     "value-performancelevel-High": "High",
     "value-performancelevel-Medium": "Medium",
     "value-performancelevel-Low": "Low",
-    "value-blockexplorer-Zcashexplorer": "Zcashexplorer",
-    "value-blockexplorer-Cipherscan": "Cipherscan",
-    "value-blockexplorer-Zexplorer": "Zexplorer",
     "value-blockexplorer-None": "None",
     "security-title": "Apply Device Security",
     "security-all": "All",
@@ -476,7 +465,8 @@
     "nym-disable-warning": "Turning off Mixnet Mode routes your transactions over the clearnet and links your activity to your IP address.",
     "nym-network": "NYM Mixnet",
     "nym-enhanced-privacy": "Enhanced Privacy",
-    "nym-diagnostics": "Run mixnet diagnostics"
+    "nym-diagnostics": "Run mixnet diagnostics",
+    "value-blockexplorer-Swarmexplorer": "explore.swarm.green"
   },
   "mixnet": {
     "status": {
@@ -498,7 +488,7 @@
     "report-copied": "Report copied to clipboard"
   },
   "header": {
-    "lastupdate": "Last update:"
+    "lastupdate": "Not used in this build."
   },
   "info": {
     "version": "Version",
@@ -506,10 +496,10 @@
     "zainod": "Server URL",
     "network": "Network",
     "serverblock": "Server Block Height",
-    "zecprice": "ZEC Price",
+    "zecprice": "Not used in this build.",
     "unknown": "Unknown",
     "title": "Server Info",
-    "zingolib": "Zingolib Version"
+    "zingolib": "Wallet SDK version"
   },
   "rescan": {
     "title": "Rescan",
@@ -519,7 +509,9 @@
   },
   "seed": {
     "buttontexts": {
-      "new": ["I have saved \n the seed"],
+      "new": [
+        "I have saved \n the seed"
+      ],
       "change": [
         "",
         "Open New",
@@ -532,8 +524,12 @@
         "You really want \n to change your \n actual server",
         "Are you certain?"
       ],
-      "view": ["I have saved \n the seed"],
-      "restore": ["Restore Wallet"],
+      "view": [
+        "I have saved \n the seed"
+      ],
+      "restore": [
+        "Restore Wallet"
+      ],
       "backup": [
         "",
         "Restore",
@@ -584,8 +580,8 @@
     "title": "Send",
     "toaddress": "To Address",
     "invalidaddress": "Invalid Address!",
-    "znsnamenotfound": "That .zcash/.zec name does not exist!",
-    "addressplaceholder": "Address or name.zcash/.zec",
+    "znsnamenotfound": "SwarmTestnet has no name service, so only addresses work here.",
+    "addressplaceholder": "SwarmTestnet address",
     "invalidamount": "Invalid Amount!",
     "invalidnumber": "Invalid Number!",
     "spendable": "Spendable: ",
@@ -605,7 +601,7 @@
     "title-acc": "Send Screen",
     "address-acc": "Address Field",
     "scan-acc": "Scan an address",
-    "zec-acc": "ZEC Amount Field",
+    "zec-acc": "SWM amount field",
     "usd-acc": "USD Amount Field",
     "memo-acc": "Memo Field",
     "sendall": "Send All",
@@ -621,8 +617,8 @@
     "deshielded": "Deshielded",
     "lose-address-title": "SELECT A NEW ADDRESS",
     "lose-address-alert": "You already have a valid address in the address field. Do you want to replace it?",
-    "confirm-donation": "Donation",
-    "donation-minimum-message": "The minimum amount for donations is a Zenny (0.01 ZEC), Try again and Thanks.",
+    "confirm-donation": "Not used in this build.",
+    "donation-minimum-message": "Not used in this build.",
     "nym-processing-title": "Processing via NYM",
     "nym-enhanced": "NYM Enhanced",
     "nym-warning": "This transaction will be routed through the NYM mixnet for enhanced privacy. This may take slightly longer than standard transactions."
@@ -729,7 +725,7 @@
     "pool": "Pool",
     "contactcopied": "Copied Contact to Clipboard",
     "address-http": "{name} has no idea who sent you this Address! It's entirely up to you to authenticate the Sender.",
-    "address-https": "Zingo-Authenticated Address",
+    "address-https": "Authenticated address",
     "type": "Type",
     "not-confirmed": "Transaction not yet confirmed",
     "calculated": "Calculated",
@@ -781,9 +777,9 @@
   },
   "about": {
     "copyright": [
-      "Copyright (c) 2026, ZingoLabs.",
-      "Built with React Native.",
-      "The MIT License (MIT) Copyright (c) 2026 Zingo",
+      "SWARM Wallet - a wallet for SwarmTestnet, a test network. SWM test coins have no value.",
+      "Based on Zingo Mobile by ZingoLabs (MIT licence). Built with React Native.",
+      "The MIT License (MIT) Copyright (c) 2026 ZingoLabs",
       "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:",
       "The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.",
       "THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
@@ -791,11 +787,13 @@
   },
   "scanner": {
     "text": "Scan a Unified Full Viewing Key",
-    "scanaddress": "Scan a Zcash Address"
+    "scanaddress": "Scan a SwarmTestnet address"
   },
   "ufvk": {
     "buttontexts": {
-      "view": ["I have saved \n the viewing key"],
+      "view": [
+        "I have saved \n the viewing key"
+      ],
       "change": [
         "",
         "Open New",
@@ -851,7 +849,7 @@
     "title2": "What you can do",
     "orchard": "ORCHARD",
     "ironwood": "IRONWOOD",
-    "step1-body-1": "**Ironwood** is a new, more private home for your Zcash. Its privacy is mathematically proven to work.",
+    "step1-body-1": "**Ironwood** is a new, more private home for your coins. Its privacy is mathematically proven to work.",
     "step1-body-2": "After the **NU6.3** upgrade, the old **Orchard** pool stops taking in new funds, and new payments go to Ironwood.",
     "option1-label": "Continue as normal",
     "option1-body": "Keep using your wallet as usual. Each transaction will reveal its amount.",
@@ -1001,7 +999,7 @@
     "replanned": "Your notes changed. Review the updated schedule.",
     "review": "Review schedule",
     "dust-title": "Nothing left to migrate",
-    "dust-body": "The {amount} ZEC still in Orchard is below the amount worth moving. Fees would cost more than it carries.",
+    "dust-body": "The {amount} SWM still in Orchard is below the amount worth moving. Fees would cost more than it carries.",
     "unconfirmed-title": "Your notes aren't confirmed yet",
     "unconfirmed-body": "The split transactions are on-chain, but the wallet can't spend their notes for another block or two. Try again in a few minutes.",
     "back": "Back",
@@ -1017,7 +1015,7 @@
     "tech-line-now": "Anchor {anchor} - Current window",
     "miss-note": "If you miss a window, the batch simply waits for a future one — that's expected, not an error.",
     "reminder-title": "Time to send batch {n}",
-    "reminder-body": "Open Zingo to send this batch to Ironwood.",
+    "reminder-body": "Open {name} to send this batch to Ironwood.",
     "armed": "Reminders scheduled.",
     "denied": "Notifications are off. Come back via the home screen banner when you're ready.",
     "back": "Back",
@@ -1085,7 +1083,7 @@
   },
   "uris": {
     "baduri": "Error: Bad URI.",
-    "notvalid": "Was not a valid zcash address",
+    "notvalid": "That is not a valid SwarmTestnet address.",
     "notvalidparameter": "was not understood as a valid parameter",
     "notvalidvalue": "Didn't understand parameter value",
     "noindex": "Unknown index",
@@ -1098,6 +1096,6 @@
     "memo-too-long": "Memo too long in parameter",
     "error-http-not-allowed": "Error: Plain HTTP is only allowed for localhost. Use HTTPS for remote servers."
   },
-  "donation-button": "Donate To ZingoLabs ",
-  "donation-legend": "You are donating to ZingoLabs activately, Thanks"
+  "donation-button": "Not used in this build.",
+  "donation-legend": "Not used in this build."
 }

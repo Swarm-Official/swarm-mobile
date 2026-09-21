@@ -23,7 +23,9 @@ export const GlobalConst = {
   serviceKeyChain: 'ZINGO',
   replyTo: '\nReply to: \n',
   expireBlocks: 40,
-  zingolib: 'Zingolib',
+  // The label shown next to the SDK version, e.g. in the support email. The
+  // constant keeps its internal name; only what the user reads changes.
+  zingolib: 'Wallet SDK',
   zingolibError: '<error>',
   zingolibNone: '<none>',
   transactionFilterThreshold: '500',

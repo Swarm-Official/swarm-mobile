@@ -339,6 +339,61 @@ jobs:
         continue-on-error: true
         run: ./gradlew bundleProdRelease -PreactNativeArchitectures=${{ env.RN_ARCHS }} --no-daemon
 
+      # Everything asserted here is something this app claims about itself and
+      # could get wrong silently. A missing font does not fail a build - it
+      # just renders in the wrong typeface. A stray `zcash` scheme does not
+      # fail a build - it just makes this app compete for payment links it
+      # cannot honour. So the APK is opened and read.
+      - name: Verify what the APK actually contains
+        run: |
+          set -eu
+          APK="$(find android/app/build/outputs -name '*.apk' | head -1)"
+          echo "inspecting $APK"
+          unzip -l "$APK" > /tmp/apk-list.txt
+
+          echo "--- the three design-system typefaces are bundled ---"
+          for f in Sora-Regular Sora-SemiBold Sora-Bold \
+                   Manrope-Regular Manrope-Medium Manrope-SemiBold \
+                   JetBrainsMono-Regular JetBrainsMono-Medium; do
+            grep -q "assets/fonts/$f.ttf" /tmp/apk-list.txt || {
+              echo "ERROR: $f.ttf is not in the APK - fontFamily would fall back silently" >&2
+              exit 1
+            }
+            echo "  ok assets/fonts/$f.ttf"
+          done
+
+          echo "--- the native wallet library is present for every ABI ---"
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            grep -q "lib/$abi/libuniffi_zingo.so" /tmp/apk-list.txt || {
+              echo "ERROR: libuniffi_zingo.so missing for $abi" >&2; exit 1; }
+            echo "  ok lib/$abi/libuniffi_zingo.so"
+          done
+
+          echo "--- identity and scheme claims ---"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt2 | sort | tail -1)"
+          "$AAPT" dump badging "$APK" > /tmp/badging.txt 2>/dev/null || true
+          if [ -s /tmp/badging.txt ]; then
+            grep -q "package: name='green.swarm.wallet'" /tmp/badging.txt || {
+              echo "ERROR: applicationId is not green.swarm.wallet" >&2
+              head -3 /tmp/badging.txt >&2; exit 1; }
+            echo "  ok applicationId green.swarm.wallet"
+            # This app cannot pay a Zcash address, so it must not claim the
+            # scheme and offer itself for links it would have to refuse.
+            if grep -qi "scheme='zcash'" /tmp/badging.txt; then
+              echo "ERROR: the APK still claims the zcash: URI scheme" >&2; exit 1; fi
+            echo "  ok no zcash: scheme claimed"
+          else
+            echo "  note: aapt2 unavailable, skipped the manifest assertions"
+          fi
+
+          echo "--- the genesis is real, not the placeholder ---"
+          test "${GENESIS_PLACEHOLDER}" = "false" || {
+            echo "ERROR: this build still carries the placeholder genesis" >&2; exit 1; }
+          echo "  ok genesis ${GENESIS}"
+        env:
+          GENESIS: ${{ steps.sdk.outputs.genesis }}
+          GENESIS_PLACEHOLDER: ${{ steps.sdk.outputs.placeholder }}
+
       - name: Collect artifacts, checksums and the release manifest
         run: |
           set -eu

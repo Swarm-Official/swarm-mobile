@@ -35,10 +35,10 @@ trust.
 
 ## Installing the APK on a phone
 
-The APK is **debug-signed**. That is deliberate — it is built for a private
-test, no signing key exists in this repository or in CI, and nothing produced
-here could be mistaken for a published build. Android will treat it as an app
-from an unknown source, which is correct.
+This APK is **debug-signed**, and sideloading is the only thing it is for. No
+signing key exists in this repository. Android will treat it as an app from an
+unknown source, which is correct. The Play build is a separate artifact with a
+separate certificate — see "Google Play" below.
 
 You need an Android **8.0 (API 26) or newer** phone with an `arm64-v8a` or
 `armeabi-v7a` processor — that is every phone sold in the last decade.
@@ -88,6 +88,68 @@ You need an Android **8.0 (API 26) or newer** phone with an `arm64-v8a` or
 
 To remove it: uninstall like any app. **Uninstalling deletes the wallet.** Back
 up your seed phrase first — it is the only way back in.
+
+---
+
+## Google Play
+
+Google Play refuses a debug-signed upload and wants an Android App Bundle
+(`.aab`) rather than an APK. The `bundle` job in
+`.github/workflows/swarm-android.yaml` produces both the bundle and a
+release-signed APK.
+
+### The upload key
+
+The key is the owner's. It lives outside this repository — it is not in the
+tree, not in the history, and not in any artifact CI uploads. CI reads it from
+four repository secrets, named here and never printed:
+
+| Secret | What it holds |
+| --- | --- |
+| `SWARM_UPLOAD_KEYSTORE_B64` | the `.jks` keystore, base64 |
+| `SWARM_UPLOAD_KEYSTORE_PASSWORD` | the keystore password |
+| `SWARM_UPLOAD_KEY_ALIAS` | the key alias inside the keystore |
+| `SWARM_UPLOAD_KEY_PASSWORD` | the key password |
+
+The job decodes the keystore into `$RUNNER_TEMP`, never into the checkout, and
+deletes it in a step that runs whether the build passed or failed. Gradle picks
+it up through the four `SWARM_UPLOAD_*` environment variables and prints
+`****** SWARM UPLOAD-KEY SIGNING ******`. `-PrequireReleaseSigning=true` fails
+configuration if the signing config would fall back to the debug keystore, so a
+missing secret cannot produce a quietly unpublishable bundle.
+
+With the secrets absent the job prints `no upload key configured - Play bundle
+skipped` and finishes green, which is what happens on a branch that has none.
+
+Before uploading, the job proves the artifacts: the certificate is not
+`CN=Android Debug` and the AAB and the APK carry the same one (the SHA-256
+fingerprint is printed and recorded in `release-manifest.json`), bundletool
+reports what each ABI would actually download and fails over 190 MB, the 64-bit
+libraries are 16 KB page aligned, no keystore, wallet file or seed fixture is
+packaged, and no upstream branding reaches a user.
+
+### The versionCode rule
+
+**Play keeps every versionCode it has ever seen and refuses a repeat**, even
+one from a release that was later deleted. The number comes from
+`SWARM_ANDROID_VERSION_CODE` in the workflow's `env` block; raise it for every
+upload. The source no longer carries it: `android/app/build.gradle.kts` reads
+`-PswarmVersionCode` and `-PswarmVersionName`, defaulting to `1` and `0.1.0`
+for a local build. The ceiling is 9999 — past that the split-APK encoding
+(`abi * 10000 + build`) collides, and Gradle fails rather than ship it.
+
+### The two signatures do not mix
+
+A release-signed build and the debug-signed sideload build carry different
+certificates. Android refuses to install one over the other and reports it as a
+signature mismatch, which is the system working as intended.
+
+**Write your recovery words down first.** Then uninstall the debug build —
+which deletes its wallet — and install the release-signed one. There is no
+upgrade path between the two and no way to move the wallet across.
+
+The debug-signed APK stays sideload-only. It is what the private test runs on,
+and it is never what goes to Play.
 
 ---
 
@@ -193,7 +255,7 @@ The app fails with one plain sentence rather than a stack trace:
 
 CI is the supported path — it is reproducible and needs nothing installed. The
 workflow is `.github/workflows/swarm-android.yaml`; push to the `swarm-mobile`
-branch or run it from the Actions tab.
+or `play-release` branch, or run it from the Actions tab.
 
 To build locally you need Linux or macOS with Docker, Node 22.18.0, Yarn and
 JDK 17. A Windows host can run the JS checks but not the native build.

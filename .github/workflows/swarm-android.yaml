@@ -1,17 +1,28 @@
 name: SWARM Android
 
 # Builds the SWARM Wallet Android app end to end on GitHub-hosted runners:
-# JS checks, the Rust wallet library for the three device ABIs, and a
-# debug-signed APK the owner can sideload.
+# JS checks, the Rust wallet library for the three device ABIs, a debug-signed
+# APK the owner can sideload, and - when the upload key is configured - the
+# Android App Bundle Google Play accepts.
 #
 # Upstream's own Android workflows target self-hosted runners
 # (`zingo-android-native-16`, `zingo-android-gradle-16`) that this project does
 # not have, so this workflow stands beside them rather than replacing them. It
 # reuses upstream's builder image, which carries the Android NDK.
 #
-# No signing key is ever committed or passed in. The release variant's signing
-# config falls back to the checked-in `android/app/debug.keystore`, so the APK
-# this produces is DEBUG-SIGNED: installable by sideloading, never publishable.
+# The `apk` job never signs with anything but the checked-in
+# `android/app/debug.keystore`: its output is DEBUG-SIGNED, installable by
+# sideloading and never publishable.
+#
+# The `bundle` job builds the Play upload. It needs four repository secrets -
+# SWARM_UPLOAD_KEYSTORE_B64, SWARM_UPLOAD_KEYSTORE_PASSWORD,
+# SWARM_UPLOAD_KEY_ALIAS and SWARM_UPLOAD_KEY_PASSWORD - and skips cleanly
+# when they are absent. No key material is committed here, and the decoded
+# keystore lives in the runner's temp directory for the length of the job.
+#
+# A release-signed build carries a different certificate from the debug-signed
+# one, so Android refuses to install it over the sideloaded app. See
+# docs/SWARM-ANDROID.md, "Google Play".
 
 on:
   workflow_dispatch:
@@ -22,7 +33,7 @@ on:
         type: boolean
         default: true
   push:
-    branches: [swarm-mobile]
+    branches: [swarm-mobile, play-release]
 
 concurrency:
   group: swarm-android-${{ github.ref }}
@@ -30,7 +41,20 @@ concurrency:
 
 env:
   # The SWARM app version for this testnet round.
-  SWARM_VERSION: 0.1.0-testnet.1
+  SWARM_VERSION: 0.1.0-testnet.2
+  # versionCode must increase for every Play upload; bump it here. Play keeps
+  # every code it has ever seen and refuses a repeat, including one from a
+  # release that was later deleted.
+  SWARM_ANDROID_VERSION_CODE: 2
+  SWARM_ANDROID_VERSION_NAME: "0.1.0"
+  # Pinned so a new bundletool release cannot change what "too large" means
+  # between two runs. The digest is checked before the jar runs.
+  BUNDLETOOL_VERSION: 1.18.3
+  BUNDLETOOL_SHA256: a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29
+  # Play's per-device download ceiling is 200 MB. 190 leaves room for the
+  # signing and compression overhead a real serve adds on top of what
+  # bundletool measures here.
+  MAX_ABI_DOWNLOAD_BYTES: 199229440
   # The SDK commit rust/Cargo.toml pins. Kept here only so the manifest job can
   # report it; the build itself reads rust/Cargo.toml.
   BUILDER_IMAGE: zingodevops/android_builder:018
@@ -349,7 +373,11 @@ jobs:
       # mistaken for a published build.
       - name: Assemble the APK
         working-directory: android
-        run: ./gradlew assembleProdRelease -PreactNativeArchitectures=${{ env.RN_ARCHS }} --no-daemon --stacktrace
+        run: |
+          ./gradlew assembleProdRelease \
+            -PswarmVersionCode=${{ env.SWARM_ANDROID_VERSION_CODE }} \
+            -PswarmVersionName=${{ env.SWARM_ANDROID_VERSION_NAME }} \
+            -PreactNativeArchitectures=${{ env.RN_ARCHS }} --no-daemon --stacktrace
 
       # No AAB. The brief asked for an unsigned release bundle "if cheap", and
       # it is not: with no release keystore in this repository the bundle comes
@@ -427,6 +455,11 @@ jobs:
           # locked"; this is the check that would have caught it.
           PATH="$(dirname "$AAPT"):$PATH" node scripts/check_no_upstream_branding.mjs "$APK"
 
+          echo "--- the 64-bit libraries are 16 KB page aligned ---"
+          # Android 15 maps 64-bit libraries on 16 KB pages. A 4 KB layout does
+          # not load, and nothing before the device says so.
+          python3 scripts/check_16kb_alignment.py "$APK"
+
           echo "--- the genesis is real, not the placeholder ---"
           test "${GENESIS_PLACEHOLDER}" = "false" || {
             echo "ERROR: this build still carries the placeholder genesis" >&2; exit 1; }
@@ -451,8 +484,8 @@ jobs:
               // What the app itself prints, and what Android records. Kept
               // equal to the iOS build so the two platforms report one
               // version to the person testing them side by side.
-              app_version_name: "0.1.0",
-              app_version_code: 1,
+              app_version_name: process.env.SWARM_ANDROID_VERSION_NAME,
+              app_version_code: Number(process.env.SWARM_ANDROID_VERSION_CODE),
               network: {
                 name: "SwarmTestnet",
                 light_wallet_chain_label: "swarm-testnet",
@@ -493,6 +526,294 @@ jobs:
           name: swarm-wallet-android-${{ env.SWARM_VERSION }}
           path: dist/
           retention-days: 30
+
+  bundle:
+    name: Play bundle
+    needs: [rust]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      # A job-level `if` cannot read `secrets`, so the gate is a step that
+      # writes one output the rest of the job reads. Without the upload key
+      # the job does nothing and finishes green: a branch with no secrets
+      # must not show a red run.
+      - name: Is the upload key configured
+        id: gate
+        run: echo "configured=${{ secrets.SWARM_UPLOAD_KEYSTORE_B64 != '' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Nothing to build
+        if: steps.gate.outputs.configured != 'true'
+        run: echo "no upload key configured - Play bundle skipped"
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.configured == 'true'
+
+      - name: Free disk space
+        if: steps.gate.outputs.configured == 'true'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk \
+                      /opt/ghc /usr/local/share/boost /usr/local/.ghcup \
+                      /opt/hostedtoolcache/CodeQL || true
+          df -h /
+
+      - uses: actions/setup-java@v4
+        if: steps.gate.outputs.configured == 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.configured == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Yarn install
+        if: steps.gate.outputs.configured == 'true'
+        run: yarn install --frozen-lockfile --network-timeout 600000
+
+      - name: Download native libraries (arm64-v8a)
+        if: steps.gate.outputs.configured == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: swarm-native-arm64-v8a
+          path: android/app/src/main/jniLibs/arm64-v8a
+
+      - name: Download native libraries (armeabi-v7a)
+        if: steps.gate.outputs.configured == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: swarm-native-armeabi-v7a
+          path: android/app/src/main/jniLibs/armeabi-v7a
+
+      - name: Download native libraries (x86_64)
+        if: steps.gate.outputs.configured == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: swarm-native-x86_64
+          path: android/app/src/main/jniLibs/x86_64
+
+      - name: Download Kotlin UniFFI bindings
+        if: steps.gate.outputs.configured == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: swarm-kotlin-uniffi
+          path: android/app/build/generated/source/uniffi/release/java/uniffi
+
+      - name: Read the SWARM SDK identity
+        id: sdk
+        if: steps.gate.outputs.configured == 'true'
+        run: |
+          set -eu
+          REV="$(grep -m1 -oE 'privacy-zingolib", rev = "[0-9a-f]+' rust/Cargo.toml | grep -oE '[0-9a-f]{40}')"
+          echo "rev=$REV" >> "$GITHUB_OUTPUT"
+          curl -fsSL "https://raw.githubusercontent.com/brs-holding/privacy-zingolib/$REV/zingolib/src/config.rs" -o /tmp/config.rs
+          GEN="$(grep -A4 'pub const SWARM_TESTNET_GENESIS:' /tmp/config.rs | grep -oE '"[0-9a-fA-F]{64}"' | head -1 | tr -d '"')"
+          PLACEHOLDER_NAME="$(grep -A4 'pub const SWARM_TESTNET_GENESIS:' /tmp/config.rs | grep -c 'SWARM_TESTNET_GENESIS_PLACEHOLDER' || true)"
+          if [ -z "${GEN:-}" ]; then
+            GEN="$(grep -A4 'pub const SWARM_TESTNET_GENESIS_PLACEHOLDER:' /tmp/config.rs | grep -oE '"[0-9a-fA-F]{64}"' | head -1 | tr -d '"')"
+          fi
+          echo "genesis=$GEN" >> "$GITHUB_OUTPUT"
+          if [ "$PLACEHOLDER_NAME" -gt 0 ]; then
+            echo "placeholder=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "placeholder=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "SDK rev $REV genesis $GEN placeholder=$PLACEHOLDER_NAME"
+
+      # The keystore is decoded into the runner's temp directory, never into
+      # the checkout, so no Gradle task, no packaging step and no artifact
+      # upload can reach it. The delete step below runs whatever happens.
+      - name: Decode the upload key
+        if: steps.gate.outputs.configured == 'true'
+        env:
+          SWARM_UPLOAD_KEYSTORE_B64: ${{ secrets.SWARM_UPLOAD_KEYSTORE_B64 }}
+        run: |
+          set -eu
+          printf '%s' "$SWARM_UPLOAD_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/swarm-upload.jks"
+          test -s "$RUNNER_TEMP/swarm-upload.jks"
+          echo "upload key decoded to \$RUNNER_TEMP/swarm-upload.jks"
+
+      - name: Gradle setup
+        if: steps.gate.outputs.configured == 'true'
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+
+      - name: Build the Play bundle and the release APK
+        if: steps.gate.outputs.configured == 'true'
+        working-directory: android
+        env:
+          SWARM_UPLOAD_KEYSTORE: ${{ runner.temp }}/swarm-upload.jks
+          SWARM_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.SWARM_UPLOAD_KEYSTORE_PASSWORD }}
+          SWARM_UPLOAD_KEY_ALIAS: ${{ secrets.SWARM_UPLOAD_KEY_ALIAS }}
+          SWARM_UPLOAD_KEY_PASSWORD: ${{ secrets.SWARM_UPLOAD_KEY_PASSWORD }}
+        run: |
+          ./gradlew bundleProdRelease assembleProdRelease \
+            -PrequireReleaseSigning=true \
+            -PswarmVersionCode=${{ env.SWARM_ANDROID_VERSION_CODE }} \
+            -PswarmVersionName=${{ env.SWARM_ANDROID_VERSION_NAME }} \
+            -PreactNativeArchitectures=${{ env.RN_ARCHS }} --no-daemon --stacktrace
+
+      - name: Fetch bundletool
+        if: steps.gate.outputs.configured == 'true'
+        run: |
+          set -eu
+          curl -fsSL -o "$RUNNER_TEMP/bundletool.jar" \
+            "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          echo "${BUNDLETOOL_SHA256}  $RUNNER_TEMP/bundletool.jar" | sha256sum -c -
+
+      - name: Verify the bundle before anyone uploads it
+        id: verify
+        if: steps.gate.outputs.configured == 'true'
+        run: |
+          set -eu
+          AAB="$(find android/app/build/outputs/bundle -name '*.aab' | head -1)"
+          APK="$(find android/app/build/outputs/apk -name '*.apk' | head -1)"
+          test -n "$AAB" || { echo "ERROR: no .aab was produced" >&2; exit 1; }
+          test -n "$APK" || { echo "ERROR: no .apk was produced" >&2; exit 1; }
+          echo "bundle $AAB"
+          echo "apk    $APK"
+
+          echo "--- the bundle carries a real certificate, not the debug one ---"
+          jarsigner -verify -verbose -certs "$AAB" > /tmp/aab-verify.txt 2>&1 || true
+          grep -q 'jar verified' /tmp/aab-verify.txt || {
+            echo "ERROR: the AAB is not signed" >&2; tail -30 /tmp/aab-verify.txt >&2; exit 1; }
+          if grep -q 'CN=Android Debug' /tmp/aab-verify.txt; then
+            echo "ERROR: the AAB is debug-signed; Play refuses it" >&2; exit 1; fi
+          keytool -printcert -jarfile "$AAB" > /tmp/aab-cert.txt
+          AAB_OWNER="$(grep -m1 '^Owner:' /tmp/aab-cert.txt | sed 's/^Owner: //')"
+          AAB_SHA="$(grep -m1 -E '^[[:space:]]+SHA256:' /tmp/aab-cert.txt | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')"
+          echo "  ok AAB signed by $AAB_OWNER"
+          echo "  ok AAB certificate sha256 $AAB_SHA"
+
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort | tail -1)"
+          "$APKSIGNER" verify --print-certs "$APK" > /tmp/apk-certs.txt
+          APK_DN="$(grep -m1 'certificate DN:' /tmp/apk-certs.txt | sed 's/.*certificate DN: //')"
+          APK_SHA="$(grep -m1 'certificate SHA-256 digest:' /tmp/apk-certs.txt | sed 's/.*digest: //' | tr 'A-F' 'a-f')"
+          case "$APK_DN" in
+            *"CN=Android Debug"*)
+              echo "ERROR: the APK is debug-signed; this is meant to be the release build" >&2
+              exit 1 ;;
+          esac
+          echo "  ok APK signed by $APK_DN"
+          echo "  ok APK certificate sha256 $APK_SHA"
+          test "$AAB_SHA" = "$APK_SHA" || {
+            echo "ERROR: the AAB and the APK carry different certificates" >&2; exit 1; }
+          echo "  ok both artifacts carry one certificate"
+          echo "cert-sha256=$AAB_SHA" >> "$GITHUB_OUTPUT"
+
+          echo "--- what each device would download ---"
+          java -jar "$RUNNER_TEMP/bundletool.jar" build-apks \
+            --bundle="$AAB" --output="$RUNNER_TEMP/play.apks" --mode=default --overwrite \
+            --ks=android/app/debug.keystore --ks-pass=pass:android \
+            --ks-key-alias=androiddebugkey --key-pass=pass:android
+          java -jar "$RUNNER_TEMP/bundletool.jar" get-size total \
+            --apks="$RUNNER_TEMP/play.apks" --dimensions=ABI > /tmp/sizes.csv
+          cat /tmp/sizes.csv
+          python3 - <<'PY'
+          import csv, json, os, sys
+
+          limit = int(os.environ["MAX_ABI_DOWNLOAD_BYTES"])
+          rows = list(csv.DictReader(open("/tmp/sizes.csv")))
+          sizes, over = {}, []
+          for row in rows:
+              abi = row.get("ABI") or row.get("abi")
+              worst = int(row["MAX"])
+              sizes[abi] = worst
+              mark = "ok" if worst <= limit else "FAIL"
+              print(f"  {mark} {abi} {worst} bytes ({worst / 1048576:.1f} MB)")
+              if worst > limit:
+                  over.append(abi)
+          json.dump(sizes, open("/tmp/sizes.json", "w"))
+          if over:
+              print(f"ERROR: {', '.join(over)} exceed {limit} bytes", file=sys.stderr)
+              sys.exit(1)
+          PY
+
+          echo "--- the 64-bit libraries are 16 KB page aligned ---"
+          python3 scripts/check_16kb_alignment.py "$AAB" "$APK"
+
+          echo "--- the release APK carries no wallet, seed or key material ---"
+          unzip -Z1 "$APK" > /tmp/apk-names.txt
+          unzip -Z1 "$AAB" > /tmp/aab-names.txt
+          if grep -qiE '(^|/)(wallet\.dat|wallet\.backup\.dat|wallet\.swap|.*\.jks|.*\.keystore|.*seed.*\.(txt|json|dat))$' /tmp/apk-names.txt /tmp/aab-names.txt; then
+            echo "ERROR: the artifacts contain wallet or key material:" >&2
+            grep -iE '(wallet\.|\.jks|\.keystore|seed)' /tmp/apk-names.txt /tmp/aab-names.txt >&2
+            exit 1
+          fi
+          echo "  ok no wallet file, keystore or seed fixture is packaged"
+          if grep -qE 'swarm-upload\.jks|debug\.keystore' /tmp/apk-names.txt /tmp/aab-names.txt; then
+            echo "ERROR: a signing keystore is packaged inside the artifacts" >&2; exit 1; fi
+          echo "  ok the upload key is not inside the bundle or the APK"
+
+          echo "--- no upstream branding reaches a user ---"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt2 | sort | tail -1)"
+          PATH="$(dirname "$AAPT"):$PATH" node scripts/check_no_upstream_branding.mjs "$APK"
+
+      - name: Collect the Play artifacts, checksums and the release manifest
+        if: steps.gate.outputs.configured == 'true'
+        run: |
+          set -eu
+          mkdir -p dist-play
+          cp "$(find android/app/build/outputs/bundle -name '*.aab' | head -1)" \
+             "dist-play/swarm-wallet-${SWARM_VERSION}-play.aab"
+          cp "$(find android/app/build/outputs/apk -name '*.apk' | head -1)" \
+             "dist-play/swarm-wallet-${SWARM_VERSION}-android-release.apk"
+          node -e '
+            const fs = require("fs");
+            const manifest = {
+              app: "SWARM Wallet (Android)",
+              version: process.env.SWARM_VERSION,
+              app_version_name: process.env.SWARM_ANDROID_VERSION_NAME,
+              app_version_code: Number(process.env.SWARM_ANDROID_VERSION_CODE),
+              network: {
+                name: "SwarmTestnet",
+                light_wallet_chain_label: "swarm-testnet",
+                ticker: "SWM",
+                default_server: "https://lwd.swarm.green:443",
+                genesis: process.env.GENESIS,
+                genesis_is_placeholder: process.env.GENESIS_PLACEHOLDER === "true",
+              },
+              source: {
+                app_repo: "https://github.com/brs-holding/swarm-mobile",
+                app_sha: process.env.GITHUB_SHA,
+                app_ref: process.env.GITHUB_REF,
+                sdk_repo: "https://github.com/brs-holding/privacy-zingolib",
+                sdk_sha: process.env.SDK_REV,
+                upstream: "https://github.com/zingolabs/zingo-mobile (MIT)",
+              },
+              build: {
+                workflow_run: process.env.GITHUB_RUN_ID,
+                abis: ["arm64-v8a", "armeabi-v7a", "x86_64"],
+                signing: "SWARM upload key, certificate sha256 " + process.env.CERT_SHA256,
+                per_abi_download_bytes: JSON.parse(fs.readFileSync("/tmp/sizes.json", "utf8")),
+                built_at: new Date().toISOString(),
+              },
+            };
+            fs.writeFileSync("dist-play/release-manifest.json", JSON.stringify(manifest, null, 2) + "\n");
+          '
+          cd dist-play
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+          cat release-manifest.json
+        env:
+          SDK_REV: ${{ steps.sdk.outputs.rev }}
+          GENESIS: ${{ steps.sdk.outputs.genesis }}
+          GENESIS_PLACEHOLDER: ${{ steps.sdk.outputs.placeholder }}
+          CERT_SHA256: ${{ steps.verify.outputs.cert-sha256 }}
+
+      - name: Upload the Play bundle
+        if: steps.gate.outputs.configured == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-wallet-play-${{ env.SWARM_VERSION }}
+          path: dist-play/
+          retention-days: 30
+
+      - name: Delete the decoded upload key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/swarm-upload.jks"
 
   smoke:
     name: Emulator smoke test

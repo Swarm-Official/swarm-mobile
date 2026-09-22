@@ -70,6 +70,14 @@ jobs:
       - name: No upstream branding in the shipped text
         run: node scripts/check_no_upstream_branding.mjs --sources
 
+      # A font the code names but does not ship renders as the system face
+      # with no error at all, which is how iOS shipped three declared-but-
+      # absent typefaces on a green build. This binds every link at once:
+      # typography.ts, assets/fonts, react-native.config.js, the Gradle
+      # staging task, and the iOS Info.plist, so the platforms cannot drift.
+      - name: Fonts are shipped and registered
+        run: node scripts/check_fonts_registered.mjs
+
   rust:
     name: Rust ${{ matrix.abi }}
     runs-on: ubuntu-latest
@@ -116,7 +124,19 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Cargo and rustup cache
+      # ONE cache for all three ABIs, and only the downloaded sources plus the
+      # two helper binaries - never the target directory.
+      #
+      # This repository's Actions cache budget is 10 GB and the iOS pipeline
+      # shares it. Caching `rust/target` per ABI cost about 2.2 GB each: three
+      # of those filled the budget on their own and evicted the iOS agent's
+      # cache. It bought roughly three minutes per ABI on a nine-minute build,
+      # which is not worth taking the budget from another pipeline.
+      #
+      # The registry and the `bindgen`/`cargo-ndk` binaries are the same bytes
+      # for every ABI, so one entry serves all three. The three jobs race to
+      # save it; the losers log "cache already exists", which is harmless.
+      - name: Cargo registry and tools cache
         uses: actions/cache@v4
         with:
           path: |
@@ -124,21 +144,8 @@ jobs:
             ${{ github.workspace }}/.cargo/registry/index
             ${{ github.workspace }}/.cargo/registry/cache
             ${{ github.workspace }}/.cargo/git/db
-          key: swarm-cargo-${{ matrix.abi }}-${{ hashFiles('rust/Cargo.lock') }}
-          restore-keys: |
-            swarm-cargo-${{ matrix.abi }}-
-            swarm-cargo-
-
-      - name: Rust target cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            rust/target
-            rust/nym-proxy-ffi/target
-          key: swarm-target-${{ matrix.abi }}-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
-          restore-keys: |
-            swarm-target-${{ matrix.abi }}-${{ hashFiles('rust/Cargo.lock') }}-
-            swarm-target-${{ matrix.abi }}-
+          key: swarm-cargo-${{ hashFiles('rust/Cargo.lock') }}
+          restore-keys: swarm-cargo-
 
       - name: Toolchain
         run: |
@@ -423,6 +430,11 @@ jobs:
             const manifest = {
               app: "SWARM Wallet (Android)",
               version: process.env.SWARM_VERSION,
+              // What the app itself prints, and what Android records. Kept
+              // equal to the iOS build so the two platforms report one
+              // version to the person testing them side by side.
+              app_version_name: "0.1.0",
+              app_version_code: 1,
               network: {
                 name: "SwarmTestnet",
                 light_wallet_chain_label: "swarm-testnet",

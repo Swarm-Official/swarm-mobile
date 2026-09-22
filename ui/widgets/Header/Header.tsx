@@ -30,7 +30,7 @@ import {
   UfvkActionEnum,
 } from '@app/AppState';
 import { ContextAppLoaded } from '@app/context';
-import { getZingoLogo } from '@app/utils/ZingoAppData';
+import { getSwarmMark } from '@app/utils/ZingoAppData';
 import { useShieldFunds } from '@app/hooks/useShieldFunds';
 import { useSyncStatus } from '@app/hooks/useSyncStatus';
 import BoldText from '@ui/primitives/BoldText';
@@ -345,7 +345,7 @@ const Header: React.FunctionComponent<HeaderProps> = ({
             </View>
           ) : (
             <Image
-              source={getZingoLogo()}
+              source={getSwarmMark()}
               style={{
                 width: 30,
                 height: 30,

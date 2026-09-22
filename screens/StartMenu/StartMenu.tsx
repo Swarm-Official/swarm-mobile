@@ -22,7 +22,7 @@ import Button, { ButtonTypeEnum } from '@ui/primitives/Button';
 import AppSheet from '@ui/primitives/AppSheet';
 import { ContextAppLoading } from '@app/context';
 import {
-  getZingoLogo,
+  getSwarmMark,
   getZingoName,
   getZingoVersion,
 } from '@app/utils/ZingoAppData';
@@ -201,7 +201,7 @@ const StartMenu: React.FunctionComponent<StartMenuProps> = ({
             {getZingoVersion()}
           </Text>
           <Image
-            source={getZingoLogo()}
+            source={getSwarmMark()}
             style={{
               width: 100,
               height: 100,

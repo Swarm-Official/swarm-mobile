@@ -149,13 +149,25 @@ jobs:
       # no default toolchain until the step above installs one. Two
       # workspaces: the Nym shim is excluded from the main one and has its
       # own lockfile, so its target dir needs listing separately.
-      - name: Cargo cache (registry, git, iOS targets)
+      # Registry and git checkouts only — NOT the cross-compiled target
+      # directories.
+      #
+      # A repository gets 10 GB of Actions cache shared by both agents. With
+      # target dirs included this one alone was 5.59 GB of an 8.35 GB total,
+      # i.e. the iOS pipeline was squeezing the Android one out. It buys
+      # little: the 0.35 GB xcframework cache above already skips the whole
+      # hour whenever rust/ is unchanged, which is the common case, and it
+      # is small enough to survive eviction. Caching target dirs only helps
+      # the rarer case where rust/ HAS changed — and then it cost 5 GB of
+      # shared budget to save part of a build we pay anyway.
+      - name: Cargo cache (registry and git checkouts)
         if: steps.xcf.outputs.cache-hit != 'true'
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
             rust
             rust/nym-proxy-ffi
+          cache-targets: false
           cache-on-failure: true
 
       - name: Install protoc
@@ -488,6 +500,21 @@ jobs:
           xcrun simctl terminate "$UDID" "$BID" || true
           sleep 4
           xcrun simctl io "$UDID" screenshot artifacts/03-home-screen.png
+
+          # Best effort, never fatal: enrol biometry and send a match so the
+          # privacy shutter opens and the wallet's own first screen is
+          # photographed too. simctl has no supported API for this — it is
+          # the notifyutil channel the Simulator's own Features > Face ID
+          # menu uses — so it is allowed to do nothing on a runner where it
+          # does not work, and the run still has the three screens above.
+          echo "--- attempting to pass the privacy shutter ---"
+          xcrun simctl spawn "$UDID" notifyutil -s com.apple.BiometricKit.enrollmentChanged 1 || true
+          xcrun simctl spawn "$UDID" notifyutil -p com.apple.BiometricKit.enrollmentChanged || true
+          xcrun simctl launch --terminate-running-process "$UDID" "$BID" || true
+          sleep 20
+          xcrun simctl spawn "$UDID" notifyutil -p com.apple.BiometricKit_Sim.fingerTouch.match || true
+          sleep 12
+          xcrun simctl io "$UDID" screenshot artifacts/04-after-unlock-attempt.png || true
 
           xcrun simctl spawn "$UDID" log show --last 3m --style compact \
             --predicate "processImagePath CONTAINS[c] 'Zingo'" \

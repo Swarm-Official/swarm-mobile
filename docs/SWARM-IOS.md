@@ -84,7 +84,7 @@ wings, on warm black. **Never tilt it and never give it a face.**
 
 ## 2. What the workflow does
 
-`swarm-ios.yml` runs on `macos-latest` and has four jobs.
+`swarm-ios.yml` runs on `macos-latest` and has five jobs.
 
 1. **`preflight`** — records what the hosted runner actually is. Every
    version pinned in the file is pinned against this.
@@ -92,10 +92,13 @@ wings, on warm black. **Never tilt it and never give it a face.**
    (`aarch64-apple-ios`, `aarch64-apple-ios-sim`, `x86_64-apple-ios`),
    `protoc` and `bindgen-cli`, then runs upstream's `rust/ios/build_ios.mjs`
    **unmodified**: uniffi Swift bindings, three `cargo build --release`
-   runs, `lipo` of the two simulator slices, and two XCFrameworks. Cargo
-   and the finished XCFrameworks are cached on the Rust source hash,
-   because the hosted runner has 3 cores where upstream uses a 12-core
-   self-hosted Mac.
+   runs, `lipo` of the two simulator slices, and two XCFrameworks. The
+   finished XCFrameworks are cached on the Rust source hash — 0.35 GB
+   that skips the whole hour whenever `rust/` is unchanged. The cargo
+   cache keeps the registry and git checkouts but **not** the
+   cross-compiled target directories: with them it was 5.59 GB of the
+   repository's shared 10 GB, which starved the Android pipeline for a
+   saving only the rarer `rust/`-changed build sees.
 3. **`app-simulator`** — renders the icons, `yarn`, `pod install`, an
    **unsigned Release build for the iOS Simulator**
    (`CODE_SIGNING_ALLOWED=NO`), then creates and boots a simulator,
@@ -119,7 +122,7 @@ wings, on warm black. **Never tilt it and never give it a face.**
    `scripts/check_no_upstream_branding.mjs` on the shared side rather than
    duplicating it: that one reads the source, this one reads the artifact
    that would actually ship.
-5. **`signed-release`** — **disabled**. Section 4.
+5. **`signed-release`** — **disabled**. Section 5.
 
 ### A note on the Actions cache, for whoever hits it next
 
@@ -148,12 +151,68 @@ Pinned versions and why:
 
 ---
 
-## 3. What only the owner can do
+## 3. Running it yourself, on a simulator
+
+This needs **a Mac and Xcode, and nothing else** — no Apple Developer
+account, no payment, no signing, no enrolment. It is the whole iOS
+deliverable until the account in section 5 exists.
+
+**What you need:** a Mac (Apple silicon or Intel) and Xcode from the Mac
+App Store, which includes the iPhone Simulator. Xcode is free. First
+launch asks to install "additional components" — let it.
+
+**Step by step:**
+
+1. Open the branch's Actions page, pick the most recent green
+   **SWARM iOS** run, and download the artifact
+   **`swarm-ios-simulator-app`**. It contains
+   `SwarmWallet-simulator.app.zip` and `SHA256SUMS`.
+2. Check what you downloaded is what CI built. In Terminal, in the
+   download folder:
+   ```sh
+   unzip -o swarm-ios-simulator-app.zip        # GitHub wraps artifacts in a zip
+   shasum -a 256 -c SHA256SUMS                 # must print: OK
+   ```
+   If that does not print `OK`, stop and say so — do not install it.
+3. Unpack the app itself:
+   ```sh
+   ditto -x -k SwarmWallet-simulator.app.zip .
+   ```
+   You now have `Zingo.app`. That filename is the internal Xcode product
+   name and is expected; the app calls itself SWARM Wallet everywhere a
+   person can see.
+4. Start a simulator. Open Xcode once, then:
+   ```sh
+   open -a Simulator
+   xcrun simctl boot "iPhone 17"     # skip if one is already running
+   ```
+5. Install and launch:
+   ```sh
+   xcrun simctl install booted Zingo.app
+   xcrun simctl launch booted green.swarm.wallet
+   ```
+6. The app opens on its privacy shutter and asks you to authenticate. On a
+   simulator, enrol a face first — Simulator menu → **Features → Face ID →
+   Enrolled** — then launch again and use **Features → Face ID → Matching
+   Face**.
+
+**What this does and does not tell you.** It shows the real app: the
+SWARM name, icon, launch screen, typefaces and screens, running the real
+Rust wallet library. It does **not** prove anything about syncing,
+sending or receiving — that needs `lwd.swarm.green` reachable — and a
+simulator is not a phone: no Secure Enclave, no real Face ID, no push
+notifications, and different performance.
+
+**You cannot put this build on an iPhone.** A simulator `.app` is a
+different architecture and carries no signature; there is no side-load
+path on iOS that avoids Apple-issued signing material. That is section 5.
+
+## 4. What only the owner can do
 
 None of this can be done by an agent. It needs a legal identity, a payment
 method and Apple's agreement — three things no agent may supply.
 
-### 3.1 Enrol in the Apple Developer Program **as an organisation**
+### 4.1 Enrol in the Apple Developer Program **as an organisation**
 
 This is not a preference. App Review guideline **3.1.5(b)(i)** allows
 cryptocurrency **wallets** only from developers **enrolled as an
@@ -178,7 +237,7 @@ Budget weeks, not hours. It is the long pole in the whole iOS path.
 > the SWARM mobile wallet is a wallet only and contains no miner. Do not add
 > one for iOS, ever.
 
-### 3.2 Create the App ID and signing material
+### 4.2 Create the App ID and signing material
 
 In the Apple Developer portal, once enrolled:
 
@@ -197,7 +256,7 @@ In the Apple Developer portal, once enrolled:
    `green.swarm.wallet`, name it *SWARM Wallet*, and set the primary
    category (Utilities is what the project declares).
 
-### 3.3 Add the repository secrets
+### 4.3 Add the repository secrets
 
 `brs-holding/swarm-mobile` → Settings → Secrets and variables → Actions.
 **Names only below. Never paste a value into a chat, an issue, a commit, a
@@ -219,7 +278,7 @@ Base64 on a Mac: `base64 -i AuthKey_XXXX.p8 | pbcopy`.
 
 ---
 
-## 4. The signed / TestFlight job (written, disabled)
+## 5. The signed / TestFlight job (written, disabled)
 
 The `signed-release` job in `swarm-ios.yml` is complete and **cannot run
 today**, by two independent locks:
@@ -288,7 +347,7 @@ TestFlight has two paths:
 
 ---
 
-## 5. Proven vs assumed
+## 6. Proven vs assumed
 
 **Proven** (each has a workflow run behind it — see the branch's Actions):
 
@@ -313,7 +372,7 @@ TestFlight has two paths:
   syncing, sending or receiving. That needs `lwd.swarm.green` reachable
   and a run that gets past the gate.
 
-## 6. What is shared and what is iOS-only
+## 7. What is shared and what is iOS-only
 
 Two agents work in this repository. Getting this boundary wrong means the
 same job done twice, or differently on each platform.
@@ -377,7 +436,7 @@ deliberately: removing them while the shared JavaScript still calls them at
 startup would break iOS only, which is exactly the platform divergence to
 avoid. They should go when the shared callers do.
 
-## 7. What remains
+## 8. What remains
 
 **The genesis hash is in.** The SDK pin
 `8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f` carries the real

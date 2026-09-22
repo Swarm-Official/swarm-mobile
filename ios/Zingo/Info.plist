@@ -23,8 +23,15 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<!-- A literal, not $(PRODUCT_NAME). PRODUCT_NAME is "Zingo" and stays
+	     that way: it names the executable, the .app directory and
+	     PRODUCT_MODULE_NAME, which Info.plist itself refers to below as
+	     $(PRODUCT_MODULE_NAME).SceneDelegate — an internal identifier the
+	     brief says not to rename. CFBundleName is not that; it is a
+	     display string iOS falls back to in places like the Storage list,
+	     so it says SWARM Wallet. (Apple's 15-character guidance: 12.) -->
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>SWARM Wallet</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

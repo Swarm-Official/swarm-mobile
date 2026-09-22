@@ -47,6 +47,12 @@ reads the server back off the Settings screen. The desktop wallet shipped a
 fresh install reading "NOT CONNECTED - No server configured" because only its
 launcher script wrote the default, which is the defect that check exists for.
 
+A fresh install runs in **basic mode**, whose Settings screen carries the
+language and the About link and nothing else. The server row belongs to
+advanced mode, so the test taps the mode pill in the drawer before it can read
+the server back. Someone in basic mode has no way to see which server their
+wallet uses.
+
 The app speaks **only** SwarmTestnet. There is no mainnet, no ZEC, no fiat
 price, no currency picker, no donation toggle, no exchange or swap, and no
 public server registry: the app never asks a third party which server to

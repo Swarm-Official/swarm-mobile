@@ -230,19 +230,69 @@ cp "$DUMP" "$OUT/ui-home.xml" 2>/dev/null || true
 shot home-screen
 echo "  sync indicator: ${STATUS:-none found}"
 
-# Settings -> the server the app actually holds.
-SERVER_SEEN=no
-if ui_tap 'header.settings'; then
+# Settings -> the server the app actually holds. Scrolls, because the row sits
+# below the fold on a phone.
+read_server() {
   for _ in 1 2 3 4 5 6; do
     ui_dump || true
-    if ui_has 'lwd.swarm.green'; then SERVER_SEEN=yes; break; fi
+    if ui_has 'lwd.swarm.green'; then return 0; fi
     adb shell input swipe 540 1400 540 600 300
     sleep 2
   done
+  return 1
+}
+
+open_settings() {
+  for _ in 1 2 3; do
+    ui_dump || true
+    if ui_tap 'header.settings'; then return 0; fi
+    adb shell input keyevent KEYCODE_BACK
+    sleep 3
+  done
+  return 1
+}
+
+# The options panel stays open after the mode pill is tapped, by design.
+close_panel() {
+  ui_dump || true
+  if ui_tap 'header.drawmenu'; then return 0; fi
+  adb shell input keyevent KEYCODE_BACK
+  sleep 3
+}
+
+SERVER_SEEN=no
+if open_settings; then
+  if read_server; then SERVER_SEEN=yes; fi
   cp "$DUMP" "$OUT/ui-network.xml" 2>/dev/null || true
   shot network-screen
 else
   echo "  note: the settings control was not on screen"
+fi
+
+# A fresh install runs in basic mode, whose Settings screen carries only the
+# language and the About link: the server row is advanced-mode only. The mode
+# pill in the drawer is the way to the screen that names the server.
+if [ "$SERVER_SEEN" != "yes" ]; then
+  echo "  basic mode hides the server row; switching to advanced mode"
+  adb shell input keyevent KEYCODE_BACK
+  sleep 3
+  ui_dump || true
+  if ui_tap 'header.drawmenu'; then
+    ui_dump || true
+    if ui_tap 'Advanced'; then
+      sleep 8
+      close_panel
+      if open_settings; then
+        if read_server; then SERVER_SEEN=yes; fi
+        cp "$DUMP" "$OUT/ui-network-advanced.xml" 2>/dev/null || true
+        shot network-screen-advanced
+      fi
+    else
+      echo "  note: the mode pill was not on screen"
+    fi
+  else
+    echo "  note: the drawer control was not on screen"
+  fi
 fi
 
 # The start menu prints the server too, and that is the screen an offline

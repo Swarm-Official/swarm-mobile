@@ -109,6 +109,10 @@ buck-out/
 # Keystore
 /android/app/Zingo.jks
 /android/local.zingo.jks.properties
+# The Play upload key. It never enters this repository; the pattern is here so
+# a copy left in the tree cannot be committed by accident.
+/android/app/swarm-upload.jks
+/android/swarm-upload.properties
 
 # Claude Code
 .claude/

@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React from 'react';
-import { Text, View, ActivityIndicator } from 'react-native';
+import { Image, Text, View, ActivityIndicator } from 'react-native';
 
 import { useTheme } from '@app/theme';
 
@@ -10,7 +10,12 @@ import {
   TranslateType,
 } from '@app/AppState';
 import Button, { ButtonTypeEnum } from '@ui/primitives/Button';
-import { getZingoName, getZingoVersion } from '@app/utils/ZingoAppData';
+import {
+  getSwarmMark,
+  getZingoName,
+  getZingoVersion,
+} from '@app/utils/ZingoAppData';
+import { fontFamily, typeScale } from '@app/theme/typography';
 import Utils from '@app/utils';
 
 type LaunchingProps = {
@@ -57,12 +62,34 @@ const Launching: React.FunctionComponent<LaunchingProps> = props => {
             padding: 10,
           }}
         >
+          {/* The first thing anyone sees. It gets the mark, the display face
+              and the primary text colour, rather than the system font in
+              muted grey. */}
+          <Image
+            source={getSwarmMark()}
+            style={{ width: 72, height: 72, resizeMode: 'contain' }}
+          />
           <Text
-            style={{ color: colors.fgMuted, fontSize: 40, fontWeight: 'bold' }}
+            style={{
+              color: colors.fgDefault,
+              fontSize: 34,
+              fontFamily: fontFamily.displayBold,
+              letterSpacing: typeScale.screenTitle.letterSpacing,
+              marginTop: 14,
+            }}
           >
             {getZingoName()}
           </Text>
-          <Text style={{ color: colors.fgMuted, fontSize: 15 }}>
+          {/* A version is a number, and the design system sets numbers in
+              mono. */}
+          <Text
+            style={{
+              color: colors.fgMuted,
+              fontSize: 13,
+              fontFamily: fontFamily.monoRegular,
+              marginTop: 6,
+            }}
+          >
             {getZingoVersion()}
           </Text>
         </View>

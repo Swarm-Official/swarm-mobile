@@ -204,6 +204,30 @@ jobs:
           ls -la ios/Zingolib.xcframework ios/ZingoNymProxyFFI.xcframework
           lipo -info ios/Zingolib.xcframework/*/libzingo.a
           lipo -info ios/ZingoNymProxyFFI.xcframework/*/libzingo_nym_proxy_ffi.a
+          du -sh ios/Zingolib.xcframework ios/ZingoNymProxyFFI.xcframework
+
+      # The cache above is a build-SKIP optimisation and nothing more. The
+      # handoff to the next job goes through this artifact, which is
+      # run-scoped and cannot be evicted underneath us.
+      #
+      # Why: a repository gets 10 GB of Actions cache, shared by every
+      # branch and every agent working in it. On 2026-09-21 the Android
+      # workflow saved three ~2.2 GB per-ABI caches at 18:14–18:15 UTC and
+      # GitHub evicted this job's xcframework cache least-recently-used.
+      # With `fail-on-cache-miss` on the consumer, an eviction landing in
+      # the gap between these two jobs would fail a build that had just
+      # spent an hour succeeding.
+      - name: Upload the xcframework for the next job
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-ios-xcframework
+          path: |
+            ios/Zingolib.xcframework
+            ios/zingo.swift
+            ios/ZingoNymProxyFFI.xcframework
+            ios/zingo_nym_proxy_ffi.swift
+          retention-days: 3
+          compression-level: 6
 
   # ---------------------------------------------------------------------
   # The app itself: pods, an unsigned Release build for the iOS Simulator,
@@ -226,16 +250,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Restore xcframework
-        uses: actions/cache/restore@v4
+      # From the artifact, not the cache: see the note in rust-xcframework.
+      - name: Download the xcframework
+        uses: actions/download-artifact@v4
         with:
-          path: |
-            ios/Zingolib.xcframework
-            ios/zingo.swift
-            ios/ZingoNymProxyFFI.xcframework
-            ios/zingo_nym_proxy_ffi.swift
-          key: ${{ needs.rust-xcframework.outputs.cache-key }}
-          fail-on-cache-miss: true
+          name: swarm-ios-xcframework
+          path: ios
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -379,11 +399,40 @@ jobs:
           NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist" 2>/dev/null || echo '(none)')
           echo "bundle identifier: $BID"
           echo "display name:      $NAME"
+
+          # The passcode sheet iOS puts up for LocalAuthentication is
+          # titled with CFBundleDisplayName. Asserting it here is what
+          # makes the sheet in the screenshot verifiable rather than only
+          # reviewable: if this passes, the sheet cannot say "Zingo".
+          if [ "$NAME" != "SWARM Wallet" ]; then
+            echo "::error::CFBundleDisplayName is '$NAME', expected 'SWARM Wallet' — the iOS authentication sheet would show the wrong name"
+            exit 1
+          fi
+          if [ "$BID" != "green.swarm.wallet" ]; then
+            echo "::error::CFBundleIdentifier is '$BID', expected 'green.swarm.wallet'"
+            exit 1
+          fi
+
           echo "--- URL schemes claimed by this build (expect none) ---"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes' "$APP/Info.plist" \
             2>/dev/null || echo "(no CFBundleURLTypes — the zcash: claim is gone)"
           echo "--- app icons compiled into the bundle ---"
           ls "$APP" | grep -i '^AppIcon' || echo "(none)"
+
+          # The storyboard launch screen shows for a fraction of a second
+          # before React Native mounts, so a screenshot cannot reliably
+          # catch it. Assert it is in the bundle instead — that is
+          # deterministic where a timed screenshot is a race.
+          echo "--- launch screen compiled into the bundle ---"
+          test -e "$APP/LaunchScreen.storyboardc" \
+            || { echo "::error::LaunchScreen.storyboardc missing from the app bundle"; exit 1; }
+          echo "ok  LaunchScreen.storyboardc present"
+          LSN=$(/usr/libexec/PlistBuddy -c 'Print :UILaunchStoryboardName' "$APP/Info.plist" 2>/dev/null || echo '(unset)')
+          if [ "$LSN" != "LaunchScreen" ]; then
+            echo "::error::UILaunchStoryboardName is '$LSN', expected 'LaunchScreen'"
+            exit 1
+          fi
+          echo "ok  UILaunchStoryboardName = $LSN"
 
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl launch --terminate-running-process "$UDID" "$BID"
@@ -393,10 +442,15 @@ jobs:
           # drawn anything of its own.
           sleep 1
           xcrun simctl io "$UDID" screenshot artifacts/00-launchscreen-1s.png
+          # At 15 s and 40 s the app has reached its LocalAuthentication
+          # privacy gate, so these two frames ARE the authentication
+          # sheet — the one that reads "Enter iPhone Passcode for
+          # <CFBundleDisplayName>". Named so a reviewer knows to read the
+          # text rather than glance at the picture.
           sleep 14
-          xcrun simctl io "$UDID" screenshot artifacts/01-launch-15s.png
+          xcrun simctl io "$UDID" screenshot artifacts/01-auth-sheet-15s.png
           sleep 25
-          xcrun simctl io "$UDID" screenshot artifacts/02-launch-40s.png
+          xcrun simctl io "$UDID" screenshot artifacts/02-auth-sheet-40s.png
 
           # Still alive 40 s after launch? A crash-on-start would be gone.
           # Captured first and matched in the shell: piping into `grep -q`
@@ -487,6 +541,69 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------
+  # Does anything a person can SEE still say Zingo?
+  #
+  # Its own job on purpose. The build either works or it does not, and
+  # that answer should stay readable; whether the shared JavaScript has
+  # finished being rebranded is a different question with a different
+  # owner. So app-simulator stays green when the app builds, and this
+  # job goes red for as long as a user-visible string still says Zingo.
+  #
+  # Today it is EXPECTED TO FAIL: app/translations/*.json (5 languages,
+  # 42 hits each) and the donation screens still carry ZingoLabs, Zennies
+  # and zingolabs.org. Those are shared JavaScript, owned by the Android
+  # agent's branch, and must be fixed once for both platforms rather than
+  # twice. The iOS-native side — display name, permission prompts, launch
+  # screen, URL-scheme claim — is already clean, which is what the
+  # assertions in app-simulator prove.
+  # ---------------------------------------------------------------------
+  string-sweep:
+    name: User-visible string sweep (fails while any Zingo is visible)
+    needs: app-simulator
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download the built app
+        uses: actions/download-artifact@v4
+        with:
+          name: swarm-ios-simulator-app
+          path: dist
+
+      - name: Unpack
+        run: |
+          set -euxo pipefail
+          mkdir -p unpacked
+          ditto -x -k dist/SwarmWallet-simulator.app.zip unpacked
+          find unpacked -maxdepth 1 -name '*.app'
+
+      - name: Sweep
+        run: |
+          set -uo pipefail
+          APP=$(find unpacked -maxdepth 1 -name '*.app' -type d | sed -n '1p')
+          bash ios/scripts/string-sweep.sh "$APP" | tee string-sweep.txt
+          status=${PIPESTATUS[0]}
+          {
+            echo "### User-visible string sweep"
+            echo
+            echo '```'
+            cat string-sweep.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      - name: Upload the sweep report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-ios-string-sweep
+          path: string-sweep.txt
+          if-no-files-found: warn
+          retention-days: 30
+
+  # ---------------------------------------------------------------------
   # DISABLED. Signed device archive + TestFlight upload.
   #
   # This job cannot run today and is not meant to: it needs an Apple
@@ -537,16 +654,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Restore xcframework
-        uses: actions/cache/restore@v4
+      - name: Download the xcframework
+        uses: actions/download-artifact@v4
         with:
-          path: |
-            ios/Zingolib.xcframework
-            ios/zingo.swift
-            ios/ZingoNymProxyFFI.xcframework
-            ios/zingo_nym_proxy_ffi.swift
-          key: ${{ needs.rust-xcframework.outputs.cache-key }}
-          fail-on-cache-miss: true
+          name: swarm-ios-xcframework
+          path: ios
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

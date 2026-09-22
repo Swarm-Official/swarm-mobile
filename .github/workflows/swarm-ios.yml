@@ -425,6 +425,50 @@ jobs:
             DEVELOPMENT_TEAM="" \
             -quiet
 
+      # C9 / E1: which hosts does a fresh install actually contact?
+      #
+      # The wallet talks gRPC over raw sockets, so nothing useful lands in the
+      # simulator's own log — but the simulator's traffic leaves through the
+      # runner's interface like anything else, so tcpdump answers it directly.
+      # `dig` runs FIRST and on purpose: its answer is the address to match on
+      # the wire, and priming the resolver cache only weakens the DNS half of
+      # the evidence, never the connection half.
+      #
+      # Best effort throughout. If tcpdump cannot run, the run says so and the
+      # settings-file assertion below still has to pass.
+      - name: Start a packet capture (DNS and the indexer)
+        id: capture
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          INDEXER_HOST=lwd.swarm.green
+          IPS=$(dig +short "$INDEXER_HOST" A | grep -E '^[0-9.]+$' | sort -u | tr '\n' ' ')
+          echo "$INDEXER_HOST resolves to: ${IPS:-(nothing)}"
+          echo "indexer_host=$INDEXER_HOST" >> "$GITHUB_OUTPUT"
+          echo "indexer_ips=$IPS" >> "$GITHUB_OUTPUT"
+          IFACE=any
+          # DNS plus the indexer's own addresses, nothing else. A blanket
+          # 'port 443' on a runner is mostly the runner's own log and
+          # artifact traffic, which is not evidence about this app; and a
+          # 128-byte snap keeps headers while storing no payload — this
+          # capture becomes a public artifact.
+          FILTER="port 53"
+          for ip in $IPS; do FILTER="$FILTER or host $ip"; done
+          echo "capture filter: $FILTER"
+          sudo tcpdump -n -i "$IFACE" -s 128 -U -w "$RUNNER_TEMP/capture.pcap" \
+            "$FILTER" >/dev/null 2>"$RUNNER_TEMP/tcpdump.err" &
+          echo "tcpdump_pid=$!" >> "$GITHUB_OUTPUT"
+          # Give it a moment to attach before the app starts talking.
+          sleep 3
+          if [ -f "$RUNNER_TEMP/capture.pcap" ]; then
+            echo "capture started on $IFACE"
+            echo "started=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::tcpdump did not start; the wire evidence will be missing"
+            cat "$RUNNER_TEMP/tcpdump.err" || true
+            echo "started=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install, launch and screenshot
         id: launch
         run: |
@@ -548,10 +592,23 @@ jobs:
           fi
           echo "ok      iPhone-only, no LSMinimumSystemVersion"
 
-          # B4: the location purpose string is gone, so CoreLocation must
-          # be gone too — otherwise the store build links a framework it
-          # has no purpose string for. $VCEnableLocation = false in the
-          # Podfile is what removes it; this is the proof.
+          # B4: the location purpose string is gone, so nothing in the app
+          # may still be able to ASK for a position.
+          #
+          # The test is on symbols, not on the load commands, and run
+          # 35737908538 is why. CoreLocation is in this binary's load
+          # commands no matter what: React Native itself compiles
+          # RCTConvert+CoreLocation into React-Core, and every React Native
+          # app therefore links the framework. What it does NOT contain is
+          # a CLLocationManager, and that is the difference Apple cares
+          # about — a purpose string is required when an app calls the API,
+          # not when the linker records the framework.
+          #
+          # $VCEnableLocation = false in the Podfile is still doing its job:
+          # the pod install log of the same run reads
+          # "[VisionCamera] $VCEnableLocation is set to false!", which is
+          # what keeps VisionCamera's own CLLocationManager out of the
+          # build. This assertion is what proves the result.
           echo "--- frameworks linked by the binary ---"
           EXE="$APP/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")"
           # Captured once and matched in the shell: piping otool into
@@ -563,24 +620,36 @@ jobs:
             echo "::error::NSLocationWhenInUseUsageDescription is back in Info.plist"
             exit 1
           fi
+          SYMS=$(nm -u "$EXE" 2>/dev/null || true)
           if printf '%s' "$LINKED" | grep -qi 'CoreLocation'; then
-            echo "::error::the binary still links CoreLocation; either \$VCEnableLocation = false did not take effect in the Podfile, or something else pulled it in — a location purpose string would then be required again"
+            echo "note    CoreLocation is in the load commands — React Native's own RCTConvert+CoreLocation does that in every RN app"
+          else
+            echo "ok      CoreLocation is not even linked"
+          fi
+          if printf '%s' "$SYMS" | grep -qE 'CLLocationManager|requestWhenInUseAuthorization|requestAlwaysAuthorization|startUpdatingLocation'; then
+            printf '%s' "$SYMS" | grep -E 'CLLocation|Authorization' | sed 's/^/    /'
+            echo "::error::the binary can ask for the device's location (a CLLocationManager symbol is present), but Info.plist declares no location purpose string. Either the feature is unintended — check \$VCEnableLocation in ios/Podfile — or the string has to come back and the privacy policy with it"
             exit 1
           fi
-          echo "ok      CoreLocation is not linked and no location purpose string ships"
+          echo "ok      no CLLocationManager anywhere: nothing in this app can ask for a position"
 
-          # Advisory, not fatal: whether anything at all can reach the
-          # photo library. A sweep of app/, screens/, ui/ and ios/*.swift
-          # finds no photo API and there is no CameraRoll dependency, so
-          # NSPhotoLibraryAddUsageDescription may be deletable as well.
-          # Reported so the answer comes from the artifact, not a guess.
-          echo "--- photo-library symbols in the binary (advisory) ---"
-          PHOTOSYMS=$(nm -u "$EXE" 2>/dev/null || true)
-          if printf '%s' "$LINKED" | grep -qi 'Photos.framework' \
-             || printf '%s' "$PHOTOSYMS" | grep -qiE 'PHPhotoLibrary|UIImageWriteToSavedPhotosAlbum'; then
-            echo "FOUND: the binary can reach the photo library — keep NSPhotoLibraryAddUsageDescription"
+          # Advisory, and the same distinction as above: Photos.framework is
+          # in the load commands (run 35737908538), but linkage is not usage.
+          # A sweep of app/, screens/, ui/ and ios/*.swift finds no photo API
+          # at all and there is no CameraRoll dependency, so the question is
+          # whether any SYMBOL that writes to the library survives. Reported
+          # rather than enforced, because deleting a purpose string that a
+          # pod turns out to need is a crash, not a warning.
+          echo "--- photo-library reach (advisory) ---"
+          if printf '%s' "$LINKED" | grep -qi 'Photos.framework'; then
+            echo "note    Photos.framework is in the load commands"
           else
-            echo "none: no Photos framework and no photo-library symbol — the add-only purpose string describes a feature that does not exist and should be deleted"
+            echo "note    Photos.framework is not linked at all"
+          fi
+          if printf '%s' "$SYMS" | grep -qE 'PHPhotoLibrary|PHAssetCreationRequest|UIImageWriteToSavedPhotosAlbum'; then
+            echo "FOUND   a symbol that writes to the photo library — NSPhotoLibraryAddUsageDescription is required, keep it"
+          else
+            echo "none    no photo-library symbol: the add-only purpose string describes a feature that does not exist, and should be deleted once someone confirms no pod reaches it dynamically"
           fi
 
           echo "--- URL schemes claimed by this build (expect none) ---"
@@ -674,7 +743,18 @@ jobs:
           sleep 12
           xcrun simctl io "$UDID" screenshot artifacts/04-after-unlock-attempt.png || true
 
-          xcrun simctl spawn "$UDID" log show --last 3m --style compact \
+          # A fresh install in basic mode creates its wallet by itself and
+          # starts syncing; before it does, the one-time risk notice is up and
+          # waiting for a tap. Both are worth photographing: the notice is the
+          # screen App Review sees first, and the screens after it are the
+          # fresh-install evidence C9 asks for.
+          echo "--- settling the fresh install ---"
+          for t in 1 2 3 4 5 6; do
+            sleep 30
+            xcrun simctl io "$UDID" screenshot "artifacts/05-fresh-install-$((t * 30))s.png" || true
+          done
+
+          xcrun simctl spawn "$UDID" log show --last 8m --style compact \
             --predicate "processImagePath CONTAINS[c] 'Zingo'" \
             > artifacts/app-log.txt 2>&1 || true
 
@@ -682,6 +762,162 @@ jobs:
             echo "app_path=$APP"
             echo "bundle_id=$BID"
           } >> "$GITHUB_OUTPUT"
+
+      # Best effort, and said so in the log either way. Maestro is the only
+      # way to tap a button on a headless simulator, and the risk notice needs
+      # one tap before a wallet is created. It is NOT allowed to fail the job:
+      # the assertions in the next step are the ones that must hold.
+      - name: Tap through the risk notice with Maestro (best effort)
+        id: maestro
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          set -uo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          BID="${{ steps.launch.outputs.bundle_id }}"
+          export MAESTRO_DRIVER_STARTUP_TIMEOUT=180000
+          if ! curl -fsSL "https://get.maestro.mobile.dev" | bash; then
+            echo "::warning::could not install Maestro; skipping the UI walk"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          export PATH="$PATH:$HOME/.maestro/bin"
+          maestro --version || true
+          mkdir -p "$RUNNER_TEMP/flows"
+          cat > "$RUNNER_TEMP/flows/ios_fresh_install.yaml" <<FLOW
+          appId: $BID
+          ---
+          # Deliberately NO launchApp: the app is already running and already
+          # past the LocalAuthentication shutter, which Maestro cannot dismiss
+          # because it is a system sheet. Relaunching would put it back up and
+          # strand the flow behind it.
+          - extendedWaitUntil:
+              visible:
+                id: "risknotice.acknowledge"
+              timeout: 120000
+          - takeScreenshot: risknotice
+          - tapOn:
+              id: "risknotice.acknowledge"
+          - extendedWaitUntil:
+              visible:
+                id: "receive.title"
+              timeout: 600000
+          - takeScreenshot: home-synced
+          FLOW
+          if maestro --device "$UDID" test "$RUNNER_TEMP/flows/ios_fresh_install.yaml"; then
+            echo "Maestro walked the fresh install to the home screen"
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::the Maestro walk did not finish; the screenshots below are whatever it reached"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+          mkdir -p artifacts
+          cp ./*.png artifacts/ 2>/dev/null || true
+          xcrun simctl io "$UDID" screenshot artifacts/06-after-maestro.png || true
+
+      # THE assertion of C9: on a fresh install, with nothing typed and nothing
+      # chosen, is the server already lwd.swarm.green on swarm-testnet, and did
+      # the app actually go there?
+      - name: Fresh install — prove the default server and the connection
+        id: freshinstall
+        run: |
+          set -euo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          BID="${{ steps.launch.outputs.bundle_id }}"
+          # Its own directory: artifacts/ is uploaded whole as the
+          # screenshot artifact, and the capture has no business in there.
+          mkdir -p evidence
+
+          CONTAINER=$(xcrun simctl get_app_container "$UDID" "$BID" data)
+          echo "data container: $CONTAINER"
+          echo "--- files the fresh install wrote ---"
+          ls -la "$CONTAINER/Documents" || true
+
+          SETTINGS="$CONTAINER/Documents/settings.json"
+          if [ ! -f "$SETTINGS" ]; then
+            echo "::error::the app wrote no settings.json, so it never got as far as choosing a server"
+            exit 1
+          fi
+          cp "$SETTINGS" evidence/settings.json
+          echo "--- settings.json as the fresh install left it ---"
+          cat "$SETTINGS"
+          echo
+
+          python3 - "$SETTINGS" <<'PY'
+          import json, sys
+          settings = json.load(open(sys.argv[1]))
+          server = settings.get('server') or {}
+          uri = server.get('uri')
+          chain = server.get('chainName')
+          print('server.uri       =', uri)
+          print('server.chainName =', chain)
+          bad = 0
+          if uri != 'https://lwd.swarm.green:443':
+              print("::error::the fresh install's default server is %r, expected https://lwd.swarm.green:443 — a reviewer would have to choose one" % (uri,))
+              bad = 1
+          if chain != 'swarm-testnet':
+              print('::error::the default chain is %r, expected swarm-testnet' % (chain,))
+              bad = 1
+          sys.exit(bad)
+          PY
+          echo "ok      the default server is lwd.swarm.green on swarm-testnet, with no user action"
+
+          WALLET=$(ls -la "$CONTAINER/Documents"/*.dat 2>/dev/null || true)
+          if [ -n "$WALLET" ]; then
+            echo "ok      a wallet file exists, so the fresh install created and saved one:"
+            printf '%s\n' "$WALLET"
+            echo "wallet_created=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "note    no wallet file yet — the risk notice is still waiting for its tap"
+            echo "wallet_created=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Read the packet capture back
+        id: wire
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          sudo pkill -INT tcpdump || true
+          sleep 2
+          PCAP="$RUNNER_TEMP/capture.pcap"
+          mkdir -p evidence
+          if [ ! -s "$PCAP" ]; then
+            echo "::warning::no packet capture; the wire evidence is missing from this run"
+            echo "proved=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          sudo chmod a+r "$PCAP"
+          cp "$PCAP" evidence/fresh-install-capture.pcap
+          sudo tcpdump -n -r "$PCAP" > "$RUNNER_TEMP/capture.txt" 2>/dev/null || true
+          echo "packets captured: $(wc -l < "$RUNNER_TEMP/capture.txt" | tr -d ' ')"
+
+          DNS=$(grep -c 'lwd.swarm.green' "$RUNNER_TEMP/capture.txt" || true)
+          echo "DNS lines naming the indexer: $DNS"
+
+          HITS=0
+          # Quoted into a variable first: an empty expansion here would be a
+          # bare `for ip in ; do`, which is a syntax error, not an empty loop.
+          IPS="${{ steps.capture.outputs.indexer_ips }}"
+          for ip in $IPS; do
+            n=$(grep -c "$ip.443" "$RUNNER_TEMP/capture.txt" || true)
+            echo "packets to $ip:443 = $n"
+            HITS=$((HITS + n))
+          done
+          {
+            echo "indexer host: ${{ steps.capture.outputs.indexer_host }}"
+            echo "indexer ips:  ${{ steps.capture.outputs.indexer_ips }}"
+            echo "dns lines:    $DNS"
+            echo "packets:      $HITS"
+            echo
+            grep -E 'lwd.swarm.green' "$RUNNER_TEMP/capture.txt" | head -40 || true
+          } > evidence/fresh-install-wire.txt
+          if [ "$HITS" -gt 0 ]; then
+            echo "ok      the fresh install really did talk to the indexer on 443"
+            echo "proved=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::no packets to the indexer's address were captured; this proves nothing either way (the capture may have missed them)"
+            echo "proved=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Package the simulator app
         run: |
@@ -711,6 +947,10 @@ jobs:
             echo "| simulator device | \`${{ steps.sim.outputs.devicetype }}\` |"
             echo "| bundle identifier | \`${{ steps.launch.outputs.bundle_id }}\` |"
             echo "| running 40 s after launch | \`${{ steps.launch.outputs.alive }}\` |"
+            echo "| default server (fresh install) | \`https://lwd.swarm.green:443\`, asserted from the app container |"
+            echo "| wallet created with no user action | \`${{ steps.freshinstall.outputs.wallet_created }}\` |"
+            echo "| reached the indexer on the wire | \`${{ steps.wire.outputs.proved }}\` |"
+            echo "| Maestro walked to the home screen | \`${{ steps.maestro.outputs.ok }}\` |"
             echo "| code signing | \`CODE_SIGNING_ALLOWED=NO\` |"
             if [ -f dist/SHA256SUMS ]; then
               echo
@@ -735,6 +975,15 @@ jobs:
         with:
           name: swarm-ios-simulator-screenshot
           path: artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload the fresh-install evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-ios-freshinstall-evidence
+          path: evidence/
           if-no-files-found: warn
           retention-days: 30
 
@@ -999,6 +1248,13 @@ jobs:
 
       # No certificate anywhere: Xcode asks App Store Connect for the
       # signing assets with the API key and creates what it is missing.
+      #
+      # CODE_SIGN_IDENTITY is forced because the project inherits
+      # CODE_SIGN_IDENTITY[sdk=iphoneos*] = "iPhone Developer" from
+      # upstream's template. Left alone, automatic signing would go
+      # looking for a DEVELOPMENT certificate for a build destined for
+      # the App Store. The API key must therefore be an Admin key: an
+      # App Manager key can upload but cannot mint certificates.
       - name: Archive for a physical device (automatic signing, API key)
         if: steps.signing.outputs.style == 'automatic'
         working-directory: ios
@@ -1022,7 +1278,8 @@ jobs:
             MARKETING_VERSION="${{ steps.version.outputs.marketing }}" \
             CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic
+            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution"
 
       - name: Read the archive back
         run: |

@@ -134,6 +134,7 @@ import {
   MixnetView,
 } from '@app/walletBackend/transforms/mixnetView';
 import { startMixnetTransport } from '@app/walletBackend/utils/nymTransport';
+import { mixnetAvailableOnChain } from '@app/walletBackend/transforms/mixnetAvailability';
 import { RPCPerformanceLevelEnum } from '@app/walletBackend/enums/RPCPerformanceLevelEnum';
 import { AddressList } from '@screens/AddressList';
 import ValueTransferDetail from '@screens/ValueTransferDetail';
@@ -2277,6 +2278,12 @@ export class LoadedAppClass extends Component<
     } = this.state;
     const { colors } = this.props.theme;
 
+    // Whether this chain offers the Nym mixnet at all. On SwarmTestnet it
+    // does not, because no mixnet send has ever been demonstrated against
+    // lwd.swarm.green and guideline 2.1 counts a visible feature that
+    // fails as an incomplete app. See mixnetAvailability.ts.
+    const mixnetOffered = mixnetAvailableOnChain(this.state.server.chainName);
+
     const context = {
       //context
       netInfo: this.state.netInfo,
@@ -2335,8 +2342,15 @@ export class LoadedAppClass extends Component<
       recoveryWalletInfoOnDevice: this.state.recoveryWalletInfoOnDevice,
       performanceLevel: this.state.performanceLevel,
       blockExplorer: this.state.blockExplorer,
-      nym: this.state.nym,
-      mixnetView: this.state.mixnetView,
+      // The whole Nym surface hangs off these two, and every consumer
+      // already renders nothing when `mixnetView` is null: the Settings
+      // toggle, the migration gate sheet, the Send toggle and the
+      // sync-status pill all test it. So one gate here hides all of them
+      // at once without deleting a line of the transport. `nym` is forced
+      // with it so a setting left true by an earlier build cannot route a
+      // send through a transport whose switch is no longer visible.
+      nym: mixnetOffered && this.state.nym,
+      mixnetView: mixnetOffered ? this.state.mixnetView : null,
       reenableMixnet: this.reenableMixnet,
       foregroundEpoch: this.state.foregroundEpoch,
     };

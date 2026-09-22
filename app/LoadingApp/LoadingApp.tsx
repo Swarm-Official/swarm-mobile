@@ -118,6 +118,8 @@ import StartMenu from '@screens/StartMenu';
 import { RPCUfvkType } from '@app/walletBackend/types/RPCUfvkType';
 import { RPCPerformanceLevelEnum } from '@app/walletBackend/enums/RPCPerformanceLevelEnum';
 import NewSeed from '@screens/NewSeed';
+import RiskNotice from '@ui/widgets/RiskNotice';
+import { acknowledgeRiskNotice, hasAcknowledgedRiskNotice } from '@app/legal';
 import { AppStackParamList } from '@app/types';
 
 const en = require('@app/translations/en.json');
@@ -574,6 +576,7 @@ export class LoadingAppClass extends Component<
       donationAlert: props.donationAlert,
       firstLaunchingMessage: props.firstLaunchingMessage,
       hasRecoveryWalletInfoSaved: false,
+      riskNoticeGateOpen: false,
     };
 
     this.customServerModalRef = React.createRef();
@@ -834,6 +837,52 @@ export class LoadingAppClass extends Component<
   };
 
   unmounted = false;
+
+  // Resolved by the notice's single button. Held on the instance and
+  // not in state because a promise in React state is a trap: state is
+  // for what renders, and what renders is `riskNoticeGateOpen`.
+  private riskNoticeAck: (() => void) | null = null;
+
+  /**
+   * Resolves once this installation has acknowledged the risk notice.
+   *
+   * Every path that can bring a wallet into existence awaits this:
+   * the Create and Restore buttons, and — the one that matters most —
+   * the basic-mode first launch, which creates a wallet with no user
+   * action at all. Without this the notice would never be seen by the
+   * person it is written for.
+   *
+   * It does NOT gate the server check that runs before it, so a fresh
+   * install still reaches lwd.swarm.green by itself (requirement C9);
+   * what is gated is the wallet, not the network.
+   */
+  ensureRiskNoticeAcknowledged = async (): Promise<void> => {
+    if (await hasAcknowledgedRiskNotice()) {
+      return;
+    }
+    if (this.unmounted) {
+      // The screen is gone. Nothing may pass the gate on its way out, so the
+      // caller never continues: no wallet, rather than a wallet whose owner
+      // was never shown the notice.
+      return new Promise<void>(() => {});
+    }
+    await new Promise<void>(resolve => {
+      this.riskNoticeAck = resolve;
+      this.setState({ riskNoticeGateOpen: true });
+    });
+  };
+
+  acceptRiskNotice = () => {
+    const resume = this.riskNoticeAck;
+    this.riskNoticeAck = null;
+    this.setState({ riskNoticeGateOpen: false });
+    // The write is best-effort and must not delay the person: a
+    // failed write only means the notice is shown again next launch.
+    acknowledgeRiskNotice();
+    if (resume) {
+      resume();
+    }
+  };
 
   componentWillUnmount = () => {
     this.unmounted = true;
@@ -1699,6 +1748,12 @@ export class LoadingAppClass extends Component<
   };
 
   createNewWallet = async (goSeedScreen: boolean = true): Promise<void> => {
+    // Before anything else, and before any state is touched: no wallet
+    // comes into existence on this device until the risk notice has
+    // been acknowledged once. This is also the basic-mode automatic
+    // first-launch path, which is exactly the case the notice exists
+    // for — the person never pressed anything.
+    await this.ensureRiskNoticeAcknowledged();
     const offline = this.state.selectServer === SelectServerEnum.offline;
     // Block only when the device is genuinely offline AND not in explicit
     // Offline mode. Offline mode is a deliberate no-server flow: the wallet is
@@ -1788,6 +1843,7 @@ export class LoadingAppClass extends Component<
   };
 
   getwalletToRestore = async () => {
+    await this.ensureRiskNoticeAcknowledged();
     this.setState({ wallet: {} as WalletType, screen: RouteEnum.ImportUfvk });
   };
 
@@ -2331,6 +2387,11 @@ export class LoadingAppClass extends Component<
                   getwalletToRestore={this.getwalletToRestore}
                   restoreLastBackup={this.restoreLastBackup}
                 />
+              )}
+              {/* Last in the tree and absolutely positioned, so it covers
+                  whatever the boot sequence was drawing. */}
+              {this.state.riskNoticeGateOpen && (
+                <RiskNotice mode="gate" onDismiss={this.acceptRiskNotice} />
               )}
               <CustomServerModalHost
                 ref={this.customServerModalRef}

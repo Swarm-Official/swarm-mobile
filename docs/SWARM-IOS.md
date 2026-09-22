@@ -524,19 +524,34 @@ or if tracking is not `false`.
 ### 9.4 Permissions: only the ones that exist
 
 * `NSLocationWhenInUseUsageDescription` — **deleted**. `ios/Podfile` now
-  sets `$VCEnableLocation = false` before `use_react_native!`, so
-  VisionCamera stops linking CoreLocation (it links it by default so a
-  photo can carry a GPS tag; this app scans QR codes and takes no photo).
-  CI runs `otool -L` on the built binary and **fails** if CoreLocation
-  comes back.
+  sets `$VCEnableLocation = false` before `use_react_native!`, which keeps
+  VisionCamera's own `CLLocationManager` out of the build (it is on by
+  default so a photo can carry a GPS tag; this app scans QR codes and takes
+  no photo). Run 35737908538 confirms it took effect — the pod install log
+  reads `[VisionCamera] $VCEnableLocation is set to false!`.
+
+  **CoreLocation is still in the binary's load commands, and that is
+  correct.** React Native itself compiles `RCTConvert+CoreLocation` into
+  React-Core, so *every* React Native app links the framework; the same run
+  logs `libtool: warning: 'RCTConvert+CoreLocation.o' has no symbols`. A
+  purpose string is required when an app **calls** the API, not when the
+  linker records the framework. The first version of this check asserted
+  linkage and failed the build for it; it now asserts the thing that
+  matters — CI **fails** if any `CLLocationManager` /
+  `requestWhenInUseAuthorization` / `startUpdatingLocation` symbol appears,
+  and merely notes the linkage.
 * `NSPhotoLibraryUsageDescription` → `NSPhotoLibraryAddUsageDescription`.
   The read key asked for the whole library; nothing here reads photos.
   **Recorded honestly:** a sweep of `app/`, `screens/`, `ui/` and
   `ios/*.swift` finds no photo-library API *at all* — no CameraRoll
   dependency, no `PHPhotoLibrary`, no `UIImageWriteToSavedPhotosAlbum` —
   and the receive QR is rendered on screen by `react-native-qrcode-svg`
-  and never saved. CI reports (advisory, not fatal) whether the binary can
-  reach the photo library; if it cannot, this key should be deleted too.
+  and never saved. `Photos.framework` *is* in the load commands (run
+  35737908538), but by the same rule as CoreLocation that is linkage, not
+  usage. CI reports, advisory and not fatal, whether any symbol that writes
+  to the library survives; if none does, this key should be deleted too.
+  Advisory rather than enforced on purpose: deleting a purpose string that
+  a pod turns out to reach dynamically is a crash, not a warning.
 * `NSCameraUsageDescription` and `NSFaceIDUsageDescription` — kept. Both
   features exist.
 
@@ -556,7 +571,13 @@ See the secrets table in 4.3. The job:
 1. refuses to run unless the four API-key secrets exist;
 2. refuses to run if *some* but not all of the certificate trio exists;
 3. picks `automatic` (API key, `-allowProvisioningUpdates`) or `manual`
-   (`.p12` + profile in a throwaway keychain) from what it found;
+   (`.p12` + profile in a throwaway keychain) from what it found. The
+   automatic path also forces `CODE_SIGN_IDENTITY="Apple Distribution"`,
+   because the project inherits upstream's
+   `CODE_SIGN_IDENTITY[sdk=iphoneos*] = "iPhone Developer"` and automatic
+   signing would otherwise hunt for a *development* certificate for a build
+   headed to the App Store. **The API key must be an Admin key on this path:**
+   an App Manager key can upload but cannot mint certificates;
 4. archives with the derived build number, reads the archive back and
    fails if the build number or the bundle id is not what it asked for;
 5. exports with method `app-store-connect`;
@@ -566,8 +587,20 @@ See the secrets table in 4.3. The job:
 8. deletes the keychain, the profile and both copies of the API key in an
    `if: always()` step.
 
-It has **never been run**, and cannot be until the secrets exist. The YAML
-is validated with `actionlint`.
+It has **never been run**, and cannot be until the secrets exist. What was
+checked instead, on 2026-09-22:
+
+* `actionlint` 1.7.7 over the whole workflow: clean.
+* `bash -n` over every `run:` block in the file: clean.
+* the refusal step's own shell, run against five combinations with **fake
+  placeholder values** (no real secret exists anywhere in that work): no
+  secrets → refuses; the four API-key secrets → `automatic`; four plus the
+  whole certificate trio → `manual`; four plus a certificate but no password
+  or profile → refuses; three of the four → refuses.
+
+What that does **not** prove is anything downstream of the refusal: no
+archive, no export and no upload has ever run, and none can until the account
+exists.
 
 ### 9.7 Still open, and not an agent's to close
 
@@ -581,3 +614,144 @@ is validated with `actionlint`.
   Send (`06-BUILD-REQUIREMENTS.md` item C5).
 * **Store screenshots at 6.9-inch size** from a synced wallet with real
   SWM amounts (item B8).
+
+---
+
+## 10. What App Review will look at (2026-09-22)
+
+Four content changes and one piece of evidence. Three of the four are in the
+**shared** JavaScript (`app/`, `screens/`, `ui/`), made on `swarm-ios` so CI
+could prove them, and **meant to be cherry-picked onto `swarm-mobile`** — see
+section 10.5.
+
+### 10.1 No "Coming soon" card
+
+`screens/MigrationStrategy/MigrationStrategy.tsx` shipped a third option card,
+greyed out, with a "Coming soon" badge: the private two-phase migration path
+(split notes, then send batches inside scheduled windows). Guideline 2.1 reads
+a placeholder feature as an incomplete app, so the card is not rendered —
+`SHOW_PRIVATE_MIGRATION_OPTION = false`.
+
+Nothing else is removed. The `'private'` option, the `MigrationSplitPlan`
+route, the screens behind it and the translations all stay. Flipping that one
+constant is the whole of putting the card back, the day the path works.
+
+### 10.2 The Nym mixnet is not offered on SwarmTestnet
+
+The "Enhanced Privacy" toggle in Settings, the Nym gate sheet in the migration
+flow, the Send toggle and the mixnet pill in the sync status bar were all
+visible, because `mixnetView` is non-null by default.
+
+**No mixnet send has ever been demonstrated against `lwd.swarm.green` on
+SwarmTestnet** — not by this agent, not by any build, on any device. Nobody
+has watched one work. A visible feature that fails is a 2.1 rejection, so the
+surfaces are gated off for this chain:
+
+* `app/walletBackend/transforms/mixnetAvailability.ts` answers whether a chain
+  offers the mixnet. SwarmTestnet is not in the set; `main`, `test` and
+  `regtest` are, which keeps the Storybook stories and the unit tests honest.
+* `LoadedApp` applies it once, where the context is assembled: `mixnetView`
+  becomes `null` and `nym` becomes `false`. Every consumer already renders
+  nothing when `mixnetView` is null, so one gate hides all of them. `nym` is
+  forced with it so a setting left `true` by an earlier build cannot route a
+  send through a transport whose switch is no longer visible.
+* `MigrationStrategy` needs its own check, because it presents the gate sheet
+  unconditionally: with no mixnet on offer, Start migrates straight away.
+
+**Nothing is deleted.** The transport, the coordinator, the transforms, the
+sheet and their tests are all still here and still tested;
+`__tests__/MigrationStrategy.nymGate.unit.tsx` now says which chain each test
+is on, and has a new case pinning the gate itself. One edit to the set in
+`mixnetAvailability.ts` turns it back on — **after** a mixnet send is proven
+end to end, not before. §4.2 of the privacy policy, which describes the
+mixnet, comes out while this is off.
+
+### 10.3 Legal links, and a risk notice that is shown once
+
+Settings → About now has a **Legal** section with four entries:
+
+| Entry | Where it goes |
+| --- | --- |
+| Privacy policy | `https://swarm.green/wallet/privacy` |
+| Terms of use | `https://swarm.green/wallet/terms` |
+| Risk notice | opens **inside the app** |
+| Open-source notices | `https://swarm.green/wallet/notices` |
+
+The three web links open in the system browser. **Those pages are not
+published yet**, which is expected and is recorded rather than hidden: the app
+side is finished so it can be reviewed, and the website agent publishes the
+four pages from the drafts in the vault (`docs/ios/legal/`). Guideline
+5.1.1(i) needs the privacy policy reachable from inside the app; the MIT
+licence this fork inherits needs the notices.
+
+The risk notice opens inside the app on purpose. It is the text a person
+acknowledged before their wallet existed, and a wallet that can only show it
+again when the network is up is a wallet that asked someone to agree to
+something they can no longer read.
+
+**"Before you start"** (`ui/widgets/RiskNotice.tsx`) is shown once per
+installation, with a single **I understand** button, before any wallet comes
+into existence. It is wired into `LoadingApp.ensureRiskNoticeAcknowledged`,
+which `createNewWallet` and `getwalletToRestore` both await — and
+`createNewWallet` is also the **basic-mode first launch, which creates a
+wallet with no user action at all**. That is exactly the case the notice
+exists for: without gating it there, the person it is written for would never
+see it.
+
+The text lives in `app/legal/riskNotice.ts`, word for word from
+`docs/ios/legal/RISK-NOTICE.md`, which is also the source of the published
+page — one source, two renderings. It is deliberately **not** translated: a
+translated liability disclaimer is a different disclaimer, and nobody here is
+qualified to write one in five languages. The link labels around it are UI and
+are translated, in all five catalogues.
+
+The gate does **not** cover the server check that runs before it, so a fresh
+install still reaches `lwd.swarm.green` by itself. What is gated is the
+wallet, not the network.
+
+### 10.4 Fresh-install evidence (item C9)
+
+The simulator job now answers "what does a fresh install do, with nobody
+touching it?" from the artifact and from the wire, not from a screenshot
+somebody read:
+
+1. **The default server.** After the run, the app's data container is opened
+   and `Documents/settings.json` is read. The job **fails** unless
+   `server.uri` is `https://lwd.swarm.green:443` and `server.chainName` is
+   `swarm-testnet`. Nothing was typed and nothing was chosen, so this is the
+   reviewer's first minute, asserted.
+2. **The connection.** `tcpdump` runs on the runner from before the app
+   launches. `lwd.swarm.green` is resolved first, and the capture is then read
+   back for packets to that address on 443 and for DNS naming it. Best effort
+   and reported either way — the wallet talks gRPC over raw sockets, so
+   nothing useful lands in the simulator's own log and the wire is the only
+   place to look.
+3. **The screens.** Six screenshots at 30-second intervals after the privacy
+   shutter is passed, so the risk notice and whatever follows it are
+   photographed.
+4. **The walk.** Maestro is installed and asked to tap **I understand** and
+   wait for the home screen, then screenshot it. This is **best effort and
+   never fails the job**: a headless simulator has no other way to tap a
+   button, and if Maestro cannot run, the run says so and the assertions above
+   still have to pass.
+
+Artifacts: `swarm-ios-simulator-screenshot` (all screenshots and the app log)
+and `swarm-ios-freshinstall-evidence` (the settings file, the capture and its
+summary).
+
+**One finding from this work, recorded because it contradicts a draft.** The
+app log of run 35682338577 shows a connection to
+`https://clients3.google.com/generate_204` about two seconds after launch,
+before any user action. That is `@react-native-community/netinfo`'s default
+reachability probe. The privacy policy draft says a fresh install contacts
+only `lwd.swarm.green`. **It is not fixed here** — the probe is shared
+JavaScript and several screens branch on connectivity — but it must be fixed
+or the policy must say so.
+
+### 10.5 For the Android side
+
+Sections 10.1, 10.2 and 10.3 are shared JavaScript and belong on
+`swarm-mobile` too. They are one commit on `swarm-ios` so they can be
+cherry-picked whole. The iOS-only parts of the same commit are
+`.github/workflows/swarm-ios.yml` and this file; everything under `app/`,
+`screens/`, `ui/` and `__tests__/` is shared and platform-neutral.

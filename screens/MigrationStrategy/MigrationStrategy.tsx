@@ -21,6 +21,7 @@ import { AppTheme } from '@app/theme';
 import { ContextAppLoaded } from '@app/context';
 import { RouteEnum } from '@app/AppState';
 import Utils from '@app/utils';
+import { mixnetAvailableOnChain } from '@app/walletBackend/transforms/mixnetAvailability';
 
 type MigrationStrategyProps = NativeStackScreenProps<
   AppDrawerParamList,
@@ -36,6 +37,16 @@ type MigrationStrategyProps = NativeStackScreenProps<
 // send batches inside scheduled windows). The private path ships later and
 // its card is disabled.
 type StrategyOption = 'none' | 'now' | 'private';
+
+// The private path is written but not finished: its card shipped greyed out
+// with a "Coming soon" badge, and App Review guideline 2.1 reads a
+// placeholder feature as an incomplete app. So the card is not rendered.
+// Nothing else is removed — the option, the route, the screens behind it and
+// the translations all stay — and flipping this to true is the whole of
+// putting it back, the day the path works.
+// Typed `boolean` rather than inferred `false` so the JSX below is an
+// ordinary condition and not a constant expression a linter should object to.
+const SHOW_PRIVATE_MIGRATION_OPTION: boolean = false;
 
 // Renders a translated string, bolding `**…**` spans in `highlight` and
 // `##…##` spans in `accent` (falling back to `highlight`), so a single
@@ -200,8 +211,20 @@ const MigrationStrategy: React.FunctionComponent<MigrationStrategyProps> = ({
   nymSheetOpen,
 }) => {
   const context = useContext(ContextAppLoaded);
-  const { translate, totalBalance, info, nym, setNymOption, mixnetView } =
-    context;
+  const {
+    translate,
+    totalBalance,
+    info,
+    nym,
+    setNymOption,
+    mixnetView,
+    server,
+  } = context;
+  // The migration flow is the one place that presents the Nym gate sheet
+  // unconditionally, so gating `mixnetView` in the context is not enough
+  // here: without this the sheet would still open, on a chain where the
+  // mixnet is not offered, and ask to enable something invisible.
+  const mixnetOffered = mixnetAvailableOnChain(server.chainName);
   const { colors } = useTheme();
   const [selected, setSelected] = useState<StrategyOption>('none');
 
@@ -328,16 +351,21 @@ const MigrationStrategy: React.FunctionComponent<MigrationStrategyProps> = ({
             colors={colors}
             accent={colors.fgWarning}
           />
-          <View style={{ height: 14 }} />
-          <OptionCard
-            title={translate('migrationstrategy.private-label') as string}
-            body={translate('migrationstrategy.private-body') as string}
-            selected={selected === 'private'}
-            onPress={() => {}}
-            colors={colors}
-            disabled={true}
-            badge={translate('migrationstrategy.coming-soon') as string}
-          />
+          {/* Hidden in this build: see SHOW_PRIVATE_MIGRATION_OPTION. */}
+          {SHOW_PRIVATE_MIGRATION_OPTION && (
+            <>
+              <View style={{ height: 14 }} />
+              <OptionCard
+                title={translate('migrationstrategy.private-label') as string}
+                body={translate('migrationstrategy.private-body') as string}
+                selected={selected === 'private'}
+                onPress={() => {}}
+                colors={colors}
+                disabled={true}
+                badge={translate('migrationstrategy.coming-soon') as string}
+              />
+            </>
+          )}
         </ScrollView>
 
         <View
@@ -365,6 +393,12 @@ const MigrationStrategy: React.FunctionComponent<MigrationStrategyProps> = ({
                 closeMigration();
                 return;
               }
+              if (!mixnetOffered) {
+                // No mixnet on this chain: migrate straight away rather than
+                // open a sheet offering a transport that is not on offer.
+                startMigration();
+                return;
+              }
               if (nym) {
                 if (nymGate.kind === 'ready') {
                   startMigration();
@@ -379,20 +413,22 @@ const MigrationStrategy: React.FunctionComponent<MigrationStrategyProps> = ({
         </View>
       </View>
 
-      <NymGateSheet
-        ref={nymSheetRef}
-        gate={nymGate}
-        onDismiss={() => setEnabling(false)}
-        onContinue={() => {
-          setEnabling(false);
-          nymSheetRef.current?.dismiss();
-          startMigration();
-        }}
-        onEnable={() => {
-          setEnabling(true);
-          setNymOption(true);
-        }}
-      />
+      {mixnetOffered && (
+        <NymGateSheet
+          ref={nymSheetRef}
+          gate={nymGate}
+          onDismiss={() => setEnabling(false)}
+          onContinue={() => {
+            setEnabling(false);
+            nymSheetRef.current?.dismiss();
+            startMigration();
+          }}
+          onEnable={() => {
+            setEnabling(true);
+            setNymOption(true);
+          }}
+        />
+      )}
     </>
   );
 };

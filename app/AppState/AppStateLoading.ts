@@ -30,4 +30,8 @@ export default interface AppStateLoading {
   donationAlert: boolean;
   firstLaunchingMessage: LaunchingModeEnum;
   hasRecoveryWalletInfoSaved: boolean;
+  // The one-time risk notice is up and the boot sequence is held
+  // behind it. Nothing may create or restore a wallet while it is
+  // true; see app/legal/riskNotice.ts.
+  riskNoticeGateOpen: boolean;
 }

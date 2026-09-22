@@ -1,10 +1,13 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useCallback, useContext, useRef, useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 
 import { useTheme } from '@app/theme';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faChevronLeft } from '@fortawesome/free-solid-svg-icons';
+import {
+  faChevronLeft,
+  faArrowUpRightFromSquare,
+} from '@fortawesome/free-solid-svg-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 
 import FadeText from '@ui/primitives/FadeText';
@@ -18,6 +21,13 @@ import { RouteEnum, ScreenEnum } from '@app/AppState';
 import { getZingoName, getZingoVersion } from '@app/utils/ZingoAppData';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFullSheetSnapPoints } from '@app/hooks/useFullSheetSnapPoints';
+import RiskNotice from '@ui/widgets/RiskNotice';
+import {
+  LEGAL_LINKS,
+  LegalLinkIdEnum,
+  openLegalLink,
+  type LegalLink,
+} from '@app/legal';
 
 type AboutProps = NativeStackScreenProps<AppDrawerParamList, RouteEnum.About>;
 
@@ -29,7 +39,21 @@ const About: React.FunctionComponent<AboutProps> = ({ navigation }) => {
 
   const [containerH, setContainerH] = useState<number>(0);
   const [headerH, setHeaderH] = useState<number>(0);
+  const [riskNoticeOpen, setRiskNoticeOpen] = useState<boolean>(false);
   const aboutSheetRef = useRef<BottomSheet>(null);
+
+  // The risk notice is the one legal text that must be readable with no
+  // network: it is the text the person acknowledged before their wallet
+  // existed, and a wallet that cannot show it again is a wallet that asked
+  // someone to agree to something they can no longer read. The other three
+  // open the published pages in the system browser.
+  const openLegal = useCallback((link: LegalLink) => {
+    if (link.id === LegalLinkIdEnum.risks) {
+      setRiskNoticeOpen(true);
+      return;
+    }
+    openLegalLink(link.url);
+  }, []);
 
   const arrayTxtObject = translate('about.copyright');
   let arrayTxt: string[] = [];
@@ -127,8 +151,60 @@ const About: React.FunctionComponent<AboutProps> = ({ navigation }) => {
               </View>
             ))}
           </View>
+
+          {/* App Review guideline 5.1.1(i): the privacy policy has to be
+              reachable from inside the app, not only from a store listing.
+              The other three are here because the MIT licence this fork
+              inherits requires the notices, and because a person who
+              acknowledged the risk notice must be able to read it again. */}
+          <View
+            testID="about.legal"
+            style={{
+              marginTop: 10,
+              borderTopWidth: 1,
+              borderTopColor: colors.borderMuted,
+              paddingTop: 16,
+            }}
+          >
+            <BoldText style={{ fontSize: 15, marginBottom: 8 }}>
+              {translate('about.legal') as string}
+            </BoldText>
+            {LEGAL_LINKS.map((link: LegalLink) => (
+              <TouchableOpacity
+                key={link.id}
+                testID={'about.legal-' + link.id}
+                accessibilityRole="link"
+                accessibilityLabel={translate(link.labelKey) as string}
+                onPress={() => openLegal(link)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  minHeight: 48,
+                }}
+              >
+                <Text style={{ color: colors.fgAccent, fontSize: 15 }}>
+                  {translate(link.labelKey) as string}
+                </Text>
+                {link.id !== LegalLinkIdEnum.risks && (
+                  <FontAwesomeIcon
+                    icon={faArrowUpRightFromSquare}
+                    size={13}
+                    color={colors.fgMuted}
+                  />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
         </BottomSheetScrollView>
       </AppSheet>
+      {riskNoticeOpen && (
+        <RiskNotice
+          mode="read"
+          closeLabel={translate('close') as string}
+          onDismiss={() => setRiskNoticeOpen(false)}
+        />
+      )}
     </View>
   );
 };

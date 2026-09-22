@@ -12,7 +12,7 @@ import {
   defaultAppContextLoaded,
   ContextAppLoadedProvider,
 } from '@app/context';
-import { RouteEnum } from '@app/AppState';
+import { ChainNameEnum, RouteEnum, ServerType } from '@app/AppState';
 import { RPCMixnetIndicatorEnum } from '@app/walletBackend/enums/RPCMixnetIndicatorEnum';
 import {
   MixnetView,
@@ -32,7 +32,16 @@ import mockNavigation from '../__mocks__/dataMocks/mockNavigation';
 // picked, not on catalog prose.
 const keyTranslate = (key: string) => key;
 
-function renderScreen(mixnetView: MixnetView) {
+// The sheet only exists on a chain that offers the mixnet, so every test
+// about the sheet says which chain it is on. SwarmTestnet is deliberately
+// not that chain — see mixnetAvailability.ts, and the last test below.
+const serverOn = (chainName: ChainNameEnum): ServerType =>
+  ({ uri: 'https://example.invalid:443', chainName }) as ServerType;
+
+function renderScreen(
+  mixnetView: MixnetView,
+  chainName: ChainNameEnum = ChainNameEnum.mainChainName,
+) {
   const navigate = jest.fn();
   const props: any = {
     navigation: { ...mockNavigation, navigate },
@@ -49,6 +58,7 @@ function renderScreen(mixnetView: MixnetView) {
     totalBalance: mockTotalBalance,
     nym: true,
     mixnetView,
+    server: serverOn(chainName),
   };
   const utils = render(
     <ContextAppLoadedProvider value={context}>
@@ -143,6 +153,23 @@ describe('MigrationStrategy nym gate sheet', () => {
 
     expect(getByText('mixnet.status.died')).toBeTruthy();
     expect(getByText('migrationstrategy.nym-gate-enable')).toBeTruthy();
+  });
+
+  // The gate: on SwarmTestnet no mixnet send has ever been demonstrated, so
+  // the sheet must not appear and Start must not wait for a transport that
+  // is not on offer — it migrates straight away.
+  test('is not offered at all on SwarmTestnet, and Start goes straight on', () => {
+    const { queryByText, getByText, getByTestId, navigate } = renderScreen(
+      mixnetLost,
+      ChainNameEnum.swarmChainName,
+    );
+
+    expect(queryByText('migrationstrategy.nym-gate-enable')).toBeNull();
+    expect(queryByText('mixnet.status.died')).toBeNull();
+
+    fireEvent.press(getByText('migrationstrategy.now-label'));
+    fireEvent.press(getByTestId('migrationstrategy.start'));
+    expect(navigate).toHaveBeenCalledWith(RouteEnum.MigrationTransactions);
   });
 
   test('the enable wait holds through a reconnect blip and continues on ready', () => {

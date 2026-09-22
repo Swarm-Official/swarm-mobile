@@ -772,14 +772,24 @@ Artifacts: `swarm-ios-simulator-screenshot` (all screenshots and the app log)
 and `swarm-ios-freshinstall-evidence` (the settings file, the capture and its
 summary).
 
-**One finding from this work, recorded because it contradicts a draft.** The
-app log of run 35682338577 shows a connection to
+**One finding from this work, and it is now fixed.** The app log of run
+35682338577 showed a connection to
 `https://clients3.google.com/generate_204` about two seconds after launch,
-before any user action. That is `@react-native-community/netinfo`'s default
-reachability probe. The privacy policy draft says a fresh install contacts
-only `lwd.swarm.green`. **It is not fixed here** — the probe is shared
-JavaScript and several screens branch on connectivity — but it must be fixed
-or the policy must say so.
+before any user action — `@react-native-community/netinfo`'s default
+reachability probe, which on iOS runs on every launch and then every 60 s,
+because the iOS native side reports no `isInternetReachable` of its own. The
+privacy policy draft says a fresh install contacts only `lwd.swarm.green`.
+
+The shared branch fixed it (`25747ec35`, "Switch off NetInfo's third-party
+reachability probe"), and that commit is **merged into `swarm-ios`** so this
+build carries it: `app/services/netInfoPolicy.ts` sets
+`reachabilityShouldRun: () => false` and `index.js` applies it before
+anything subscribes. The probe is switched off rather than pointed at
+`lwd.swarm.green`, which would only have turned a Google heartbeat into a
+SWARM one. Nothing reads `isInternetReachable`; every screen branches on
+`isConnected`, `type` and `isConnectionExpensive`, which come from the OS.
+The packet capture in this job is what will show whether anything else is
+left.
 
 ### 10.5 For the Android side
 

@@ -4,6 +4,7 @@
 
 import { AppRegistry } from 'react-native';
 import App from '@app/App';
+import { applyNetInfoPolicy } from '@app/services/netInfoPolicy';
 import { name as appName } from './app.json';
 
 // STORYBOOK_ENABLED is inlined by Metro (withStorybook) at bundle time.
@@ -28,5 +29,10 @@ if (!__DEV__) {
   console.debug = () => {};
   console.info = () => {};
 }
+
+// The wallet contacts no host but the wallet server: switch off NetInfo's
+// third-party reachability probe before anything subscribes to NetInfo
+// (app/services/netInfoPolicy.ts has the reasoning and the evidence).
+applyNetInfoPolicy();
 
 AppRegistry.registerComponent(appName, () => Root);

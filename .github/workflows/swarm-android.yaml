@@ -78,6 +78,11 @@ jobs:
       - name: Fonts are shipped and registered
         run: node scripts/check_fonts_registered.mjs
 
+      # Play refuses an over-length listing field at upload, which is after
+      # the ~40 minutes of build. The limits cost two seconds here.
+      - name: Play listing fits and carries no upstream wording
+        run: node scripts/check_play_listing.mjs
+
   rust:
     name: Rust ${{ matrix.abi }}
     runs-on: ubuntu-latest

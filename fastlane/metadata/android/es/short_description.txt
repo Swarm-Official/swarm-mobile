@@ -1,1 +1,1 @@
-Zingo! es un monedero privado y mensajero para Zcash.
+Billetera testnet de SWARM: envía y recibe monedas SWM de prueba, sin valor.

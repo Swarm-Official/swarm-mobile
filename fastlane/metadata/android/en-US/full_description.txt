@@ -1,12 +1,30 @@
-Zingo! Wallet lets you use Real Secure Money (RSM), based on Zcash, for unblockable, uncensorable, and undetectable transactions.
+SWARM Wallet is the phone wallet for SwarmTestnet, the test network of SWARM: private, proof-of-work money run by its community.
 
-Thanks to Zero-Knowledge Cryptography, you have complete control and privacy over your money and messages.
+THIS IS A TEST NETWORK. SWM test coins have no monetary value, cannot be bought or sold, and may disappear when the test network is reset. Nothing in this app is an offer, an investment or a way to earn money.
 
-What can you do with Zingo!?
-* Send ZEC and messages quickly, privately, and securely.
-* Add addresses to your address book and save them as contacts.
-* Shielded your transparent funds and ensure secure spending for added privacy.
-* Basic and advanced use for all users.
-* Automatic server management that keeps your wallet synchronized.
+What you can do
+• Create a wallet on your phone. Your recovery words stay with you; nobody else has them.
+• Receive SWM at a shielded address and show it as a QR code.
+• Send SWM to another SwarmTestnet address, with an optional encrypted memo.
+• See your balance and your transaction history.
+• Lock the app with your phone's screen lock or fingerprint.
 
-Download Zingo! to experience financial freedom with RSM.
+What this app does not do
+• It does not mine. Phones do not mine SWARM; mining runs on a computer with the separate SWARM Node program.
+• It does not hold your coins for you. It is self-custodial: your keys are generated and kept on your phone, and your recovery words are the only backup.
+• It has no accounts, no sign-up, no exchange, no swap, no fiat prices, no ads and no referral or reward programme.
+
+Privacy
+The app has no analytics and no tracking. It talks to one server to sync blocks and send transactions: the SWARM wallet server (lwd.swarm.green) or a server you choose yourself. The camera is used only to read QR codes on your phone. Fingerprint or screen-lock unlock is handled by Android and never leaves the device. Details: https://swarm.green/wallet/privacy/
+
+Open source
+SWARM Wallet is a fork of Zingo, an MIT-licensed wallet, adapted for SwarmTestnet. Source code: https://github.com/brs-holding/swarm-mobile
+
+Please note
+• Write your recovery words on paper. If you lose them, nobody can restore your wallet.
+• The test network may be reset at any time; test coins do not carry over.
+• This is experimental software provided as-is, without warranty. Terms: https://swarm.green/wallet/terms/
+
+SWARM is not affiliated with or endorsed by the Electric Coin Company, the Zcash Foundation, Zingo Labs, Foursquare's Swarm app or the Ethereum Swarm project.
+
+Official channels: https://swarm.green, https://github.com/brs-holding, @swarm_coin on X, swarmofficial@atomicmail.io. Nobody will ever ask you for your recovery words.

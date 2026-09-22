@@ -481,217 +481,14 @@ jobs:
           test -n "$APP"
           echo "app bundle: $APP"
           BID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")
-          NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist" 2>/dev/null || echo '(none)')
-          SHORT=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")
-          BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")
           echo "bundle identifier: $BID"
-          echo "display name:      $NAME"
-          echo "version (build):   $SHORT ($BUILD)"
 
-          # The build number is the one thing App Store Connect checks
-          # before it looks at the app at all, so prove it landed in the
-          # bundle rather than trusting the command line.
-          if [ "$SHORT" != "${{ steps.version.outputs.marketing }}" ]; then
-            echo "::error::CFBundleShortVersionString is '$SHORT', expected '${{ steps.version.outputs.marketing }}'"
-            exit 1
-          fi
-          if [ "$BUILD" != "${{ steps.version.outputs.build }}" ]; then
-            echo "::error::CFBundleVersion is '$BUILD', expected '${{ steps.version.outputs.build }}' — the run-number build number did not reach the bundle"
-            exit 1
-          fi
-          if [ "$BUILD" -le 1 ]; then
-            echo "::error::CFBundleVersion $BUILD is not greater than 1"
-            exit 1
-          fi
-
-          # The passcode sheet iOS puts up for LocalAuthentication is
-          # titled with CFBundleDisplayName. Asserting it here is what
-          # makes the sheet in the screenshot verifiable rather than only
-          # reviewable: if this passes, the sheet cannot say "Zingo".
-          if [ "$NAME" != "SWARM Wallet" ]; then
-            echo "::error::CFBundleDisplayName is '$NAME', expected 'SWARM Wallet' — the iOS authentication sheet would show the wrong name"
-            exit 1
-          fi
-          if [ "$BID" != "green.swarm.wallet" ]; then
-            echo "::error::CFBundleIdentifier is '$BID', expected 'green.swarm.wallet'"
-            exit 1
-          fi
-
-          # C10: the project references the ROOT ios/PrivacyInfo.xcprivacy,
-          # not the one in ios/Zingo/. Apple reads the manifest that is
-          # actually bundled, so read THAT one and say which source file it
-          # is, byte for byte.
-          echo "--- privacy manifest shipped in the .app ---"
-          MANIFEST="$APP/PrivacyInfo.xcprivacy"
-          if [ ! -f "$MANIFEST" ]; then
-            echo "::error::no PrivacyInfo.xcprivacy in the built app — Apple rejects uploads without one"
-            exit 1
-          fi
-          SHIPPED_SHA=$(shasum -a 256 "$MANIFEST" | cut -d' ' -f1)
-          ROOT_SHA=$(shasum -a 256 ios/PrivacyInfo.xcprivacy | cut -d' ' -f1)
-          ZINGO_SHA=$(shasum -a 256 ios/Zingo/PrivacyInfo.xcprivacy | cut -d' ' -f1)
-          echo "shipped sha256:            $SHIPPED_SHA"
-          echo "ios/PrivacyInfo.xcprivacy: $ROOT_SHA"
-          echo "ios/Zingo/PrivacyInfo…:    $ZINGO_SHA"
-          if [ "$SHIPPED_SHA" = "$ROOT_SHA" ]; then
-            WHICH='ios/PrivacyInfo.xcprivacy (the root file)'
-          elif [ "$SHIPPED_SHA" = "$ZINGO_SHA" ]; then
-            WHICH='ios/Zingo/PrivacyInfo.xcprivacy'
-          else
-            WHICH='NEITHER source file — something rewrote it'
-          fi
-          echo "the app ships: $WHICH"
-          /usr/libexec/PlistBuddy -c 'Print' "$MANIFEST"
-          manifest_missing=0
-          for k in NSPrivacyTracking NSPrivacyCollectedDataTypes NSPrivacyAccessedAPITypes; do
-            if /usr/libexec/PlistBuddy -c "Print :$k" "$MANIFEST" >/dev/null 2>&1; then
-              echo "ok      $k present"
-            else
-              echo "MISSING $k"
-              manifest_missing=$((manifest_missing + 1))
-            fi
-          done
-          if [ "$manifest_missing" -gt 0 ]; then
-            echo "::error::the BUNDLED privacy manifest is missing $manifest_missing required key(s); Apple reads this file, not the one you meant"
-            exit 1
-          fi
-          TRACKING=$(/usr/libexec/PlistBuddy -c 'Print :NSPrivacyTracking' "$MANIFEST")
-          if [ "$TRACKING" != "false" ]; then
-            echo "::error::NSPrivacyTracking is '$TRACKING'; this app tracks nobody and must say false"
-            exit 1
-          fi
-          echo "ok      NSPrivacyTracking = false"
-
-          # B1: no push entitlement, no remote-notification mode. An
-          # entitlement the App ID does not carry is refused by the
-          # provisioning profile, which would fail the first upload.
-          echo "--- background modes and push entitlement ---"
-          MODES=$(/usr/libexec/PlistBuddy -c 'Print :UIBackgroundModes' "$APP/Info.plist" 2>/dev/null || echo '(none)')
-          echo "$MODES"
-          if printf '%s' "$MODES" | grep -q 'remote-notification'; then
-            echo "::error::UIBackgroundModes still declares remote-notification, but nothing in this app registers for remote notifications"
-            exit 1
-          fi
-          echo "ok      no remote-notification background mode"
-          if codesign -d --entitlements :- "$APP" 2>/dev/null | grep -q 'aps-environment'; then
-            echo "::error::the built app still carries the aps-environment entitlement"
-            exit 1
-          fi
-          echo "ok      no aps-environment entitlement in the built app"
-
-          # A3/A4: iPhone-only, and no stray macOS key.
-          FAMILY=$({ /usr/libexec/PlistBuddy -c 'Print :UIDeviceFamily' "$APP/Info.plist" 2>/dev/null || echo '?'; } | tr -d ' \n')
-          echo "UIDeviceFamily: $FAMILY"
-          if printf '%s' "$FAMILY" | grep -q '2'; then
-            echo "::error::UIDeviceFamily still includes iPad (2); TARGETED_DEVICE_FAMILY must be 1"
-            exit 1
-          fi
-          if /usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP/Info.plist" >/dev/null 2>&1; then
-            echo "::error::LSMinimumSystemVersion (a macOS key) is still in the iOS Info.plist"
-            exit 1
-          fi
-          echo "ok      iPhone-only, no LSMinimumSystemVersion"
-
-          # B4: the location purpose string is gone, so nothing in the app
-          # may still be able to ASK for a position.
-          #
-          # The test is on symbols, not on the load commands, and run
-          # 35737908538 is why. CoreLocation is in this binary's load
-          # commands no matter what: React Native itself compiles
-          # RCTConvert+CoreLocation into React-Core, and every React Native
-          # app therefore links the framework. What it does NOT contain is
-          # a CLLocationManager, and that is the difference Apple cares
-          # about — a purpose string is required when an app calls the API,
-          # not when the linker records the framework.
-          #
-          # $VCEnableLocation = false in the Podfile is still doing its job:
-          # the pod install log of the same run reads
-          # "[VisionCamera] $VCEnableLocation is set to false!", which is
-          # what keeps VisionCamera's own CLLocationManager out of the
-          # build. This assertion is what proves the result.
-          echo "--- frameworks linked by the binary ---"
-          EXE="$APP/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")"
-          # Captured once and matched in the shell: piping otool into
-          # `grep -q` kills otool with SIGPIPE on the first match, and
-          # under pipefail that reads as "not found" when it was found.
-          LINKED=$(otool -L "$EXE" || true)
-          printf '%s\n' "$LINKED" | sed 's/^/    /'
-          if /usr/libexec/PlistBuddy -c 'Print :NSLocationWhenInUseUsageDescription' "$APP/Info.plist" >/dev/null 2>&1; then
-            echo "::error::NSLocationWhenInUseUsageDescription is back in Info.plist"
-            exit 1
-          fi
-          SYMS=$(nm -u "$EXE" 2>/dev/null || true)
-          if printf '%s' "$LINKED" | grep -qi 'CoreLocation'; then
-            echo "note    CoreLocation is in the load commands — React Native's own RCTConvert+CoreLocation does that in every RN app"
-          else
-            echo "ok      CoreLocation is not even linked"
-          fi
-          if printf '%s' "$SYMS" | grep -qE 'CLLocationManager|requestWhenInUseAuthorization|requestAlwaysAuthorization|startUpdatingLocation'; then
-            printf '%s' "$SYMS" | grep -E 'CLLocation|Authorization' | sed 's/^/    /'
-            echo "::error::the binary can ask for the device's location (a CLLocationManager symbol is present), but Info.plist declares no location purpose string. Either the feature is unintended — check \$VCEnableLocation in ios/Podfile — or the string has to come back and the privacy policy with it"
-            exit 1
-          fi
-          echo "ok      no CLLocationManager anywhere: nothing in this app can ask for a position"
-
-          # Advisory, and the same distinction as above: Photos.framework is
-          # in the load commands (run 35737908538), but linkage is not usage.
-          # A sweep of app/, screens/, ui/ and ios/*.swift finds no photo API
-          # at all and there is no CameraRoll dependency, so the question is
-          # whether any SYMBOL that writes to the library survives. Reported
-          # rather than enforced, because deleting a purpose string that a
-          # pod turns out to need is a crash, not a warning.
-          echo "--- photo-library reach (advisory) ---"
-          if printf '%s' "$LINKED" | grep -qi 'Photos.framework'; then
-            echo "note    Photos.framework is in the load commands"
-          else
-            echo "note    Photos.framework is not linked at all"
-          fi
-          if printf '%s' "$SYMS" | grep -qE 'PHPhotoLibrary|PHAssetCreationRequest|UIImageWriteToSavedPhotosAlbum'; then
-            echo "FOUND   a symbol that writes to the photo library — NSPhotoLibraryAddUsageDescription is required, keep it"
-          else
-            echo "none    no photo-library symbol: the add-only purpose string describes a feature that does not exist, and should be deleted once someone confirms no pod reaches it dynamically"
-          fi
-
-          echo "--- URL schemes claimed by this build (expect none) ---"
-          /usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes' "$APP/Info.plist" \
-            2>/dev/null || echo "(no CFBundleURLTypes — the zcash: claim is gone)"
-          echo "--- app icons compiled into the bundle ---"
-          ls "$APP" | grep -i '^AppIcon' || echo "(none)"
-
-          # The storyboard launch screen shows for a fraction of a second
-          # before React Native mounts, so a screenshot cannot reliably
-          # catch it. Assert it is in the bundle instead — that is
-          # deterministic where a timed screenshot is a race.
-          echo "--- launch screen compiled into the bundle ---"
-          test -e "$APP/LaunchScreen.storyboardc" \
-            || { echo "::error::LaunchScreen.storyboardc missing from the app bundle"; exit 1; }
-          echo "ok  LaunchScreen.storyboardc present"
-          LSN=$(/usr/libexec/PlistBuddy -c 'Print :UILaunchStoryboardName' "$APP/Info.plist" 2>/dev/null || echo '(unset)')
-          if [ "$LSN" != "LaunchScreen" ]; then
-            echo "::error::UILaunchStoryboardName is '$LSN', expected 'LaunchScreen'"
-            exit 1
-          fi
-          echo "ok  UILaunchStoryboardName = $LSN"
-
-          # Every face named in UIAppFonts must actually be in the bundle.
-          # A missing one is silent at runtime — iOS just falls back to the
-          # system face — so it has to be caught here or not at all.
-          echo "--- bundled typefaces ---"
-          missing=0
-          for f in $(/usr/libexec/PlistBuddy -c 'Print :UIAppFonts' "$APP/Info.plist" \
-                     | sed -n 's/^ *\(fonts\/.*\.ttf\) *$/\1/p'); do
-            if [ -f "$APP/$f" ]; then
-              echo "ok      $f"
-            else
-              echo "MISSING $f"
-              missing=$((missing + 1))
-            fi
-          done
-          if [ "$missing" -gt 0 ]; then
-            echo "::error::$missing font(s) declared in UIAppFonts are not in the app bundle; the SWARM typefaces would silently fall back to the system face"
-            exit 1
-          fi
-
+          # Everything this step used to assert about the bundle now lives in
+          # "Assert the shipped bundle", which runs after the evidence has
+          # been gathered and uploaded. Run 35741774745 is the reason: one
+          # failed assertion here took the screenshots, the container dump
+          # and the packet capture down with it, and the run reported a
+          # verdict with nothing to show for it.
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl launch --terminate-running-process "$UDID" "$BID"
 
@@ -820,6 +617,7 @@ jobs:
       # the app actually go there?
       - name: Fresh install — prove the default server and the connection
         id: freshinstall
+        if: always()
         run: |
           set -euo pipefail
           UDID="${{ steps.sim.outputs.udid }}"
@@ -874,6 +672,7 @@ jobs:
 
       - name: Read the packet capture back
         id: wire
+        if: always()
         continue-on-error: true
         run: |
           set -uo pipefail
@@ -919,7 +718,257 @@ jobs:
             echo "proved=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # The verdict on what would be uploaded to Apple, read from the built
+      # .app rather than from the sources it was meant to come from. It runs
+      # LAST, and always, so that a "no" arrives with the screenshots, the
+      # container dump and the packet capture already gathered — run
+      # 35741774745 failed here first and reported a verdict with nothing to
+      # show for it.
+      - name: Assert the shipped bundle
+        if: always()
+        run: |
+          set -euo pipefail
+          APP=$(find ios/build/DerivedData/Build/Products -maxdepth 2 -name '*.app' -type d | sed -n '1p')
+          if [ -z "$APP" ]; then
+            echo "::error::no built .app to assert on"
+            exit 1
+          fi
+          PLIST="$APP/Info.plist"
+          BID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$PLIST")
+          NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$PLIST" 2>/dev/null || echo '(none)')
+          SHORT=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")
+          BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PLIST")
+          echo "app bundle:        $APP"
+          echo "bundle identifier: $BID"
+          echo "display name:      $NAME"
+          echo "version (build):   $SHORT ($BUILD)"
+
+          # The build number is the one thing App Store Connect checks before
+          # it looks at the app at all, so prove it landed in the bundle
+          # rather than trusting the command line.
+          if [ "$SHORT" != "${{ steps.version.outputs.marketing }}" ]; then
+            echo "::error::CFBundleShortVersionString is '$SHORT', expected '${{ steps.version.outputs.marketing }}'"
+            exit 1
+          fi
+          if [ "$BUILD" != "${{ steps.version.outputs.build }}" ]; then
+            echo "::error::CFBundleVersion is '$BUILD', expected '${{ steps.version.outputs.build }}' — the run-number build number did not reach the bundle"
+            exit 1
+          fi
+          if [ "$BUILD" -le 1 ]; then
+            echo "::error::CFBundleVersion $BUILD is not greater than 1"
+            exit 1
+          fi
+          echo "ok      version and build number reached the bundle"
+
+          # The passcode sheet iOS puts up for LocalAuthentication is titled
+          # with CFBundleDisplayName. Asserting it is what makes the sheet in
+          # the screenshot verifiable rather than only reviewable.
+          if [ "$NAME" != "SWARM Wallet" ]; then
+            echo "::error::CFBundleDisplayName is '$NAME', expected 'SWARM Wallet' — the iOS authentication sheet would show the wrong name"
+            exit 1
+          fi
+          if [ "$BID" != "green.swarm.wallet" ]; then
+            echo "::error::CFBundleIdentifier is '$BID', expected 'green.swarm.wallet'"
+            exit 1
+          fi
+          echo "ok      SWARM Wallet / green.swarm.wallet"
+
+          # C10: the project references the ROOT ios/PrivacyInfo.xcprivacy,
+          # not the one in ios/Zingo/. Apple reads the manifest that is
+          # actually bundled, so read THAT one and say which source file it
+          # is, byte for byte.
+          echo "--- privacy manifest shipped in the .app ---"
+          MANIFEST="$APP/PrivacyInfo.xcprivacy"
+          if [ ! -f "$MANIFEST" ]; then
+            echo "::error::no PrivacyInfo.xcprivacy in the built app — Apple rejects uploads without one"
+            exit 1
+          fi
+          SHIPPED_SHA=$(shasum -a 256 "$MANIFEST" | cut -d' ' -f1)
+          ROOT_SHA=$(shasum -a 256 ios/PrivacyInfo.xcprivacy | cut -d' ' -f1)
+          ZINGO_SHA=$(shasum -a 256 ios/Zingo/PrivacyInfo.xcprivacy | cut -d' ' -f1)
+          echo "shipped sha256:            $SHIPPED_SHA"
+          echo "ios/PrivacyInfo.xcprivacy: $ROOT_SHA"
+          echo "ios/Zingo/PrivacyInfo…:    $ZINGO_SHA"
+          if [ "$SHIPPED_SHA" = "$ROOT_SHA" ]; then
+            echo "the app ships: ios/PrivacyInfo.xcprivacy (the root file)"
+          elif [ "$SHIPPED_SHA" = "$ZINGO_SHA" ]; then
+            echo "the app ships: ios/Zingo/PrivacyInfo.xcprivacy"
+          else
+            echo "the app ships: NEITHER source file byte for byte — Xcode rewrote it"
+          fi
+          /usr/libexec/PlistBuddy -c 'Print' "$MANIFEST"
+          manifest_missing=0
+          for k in NSPrivacyTracking NSPrivacyCollectedDataTypes NSPrivacyAccessedAPITypes; do
+            if /usr/libexec/PlistBuddy -c "Print :$k" "$MANIFEST" >/dev/null 2>&1; then
+              echo "ok      $k present"
+            else
+              echo "MISSING $k"
+              manifest_missing=$((manifest_missing + 1))
+            fi
+          done
+          if [ "$manifest_missing" -gt 0 ]; then
+            echo "::error::the BUNDLED privacy manifest is missing $manifest_missing required key(s); Apple reads this file, not the one you meant"
+            exit 1
+          fi
+          TRACKING=$(/usr/libexec/PlistBuddy -c 'Print :NSPrivacyTracking' "$MANIFEST")
+          if [ "$TRACKING" != "false" ]; then
+            echo "::error::NSPrivacyTracking is '$TRACKING'; this app tracks nobody and must say false"
+            exit 1
+          fi
+          echo "ok      NSPrivacyTracking = false"
+
+          # B1: no push entitlement, no remote-notification mode. An
+          # entitlement the App ID does not carry is refused by the
+          # provisioning profile, which would fail the first upload.
+          echo "--- background modes and push entitlement ---"
+          MODES=$(/usr/libexec/PlistBuddy -c 'Print :UIBackgroundModes' "$PLIST" 2>/dev/null || echo '(none)')
+          echo "$MODES"
+          if printf '%s' "$MODES" | grep -q 'remote-notification'; then
+            echo "::error::UIBackgroundModes still declares remote-notification, but nothing in this app registers for remote notifications"
+            exit 1
+          fi
+          echo "ok      no remote-notification background mode"
+          if codesign -d --entitlements :- "$APP" 2>/dev/null | grep -q 'aps-environment'; then
+            echo "::error::the built app still carries the aps-environment entitlement"
+            exit 1
+          fi
+          echo "ok      no aps-environment entitlement in the built app"
+
+          # A3/A4: iPhone-only, and no stray macOS key.
+          FAMILY=$({ /usr/libexec/PlistBuddy -c 'Print :UIDeviceFamily' "$PLIST" 2>/dev/null || echo '?'; } | tr -d ' \n')
+          echo "UIDeviceFamily: $FAMILY"
+          if printf '%s' "$FAMILY" | grep -q '2'; then
+            echo "::error::UIDeviceFamily still includes iPad (2); TARGETED_DEVICE_FAMILY must be 1"
+            exit 1
+          fi
+          if /usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$PLIST" >/dev/null 2>&1; then
+            echo "::error::LSMinimumSystemVersion (a macOS key) is still in the iOS Info.plist"
+            exit 1
+          fi
+          echo "ok      iPhone-only, no LSMinimumSystemVersion"
+
+          echo "--- URL schemes claimed by this build (expect none) ---"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes' "$PLIST" \
+            2>/dev/null || echo "(no CFBundleURLTypes — the zcash: claim is gone)"
+          echo "--- app icons compiled into the bundle ---"
+          ls "$APP" | grep -i '^AppIcon' || echo "(none)"
+
+          echo "--- launch screen compiled into the bundle ---"
+          test -e "$APP/LaunchScreen.storyboardc" \
+            || { echo "::error::LaunchScreen.storyboardc missing from the app bundle"; exit 1; }
+          LSN=$(/usr/libexec/PlistBuddy -c 'Print :UILaunchStoryboardName' "$PLIST" 2>/dev/null || echo '(unset)')
+          if [ "$LSN" != "LaunchScreen" ]; then
+            echo "::error::UILaunchStoryboardName is '$LSN', expected 'LaunchScreen'"
+            exit 1
+          fi
+          echo "ok      LaunchScreen.storyboardc present and named"
+
+          # Every face named in UIAppFonts must actually be in the bundle. A
+          # missing one is silent at runtime — iOS falls back to the system
+          # face — so it has to be caught here or not at all.
+          echo "--- bundled typefaces ---"
+          missing=0
+          for f in $(/usr/libexec/PlistBuddy -c 'Print :UIAppFonts' "$PLIST" \
+                     | sed -n 's/^ *\(fonts\/.*\.ttf\) *$/\1/p'); do
+            if [ -f "$APP/$f" ]; then
+              echo "ok      $f"
+            else
+              echo "MISSING $f"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            echo "::error::$missing font(s) declared in UIAppFonts are not in the app bundle; the SWARM typefaces would silently fall back to the system face"
+            exit 1
+          fi
+
+          # ----------------------------------------------------------- B4
+          # The location purpose string is deleted, so nothing that a person
+          # can reach may ask for a position.
+          #
+          # This is asserted on the MECHANISM, not on the binary, and runs
+          # 35737908538 and 35741774745 are why. Neither the load commands
+          # nor the symbol table can tell code that runs from code that is
+          # merely compiled, and this binary provably contains the latter:
+          #
+          #   * React Native compiles RCTConvert+CoreLocation into
+          #     React-Core, so every RN app links CoreLocation.
+          #   * VisionCamera compiles ios/Core/**/*.swift unconditionally, so
+          #     LocationProvider (a CLLocationManager and a
+          #     startUpdatingLocation in its init) and
+          #     CLLocationManager+requestAccess (a
+          #     requestWhenInUseAuthorization) are in the binary whatever the
+          #     flag says. What $VCEnableLocation = false removes is every
+          #     CALL SITE: the only LocationProvider() construction,
+          #     requestLocationPermission and getLocationPermissionStatus are
+          #     each inside #if VISION_CAMERA_ENABLE_LOCATION and, with the
+          #     condition unset, throw locationNotEnabled or return
+          #     .restricted instead.
+          #   * react-native-device-info calls four CLLocationManager CLASS
+          #     methods that only read status. None prompts, none needs a
+          #     purpose string, and this app never calls the JS that reaches
+          #     them.
+          #
+          # So the two things that CAN be asserted exactly are asserted: the
+          # compilation condition that gates every call site is absent, and
+          # this repository's own code contains no location API at all.
+          echo "--- location: the gate, not the symbol table ---"
+          XCCONFIGS=$(find "ios/Pods/Target Support Files" -name 'VisionCamera*.xcconfig' 2>/dev/null || true)
+          if [ -z "$XCCONFIGS" ]; then
+            echo "::error::no VisionCamera xcconfig under ios/Pods/Target Support Files — cannot prove the location gate either way"
+            exit 1
+          fi
+          echo "$XCCONFIGS"
+          if grep -l 'VISION_CAMERA_ENABLE_LOCATION' $XCCONFIGS >/dev/null 2>&1; then
+            grep -n 'SWIFT_ACTIVE_COMPILATION_CONDITIONS' $XCCONFIGS | sed 's/^/    /'
+            echo "::error::VISION_CAMERA_ENABLE_LOCATION is set in VisionCamera's generated xcconfig, so its location call sites ARE compiled. Either \$VCEnableLocation = false has been removed from ios/Podfile, or a pod update changed the flag — and NSLocationWhenInUseUsageDescription plus the privacy policy would have to come back with it"
+            exit 1
+          fi
+          grep -n 'SWIFT_ACTIVE_COMPILATION_CONDITIONS' $XCCONFIGS | sed 's/^/    /' || true
+          echo "ok      VISION_CAMERA_ENABLE_LOCATION is unset: every VisionCamera location call site is compiled out"
+
+          OWN=$(grep -rnE 'CLLocationManager|requestWhenInUseAuthorization|requestAlwaysAuthorization|startUpdatingLocation|isLocationEnabled|getAvailableLocationProviders|Geolocation' \
+                app screens ui ios/*.swift 2>/dev/null || true)
+          if [ -n "$OWN" ]; then
+            printf '%s\n' "$OWN" | sed 's/^/    /'
+            echo "::error::this repository's own code now reaches a location API; NSLocationWhenInUseUsageDescription and the privacy policy would have to come back"
+            exit 1
+          fi
+          echo "ok      no location API in app/, screens/, ui/ or ios/*.swift"
+
+          if /usr/libexec/PlistBuddy -c 'Print :NSLocationWhenInUseUsageDescription' "$PLIST" >/dev/null 2>&1; then
+            echo "::error::NSLocationWhenInUseUsageDescription is back in Info.plist, but nothing reachable asks for a position"
+            exit 1
+          fi
+          echo "ok      no location purpose string ships"
+
+          # Notes, not gates: what the binary happens to link and reference.
+          echo "--- what the binary links and references (notes) ---"
+          EXE="$APP/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$PLIST")"
+          LINKED=$(otool -L "$EXE" || true)
+          SYMS=$(nm -u "$EXE" 2>/dev/null || true)
+          printf '%s\n' "$LINKED" | sed 's/^/    /'
+          for fw in CoreLocation Photos; do
+            if printf '%s' "$LINKED" | grep -qi "$fw"; then
+              echo "note    $fw is in the load commands"
+            else
+              echo "note    $fw is not linked"
+            fi
+          done
+          printf '%s' "$SYMS" | grep -E 'CLLocation|PHPhoto|PHAsset' | sed 's/^/    /' || echo "    (no CoreLocation or Photos class references)"
+          if printf '%s' "$SYMS" | grep -qE 'PHPhotoLibrary|PHAssetCreationRequest'; then
+            echo "note    a photo-library class is referenced — NSPhotoLibraryAddUsageDescription earns its place"
+          else
+            echo "note    no photo-library class reference: NSPhotoLibraryAddUsageDescription may describe a feature that does not exist. Left in place because deleting a purpose string a pod reaches dynamically is a crash, not a warning."
+          fi
+
+          echo
+          echo "THE SHIPPED BUNDLE PASSES."
+
+      # always(): a failed assertion must still leave the artifact it was
+      # reached from, so the next person can look instead of guessing.
       - name: Package the simulator app
+        if: always()
         run: |
           set -euo pipefail
           mkdir -p dist

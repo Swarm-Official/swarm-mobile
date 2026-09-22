@@ -530,16 +530,49 @@ or if tracking is not `false`.
   no photo). Run 35737908538 confirms it took effect — the pod install log
   reads `[VisionCamera] $VCEnableLocation is set to false!`.
 
-  **CoreLocation is still in the binary's load commands, and that is
-  correct.** React Native itself compiles `RCTConvert+CoreLocation` into
-  React-Core, so *every* React Native app links the framework; the same run
-  logs `libtool: warning: 'RCTConvert+CoreLocation.o' has no symbols`. A
-  purpose string is required when an app **calls** the API, not when the
-  linker records the framework. The first version of this check asserted
-  linkage and failed the build for it; it now asserts the thing that
-  matters — CI **fails** if any `CLLocationManager` /
-  `requestWhenInUseAuthorization` / `startUpdatingLocation` symbol appears,
-  and merely notes the linkage.
+  **The binary still links CoreLocation and still references
+  `CLLocationManager`, and both are correct.** It took two failed runs to
+  get this check right, so the reasoning is written down rather than
+  repeated:
+
+  * Run 35737908538 failed on the *load commands*. React Native compiles
+    `RCTConvert+CoreLocation` into React-Core, so **every** React Native app
+    links CoreLocation; the same run logs `libtool: warning:
+    'RCTConvert+CoreLocation.o' has no symbols`.
+  * Run 35741774745 then failed on the *symbol table*, on
+    `_OBJC_CLASS_$_CLLocationManager`. That symbol is real, and still proves
+    nothing: VisionCamera compiles `ios/Core/**/*.swift` unconditionally, so
+    `LocationProvider.swift` (which holds a `CLLocationManager` and calls
+    `startUpdatingLocation()` in its `init`) and
+    `CLLocationManager+requestAccess.swift` (which calls
+    `requestWhenInUseAuthorization()`) are in the binary whatever the flag
+    says. What `$VCEnableLocation = false` removes is every **call site**:
+    the only `LocationProvider()` construction
+    (`CameraSession+Location.swift`), `requestLocationPermission` and
+    `getLocationPermissionStatus` (`CameraViewManager.swift`) are each
+    inside `#if VISION_CAMERA_ENABLE_LOCATION`, and with the condition unset
+    they throw `locationNotEnabled` or return `.restricted` instead.
+    Separately, `react-native-device-info` calls four `CLLocationManager`
+    **class** methods that only read status — `locationServicesEnabled`,
+    `significantLocationChangeMonitoringAvailable`, `headingAvailable`,
+    `isRangingAvailable`. None of them prompts, none needs a purpose string,
+    and this app never calls the JavaScript that reaches them.
+
+  Neither linkage nor a symbol can tell code that runs from code that is
+  merely compiled, so the check asserts the **mechanism** instead, and CI
+  fails if either half changes:
+
+  1. `VISION_CAMERA_ENABLE_LOCATION` must be **absent** from VisionCamera's
+     generated xcconfig under `ios/Pods/Target Support Files` — that is the
+     condition gating every call site, and the step errors out rather than
+     passing quietly if the xcconfig cannot be found at all;
+  2. `app/`, `screens/`, `ui/` and `ios/*.swift` must contain **no** location
+     API — no `CLLocationManager`, no authorization request, not even
+     device-info's `isLocationEnabled`;
+  3. and `NSLocationWhenInUseUsageDescription` must stay out of Info.plist.
+
+  What the binary links and references is printed as a **note**, because
+  that is all it is.
 * `NSPhotoLibraryUsageDescription` → `NSPhotoLibraryAddUsageDescription`.
   The read key asked for the whole library; nothing here reads photos.
   **Recorded honestly:** a sweep of `app/`, `screens/`, `ui/` and

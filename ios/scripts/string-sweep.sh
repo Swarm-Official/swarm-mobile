@@ -121,8 +121,13 @@ fi
 echo ""
 echo "--- 2. Info.plist, user-visible keys only ---"
 plist="$APP/Info.plist"
+# NSPhotoLibraryUsageDescription and NSLocationWhenInUseUsageDescription are
+# still listed although this build no longer declares them: an absent key is
+# skipped below, and keeping it in the list means the sweep still reads it if
+# it ever comes back.
 for key in CFBundleDisplayName CFBundleName NSCameraUsageDescription \
            NSFaceIDUsageDescription NSPhotoLibraryUsageDescription \
+           NSPhotoLibraryAddUsageDescription \
            NSLocationWhenInUseUsageDescription NSHumanReadableCopyright; do
     value=$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist" 2>/dev/null || true)
     [ -z "$value" ] && continue

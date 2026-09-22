@@ -10,6 +10,18 @@ require Pod::Executable.execute_command('node', ['-p',
 IOS_DEPLOYMENT_TARGET = '16.0'
 
 platform :ios, IOS_DEPLOYMENT_TARGET
+
+# VisionCamera links CoreLocation by default so a photo it takes can carry a
+# GPS EXIF tag. This app scans QR codes; it takes no photo, writes no file and
+# wants no position. Left on, the pod pulls CoreLocation into the binary, and
+# an App Store build that links CoreLocation is expected to declare a location
+# purpose string — a permission for a feature that does not exist, which is
+# exactly what a reviewer asks about. Off here, and
+# NSLocationWhenInUseUsageDescription is deleted from Info.plist to match;
+# the CI simulator job then greps the built binary for CoreLocation and fails
+# if it comes back.
+$VCEnableLocation = false
+
 prepare_react_native_project!
  
 linkage = ENV['USE_FRAMEWORKS']

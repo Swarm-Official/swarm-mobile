@@ -1,8 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-	<key>aps-environment</key>
-	<string>development</string>
-</dict>
+<!--
+  Deliberately empty.
+
+  Upstream ships `aps-environment: development` here, but this app
+  registers for NO remote notifications: there is no
+  registerForRemoteNotifications, no didRegisterForRemoteNotificationsWith…,
+  no UNUserNotificationCenter delegate and no push SDK anywhere in
+  ios/*.swift, app/, screens/ or ui/ — the only notification dependency is
+  @notifee/react-native, which schedules LOCAL reminders.
+
+  An entitlement the App ID does not carry makes the provisioning profile
+  refuse the signature, so an unused `aps-environment` would break the very
+  first TestFlight upload; and the privacy policy says the app sends no
+  push. Both reasons point the same way, so the entitlement is removed
+  rather than the Push Notifications capability enabled on the App ID.
+
+  The matching `remote-notification` background mode is removed from
+  Info.plist for the same reason. `fetch` and `processing` stay: they are
+  what continues wallet synchronisation.
+
+  If a real push feature is ever added, put `aps-environment` back AND
+  enable Push Notifications on the `green.swarm.wallet` App ID.
+-->
+<dict/>
 </plist>

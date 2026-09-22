@@ -49,8 +49,6 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<key>LSMinimumSystemVersion</key>
-	<string>13.0.0</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -68,10 +66,18 @@
 	<string>SWARM Wallet uses the camera only to scan a SWARM address or payment QR code. Nothing is photographed, stored or sent.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>SWARM Wallet uses Face ID or Touch ID to unlock your wallet on this device. Your wallet never leaves the phone.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>SWARM Wallet does not use location. It never asks for your position and records none.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>SWARM Wallet saves a receive-address QR code to your photos when you ask it to. It reads nothing else from your library.</string>
+	<!-- Add-only, never read. Upstream declares NSPhotoLibraryUsageDescription,
+	     which asks for READ access to the whole library; nothing in this app
+	     reads photos. The narrower add key is the honest one.
+
+	     Open question, recorded rather than hidden: a sweep of app/, screens/,
+	     ui/ and ios/*.swift finds no photo-library API at all (no CameraRoll
+	     dependency, no PHPhotoLibrary, no UIImageWriteToSavedPhotosAlbum) —
+	     the receive QR is rendered on screen by react-native-qrcode-svg and
+	     never saved. The CI job asserts whether the built binary references
+	     any Photos symbol; if it does not, this key should be deleted too. -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>SWARM Wallet only ever adds a receive-address QR code to your photos, and only when you ask it to. It never reads your library.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<!-- The three SWARM typefaces, bundled in the app so nothing is
@@ -117,11 +123,23 @@
 			</array>
 		</dict>
 	</dict>
+	<!-- `fetch` and `processing` only. Both exist for one declared purpose:
+	     continuing wallet synchronisation while the app is not in front
+	     (AppDelegate.swift registers the BGTaskScheduler identifiers above
+	     and does nothing else with them).
+
+	     Upstream also declares `remote-notification`. It is removed: the app
+	     registers for no remote notifications anywhere (no
+	     registerForRemoteNotifications in ios/*.swift, no push SDK in
+	     package.json — @notifee/react-native schedules LOCAL reminders), so
+	     the mode would be a background capability declared for a feature
+	     that does not exist, which guideline 2.5.4 does not allow. The
+	     matching `aps-environment` entitlement is removed with it; see
+	     Zingo.entitlements. -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
 		<string>processing</string>
-		<string>remote-notification</string>
 	</array>
 	<!-- Upstream reads "LaunchScreen.storyboar": a typo, so iOS finds no
 	     launch storyboard and shows a blank one. Corrected here so the

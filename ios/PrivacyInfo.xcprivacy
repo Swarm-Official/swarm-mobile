@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  THIS is the manifest the app actually bundles.
+
+  ios/Zingo.xcodeproj references this file (fileRef 1F0893FE2BA4C438…, in
+  the project's root group), not the near-identical one in ios/Zingo/, so
+  Apple reads this one. It used to carry only the four required-reason API
+  declarations; the two keys Apple's upload check asks every app for —
+  NSPrivacyTracking and NSPrivacyCollectedDataTypes — were only in the
+  unreferenced copy. Both are now here, and the CI simulator job unzips the
+  built .app and asserts that the shipped PrivacyInfo.xcprivacy contains
+  them, so the two files cannot silently swap roles again.
+
+  SWARM Wallet collects nothing and tracks nobody: no analytics, no crash
+  reporter, no advertising SDK, no account. Hence tracking false and an
+  empty collected-data array — an EMPTY array, not a missing key, because
+  a missing key is "unanswered" and an empty one is "nothing".
+-->
 <plist version="1.0">
 <dict>
 	<key>NSPrivacyAccessedAPITypes</key>
@@ -39,5 +56,14 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Nothing is collected, so the array is present and empty. -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<!-- No tracking, no tracking domains: there is no analytics, crash
+	     reporting or advertising SDK in this app. -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
 </dict>
 </plist>

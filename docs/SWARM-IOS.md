@@ -1,6 +1,7 @@
 # SWARM Wallet on iOS
 
-Status of this document: written by the iOS build agent on 2026-09-21.
+Status of this document: written by the iOS build agent on 2026-09-21,
+extended on 2026-09-22 with the upload-readiness work (section 9).
 Everything under "Proven" was executed in GitHub Actions and has a run URL.
 Everything else is described, not done.
 
@@ -43,7 +44,10 @@ says **SWARM Wallet**.
 | App icon | Zingo artwork (PNGs in the repo) | SWARM hive bee, rendered in CI from SVG |
 | Launch screen | `Zingo` in white on black, and never shown (see below) | warm black `#0A0908` with the hive bee |
 | Minimum iOS | 16.0 | 16.0, unchanged |
-| Entitlements | `aps-environment: development` | unchanged — no new entitlement was added |
+| Entitlements | `aps-environment: development` | **empty** — the app registers for no remote notifications, so the entitlement is removed (see 9.2) |
+| Background modes | `fetch`, `processing`, `remote-notification` | `fetch`, `processing` — sync only |
+| Device family | iPhone + iPad (`1,2`) | **iPhone only (`1`)** |
+| Build number | `CURRENT_PROJECT_VERSION = 1`, static | derived in CI from `github.run_number` (see 9.1) |
 | Face ID / Touch ID / keychain | `ios/DeviceAuth.swift` | unchanged, byte for byte |
 | Analytics | none | none |
 
@@ -258,21 +262,33 @@ In the Apple Developer portal, once enrolled:
 
 ### 4.3 Add the repository secrets
 
-`brs-holding/swarm-mobile` → Settings → Secrets and variables → Actions.
+`Swarm-Official/swarm-mobile` → Settings → Secrets and variables → Actions.
+(The organisation was renamed from `brs-holding` on 2026-09-22; old URLs
+redirect.)
 **Names only below. Never paste a value into a chat, an issue, a commit, a
 log or a file in this repository.** The workflow reads them only inside the
 `apple-distribution` environment, which the owner should also create with
 required reviewers so a release cannot start unattended.
 
-| Secret name | What goes in it |
-| --- | --- |
-| `APPLE_TEAM_ID` | the 10-character team ID |
-| `APPLE_APP_STORE_CONNECT_KEY_ID` | the API key's Key ID |
-| `APPLE_APP_STORE_CONNECT_ISSUER_ID` | the API key's Issuer ID |
-| `APPLE_APP_STORE_CONNECT_KEY_P8` | the `.p8` file, base64-encoded |
-| `APPLE_DISTRIBUTION_CERT_P12` | the distribution `.p12`, base64-encoded |
-| `APPLE_DISTRIBUTION_CERT_PASSWORD` | that `.p12`'s password |
-| `APPLE_PROVISIONING_PROFILE` | the `.mobileprovision`, base64-encoded |
+**Four secrets are enough.** The job now picks its signing path from what
+exists, and the short path needs no certificate file at all.
+
+| Secret name | Needed | What goes in it |
+| --- | --- | --- |
+| `APPLE_TEAM_ID` | always | the 10-character team ID |
+| `APPLE_APP_STORE_CONNECT_KEY_ID` | always | the API key's Key ID |
+| `APPLE_APP_STORE_CONNECT_ISSUER_ID` | always | the API key's Issuer ID |
+| `APPLE_APP_STORE_CONNECT_KEY_P8` | always | the `.p8` file, base64-encoded |
+| `APPLE_DISTRIBUTION_CERT_P12` | only for manual signing | the distribution `.p12`, base64-encoded |
+| `APPLE_DISTRIBUTION_CERT_PASSWORD` | only for manual signing | that `.p12`'s password |
+| `APPLE_PROVISIONING_PROFILE` | only for manual signing | the `.mobileprovision`, base64-encoded |
+
+With the first four alone the job archives with automatic signing and
+`-allowProvisioningUpdates`, and Xcode creates the distribution
+certificate and the App Store profile itself — no certificate file and no
+certificate password ever leave Apple. Supplying the last three switches
+the job to manual signing; supplying *some* of them is refused, because a
+half-configured certificate is a silent wrong signature waiting to happen.
 
 Base64 on a Mac: `base64 -i AuthKey_XXXX.p8 | pbcopy`.
 
@@ -447,3 +463,121 @@ release gate, which this build reports rather than assumes.
 create the `apple-distribution` environment with required reviewers, run
 the workflow manually with `signed_release: true`, and take the first build
 to **internal** TestFlight testers before considering external testing.
+
+---
+
+## 9. Upload readiness (2026-09-22)
+
+Everything in this section is about the *first* TestFlight upload: the
+things App Store Connect checks before a human ever sees the app, and the
+things a reviewer looks at first. The full work list is
+`docs/ios/06-BUILD-REQUIREMENTS.md` in the project vault.
+
+### 9.1 The build number now increases by itself
+
+`MARKETING_VERSION` stays `0.1.0` for the whole testnet series.
+`CURRENT_PROJECT_VERSION` is computed in CI as
+`github.run_number + BUILD_NUMBER_OFFSET` (offset `1000`, so the first one
+is well clear of the `1` in the project file) and injected on the
+`xcodebuild` command line for both the simulator build and the signed
+archive. The job then reads `CFBundleVersion` back out of the built bundle
+and fails if it is not the number it asked for, and prints version, build
+and commit into the job summary.
+
+The project file keeps `CURRENT_PROJECT_VERSION = 1`. That is deliberate:
+it is what makes the project open and build in Xcode with no environment,
+and CI overrides it. If the fallback path of D7 is ever used — a manual
+Xcode archive on someone's Mac — **set the build number by hand in Xcode
+first**, higher than any build CI has uploaded.
+
+### 9.2 No push entitlement, no push background mode
+
+The app registers for **no** remote notifications: there is no
+`registerForRemoteNotifications`, no
+`didRegisterForRemoteNotificationsWithDeviceToken`, no
+`UNUserNotificationCenter` delegate and no push SDK in `ios/*.swift`,
+`app/`, `screens/` or `ui/`. The only notification dependency is
+`@notifee/react-native`, which schedules **local** reminders.
+
+So `aps-environment` is gone from `Zingo.entitlements` (now an empty
+`<dict/>`) and `remote-notification` is gone from `UIBackgroundModes`.
+This matters beyond tidiness: a provisioning profile whose App ID does not
+carry the Push Notifications capability **refuses** an entitlement that
+asks for it, which would have failed the very first upload. `fetch` and
+`processing` stay — they are what continues wallet synchronisation, and
+that is the sentence for the App Review notes.
+
+### 9.3 The bundled privacy manifest is the complete one
+
+`ios/Zingo.xcodeproj` references the **root** `ios/PrivacyInfo.xcprivacy`,
+not the near-identical copy in `ios/Zingo/`. Apple reads the manifest that
+is actually bundled, and the root one was missing `NSPrivacyTracking` and
+`NSPrivacyCollectedDataTypes`. Both keys are now in the root file
+(tracking `false`, collected data an **empty array** — present and empty,
+because a missing key is "unanswered" and an empty one is "nothing").
+
+The simulator job now reads `PrivacyInfo.xcprivacy` out of the built
+`.app`, prints its SHA-256 next to both source files so the summary says
+which one shipped, prints the manifest, and fails if either key is absent
+or if tracking is not `false`.
+
+### 9.4 Permissions: only the ones that exist
+
+* `NSLocationWhenInUseUsageDescription` — **deleted**. `ios/Podfile` now
+  sets `$VCEnableLocation = false` before `use_react_native!`, so
+  VisionCamera stops linking CoreLocation (it links it by default so a
+  photo can carry a GPS tag; this app scans QR codes and takes no photo).
+  CI runs `otool -L` on the built binary and **fails** if CoreLocation
+  comes back.
+* `NSPhotoLibraryUsageDescription` → `NSPhotoLibraryAddUsageDescription`.
+  The read key asked for the whole library; nothing here reads photos.
+  **Recorded honestly:** a sweep of `app/`, `screens/`, `ui/` and
+  `ios/*.swift` finds no photo-library API *at all* — no CameraRoll
+  dependency, no `PHPhotoLibrary`, no `UIImageWriteToSavedPhotosAlbum` —
+  and the receive QR is rendered on screen by `react-native-qrcode-svg`
+  and never saved. CI reports (advisory, not fatal) whether the binary can
+  reach the photo library; if it cannot, this key should be deleted too.
+* `NSCameraUsageDescription` and `NSFaceIDUsageDescription` — kept. Both
+  features exist.
+
+### 9.5 iPhone only, and no macOS key
+
+`TARGETED_DEVICE_FAMILY` is `1` in all four app configurations. iPhone-only
+apps still run on iPad in compatibility mode, and the change is one line to
+reverse — but universal would oblige a 13-inch iPad screenshot set and an
+iPad layout review for a first testnet build. `LSMinimumSystemVersion`, a
+macOS key that had no business in an iOS-only plist, is removed. CI asserts
+both from the built bundle.
+
+### 9.6 The signed job takes either path
+
+See the secrets table in 4.3. The job:
+
+1. refuses to run unless the four API-key secrets exist;
+2. refuses to run if *some* but not all of the certificate trio exists;
+3. picks `automatic` (API key, `-allowProvisioningUpdates`) or `manual`
+   (`.p12` + profile in a throwaway keychain) from what it found;
+4. archives with the derived build number, reads the archive back and
+   fails if the build number or the bundle id is not what it asked for;
+5. exports with method `app-store-connect`;
+6. uploads with `xcrun altool --upload-app --apiKey --apiIssuer`;
+7. writes signing style, version, build, commit, the `.ipa`'s SHA-256 and
+   the delivery UUID into the job summary; and
+8. deletes the keychain, the profile and both copies of the API key in an
+   `if: always()` step.
+
+It has **never been run**, and cannot be until the secrets exist. The YAML
+is validated with `actionlint`.
+
+### 9.7 Still open, and not an agent's to close
+
+* **Export compliance** (`ITSAppUsesNonExemptEncryption`, currently
+  `false`, inherited from upstream) — owner and legal advice, see
+  `docs/ios/03-APPLE-GUIDELINES-CHECK.md`. Do not upload before it is
+  confirmed.
+* **The Apple Developer Program organisation account itself**, the App ID,
+  the App Store Connect app record and the API key. Section 4.
+* **A funded App Review wallet** or a faucet, so a reviewer can exercise
+  Send (`06-BUILD-REQUIREMENTS.md` item C5).
+* **Store screenshots at 6.9-inch size** from a synced wallet with real
+  SWM amounts (item B8).

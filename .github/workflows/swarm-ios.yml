@@ -42,6 +42,15 @@ env:
   PREFERRED_SIM_RUNTIME: com.apple.CoreSimulator.SimRuntime.iOS-26-5
   PREFERRED_SIM_DEVICE_TYPE: com.apple.CoreSimulator.SimDeviceType.iPhone-17
   NODE_VERSION: '22.18.0'
+  # App Store Connect refuses a build number it has already seen for the
+  # same MARKETING_VERSION, so CURRENT_PROJECT_VERSION must strictly
+  # increase per upload. github.run_number does exactly that and never
+  # restarts; the offset keeps it clear of the 1 baked into the project
+  # (and of anything a local Xcode archive would produce). Both are
+  # injected on the xcodebuild command line and the project file keeps its
+  # own values, so opening the project in Xcode still works.
+  MARKETING_VERSION: '0.1.0'
+  BUILD_NUMBER_OFFSET: '1000'
   # Keep cargo lean on a 3-core runner.
   CARGO_INCREMENTAL: '0'
   CARGO_NET_RETRY: '10'
@@ -324,6 +333,24 @@ jobs:
           retry_wait_seconds: 20
           command: cd ios && pod install
 
+      # Derived once, then used by the build, the assertions and the
+      # summary, so the three can never disagree.
+      - name: Derive the build number
+        id: version
+        run: |
+          set -euo pipefail
+          BUILD_NUMBER=$(( ${{ github.run_number }} + BUILD_NUMBER_OFFSET ))
+          if [ "$BUILD_NUMBER" -le 1 ]; then
+            echo "::error::derived build number $BUILD_NUMBER is not greater than 1"
+            exit 1
+          fi
+          echo "marketing version: $MARKETING_VERSION"
+          echo "build number:      $BUILD_NUMBER  (run_number ${{ github.run_number }} + offset $BUILD_NUMBER_OFFSET)"
+          {
+            echo "build=$BUILD_NUMBER"
+            echo "marketing=$MARKETING_VERSION"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create and boot the simulator
         id: sim
         run: |
@@ -388,6 +415,8 @@ jobs:
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath build/DerivedData \
             -resultBundlePath build/reports/SwarmWallet-simulator.xcresult \
+            MARKETING_VERSION="${{ steps.version.outputs.marketing }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
             ONLY_ACTIVE_ARCH=YES \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -409,8 +438,27 @@ jobs:
           echo "app bundle: $APP"
           BID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")
           NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist" 2>/dev/null || echo '(none)')
+          SHORT=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")
+          BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")
           echo "bundle identifier: $BID"
           echo "display name:      $NAME"
+          echo "version (build):   $SHORT ($BUILD)"
+
+          # The build number is the one thing App Store Connect checks
+          # before it looks at the app at all, so prove it landed in the
+          # bundle rather than trusting the command line.
+          if [ "$SHORT" != "${{ steps.version.outputs.marketing }}" ]; then
+            echo "::error::CFBundleShortVersionString is '$SHORT', expected '${{ steps.version.outputs.marketing }}'"
+            exit 1
+          fi
+          if [ "$BUILD" != "${{ steps.version.outputs.build }}" ]; then
+            echo "::error::CFBundleVersion is '$BUILD', expected '${{ steps.version.outputs.build }}' — the run-number build number did not reach the bundle"
+            exit 1
+          fi
+          if [ "$BUILD" -le 1 ]; then
+            echo "::error::CFBundleVersion $BUILD is not greater than 1"
+            exit 1
+          fi
 
           # The passcode sheet iOS puts up for LocalAuthentication is
           # titled with CFBundleDisplayName. Asserting it here is what
@@ -423,6 +471,116 @@ jobs:
           if [ "$BID" != "green.swarm.wallet" ]; then
             echo "::error::CFBundleIdentifier is '$BID', expected 'green.swarm.wallet'"
             exit 1
+          fi
+
+          # C10: the project references the ROOT ios/PrivacyInfo.xcprivacy,
+          # not the one in ios/Zingo/. Apple reads the manifest that is
+          # actually bundled, so read THAT one and say which source file it
+          # is, byte for byte.
+          echo "--- privacy manifest shipped in the .app ---"
+          MANIFEST="$APP/PrivacyInfo.xcprivacy"
+          if [ ! -f "$MANIFEST" ]; then
+            echo "::error::no PrivacyInfo.xcprivacy in the built app — Apple rejects uploads without one"
+            exit 1
+          fi
+          SHIPPED_SHA=$(shasum -a 256 "$MANIFEST" | cut -d' ' -f1)
+          ROOT_SHA=$(shasum -a 256 ios/PrivacyInfo.xcprivacy | cut -d' ' -f1)
+          ZINGO_SHA=$(shasum -a 256 ios/Zingo/PrivacyInfo.xcprivacy | cut -d' ' -f1)
+          echo "shipped sha256:            $SHIPPED_SHA"
+          echo "ios/PrivacyInfo.xcprivacy: $ROOT_SHA"
+          echo "ios/Zingo/PrivacyInfo…:    $ZINGO_SHA"
+          if [ "$SHIPPED_SHA" = "$ROOT_SHA" ]; then
+            WHICH='ios/PrivacyInfo.xcprivacy (the root file)'
+          elif [ "$SHIPPED_SHA" = "$ZINGO_SHA" ]; then
+            WHICH='ios/Zingo/PrivacyInfo.xcprivacy'
+          else
+            WHICH='NEITHER source file — something rewrote it'
+          fi
+          echo "the app ships: $WHICH"
+          /usr/libexec/PlistBuddy -c 'Print' "$MANIFEST"
+          manifest_missing=0
+          for k in NSPrivacyTracking NSPrivacyCollectedDataTypes NSPrivacyAccessedAPITypes; do
+            if /usr/libexec/PlistBuddy -c "Print :$k" "$MANIFEST" >/dev/null 2>&1; then
+              echo "ok      $k present"
+            else
+              echo "MISSING $k"
+              manifest_missing=$((manifest_missing + 1))
+            fi
+          done
+          if [ "$manifest_missing" -gt 0 ]; then
+            echo "::error::the BUNDLED privacy manifest is missing $manifest_missing required key(s); Apple reads this file, not the one you meant"
+            exit 1
+          fi
+          TRACKING=$(/usr/libexec/PlistBuddy -c 'Print :NSPrivacyTracking' "$MANIFEST")
+          if [ "$TRACKING" != "false" ]; then
+            echo "::error::NSPrivacyTracking is '$TRACKING'; this app tracks nobody and must say false"
+            exit 1
+          fi
+          echo "ok      NSPrivacyTracking = false"
+
+          # B1: no push entitlement, no remote-notification mode. An
+          # entitlement the App ID does not carry is refused by the
+          # provisioning profile, which would fail the first upload.
+          echo "--- background modes and push entitlement ---"
+          MODES=$(/usr/libexec/PlistBuddy -c 'Print :UIBackgroundModes' "$APP/Info.plist" 2>/dev/null || echo '(none)')
+          echo "$MODES"
+          if printf '%s' "$MODES" | grep -q 'remote-notification'; then
+            echo "::error::UIBackgroundModes still declares remote-notification, but nothing in this app registers for remote notifications"
+            exit 1
+          fi
+          echo "ok      no remote-notification background mode"
+          if codesign -d --entitlements :- "$APP" 2>/dev/null | grep -q 'aps-environment'; then
+            echo "::error::the built app still carries the aps-environment entitlement"
+            exit 1
+          fi
+          echo "ok      no aps-environment entitlement in the built app"
+
+          # A3/A4: iPhone-only, and no stray macOS key.
+          FAMILY=$({ /usr/libexec/PlistBuddy -c 'Print :UIDeviceFamily' "$APP/Info.plist" 2>/dev/null || echo '?'; } | tr -d ' \n')
+          echo "UIDeviceFamily: $FAMILY"
+          if printf '%s' "$FAMILY" | grep -q '2'; then
+            echo "::error::UIDeviceFamily still includes iPad (2); TARGETED_DEVICE_FAMILY must be 1"
+            exit 1
+          fi
+          if /usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP/Info.plist" >/dev/null 2>&1; then
+            echo "::error::LSMinimumSystemVersion (a macOS key) is still in the iOS Info.plist"
+            exit 1
+          fi
+          echo "ok      iPhone-only, no LSMinimumSystemVersion"
+
+          # B4: the location purpose string is gone, so CoreLocation must
+          # be gone too — otherwise the store build links a framework it
+          # has no purpose string for. $VCEnableLocation = false in the
+          # Podfile is what removes it; this is the proof.
+          echo "--- frameworks linked by the binary ---"
+          EXE="$APP/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")"
+          # Captured once and matched in the shell: piping otool into
+          # `grep -q` kills otool with SIGPIPE on the first match, and
+          # under pipefail that reads as "not found" when it was found.
+          LINKED=$(otool -L "$EXE" || true)
+          printf '%s\n' "$LINKED" | sed 's/^/    /'
+          if /usr/libexec/PlistBuddy -c 'Print :NSLocationWhenInUseUsageDescription' "$APP/Info.plist" >/dev/null 2>&1; then
+            echo "::error::NSLocationWhenInUseUsageDescription is back in Info.plist"
+            exit 1
+          fi
+          if printf '%s' "$LINKED" | grep -qi 'CoreLocation'; then
+            echo "::error::the binary still links CoreLocation; either \$VCEnableLocation = false did not take effect in the Podfile, or something else pulled it in — a location purpose string would then be required again"
+            exit 1
+          fi
+          echo "ok      CoreLocation is not linked and no location purpose string ships"
+
+          # Advisory, not fatal: whether anything at all can reach the
+          # photo library. A sweep of app/, screens/, ui/ and ios/*.swift
+          # finds no photo API and there is no CameraRoll dependency, so
+          # NSPhotoLibraryAddUsageDescription may be deletable as well.
+          # Reported so the answer comes from the artifact, not a guess.
+          echo "--- photo-library symbols in the binary (advisory) ---"
+          PHOTOSYMS=$(nm -u "$EXE" 2>/dev/null || true)
+          if printf '%s' "$LINKED" | grep -qi 'Photos.framework' \
+             || printf '%s' "$PHOTOSYMS" | grep -qiE 'PHPhotoLibrary|UIImageWriteToSavedPhotosAlbum'; then
+            echo "FOUND: the binary can reach the photo library — keep NSPhotoLibraryAddUsageDescription"
+          else
+            echo "none: no Photos framework and no photo-library symbol — the add-only purpose string describes a feature that does not exist and should be deleted"
           fi
 
           echo "--- URL schemes claimed by this build (expect none) ---"
@@ -545,6 +703,9 @@ jobs:
             echo
             echo "| item | value |"
             echo "| --- | --- |"
+            echo "| marketing version | \`${{ steps.version.outputs.marketing }}\` |"
+            echo "| build number (CURRENT_PROJECT_VERSION) | \`${{ steps.version.outputs.build }}\` |"
+            echo "| commit | \`${{ github.sha }}\` |"
             echo "| Xcode | \`$(xcodebuild -version | head -1)\` |"
             echo "| simulator runtime | \`${{ steps.sim.outputs.runtime }}\` |"
             echo "| simulator device | \`${{ steps.sim.outputs.devicetype }}\` |"
@@ -650,27 +811,46 @@ jobs:
           retention-days: 30
 
   # ---------------------------------------------------------------------
-  # DISABLED. Signed device archive + TestFlight upload.
+  # Signed device archive + TestFlight upload.
   #
-  # This job cannot run today and is not meant to: it needs an Apple
-  # Developer Program ORGANISATION account (App Review guideline 3.1.5(b)
-  # accepts crypto wallets only from organisation accounts), an App ID
-  # green.swarm.wallet, a distribution certificate and provisioning
-  # profile or an App Store Connect API key, and the repository secrets
-  # named below. It is gated behind a manual input that defaults to false
-  # AND hard-fails on the first step when the secrets are absent, so it
-  # cannot run by accident. No signing material belongs in this
-  # repository or in these logs. Full instructions: docs/SWARM-IOS.md.
+  # It cannot run today and is not meant to: it needs an Apple Developer
+  # Program ORGANISATION account (App Review guideline 3.1.5(b) accepts
+  # crypto wallets only from organisation accounts), an App ID
+  # green.swarm.wallet, an App Store Connect API key, and the repository
+  # secrets named below. Two independent locks keep it shut: a manual
+  # workflow_dispatch input that defaults to false, and a first step that
+  # hard-fails when the secrets are absent, before any signing step is
+  # reached. No signing material belongs in this repository or in these
+  # logs. Full instructions: docs/SWARM-IOS.md.
+  #
+  # TWO SIGNING PATHS, chosen by which secrets exist:
+  #
+  #   automatic (four secrets, preferred) — the API key alone. xcodebuild
+  #     runs with -allowProvisioningUpdates and the authentication key, and
+  #     Xcode creates and downloads the distribution certificate and the
+  #     App Store profile itself. Nobody exports a .p12, so no certificate
+  #     file and no certificate password ever exist outside Apple.
+  #
+  #   manual (seven secrets) — the path this job shipped first: a .p12 and
+  #     a .mobileprovision imported into a throwaway keychain. Kept because
+  #     it is the one that works when the team's certificates are managed
+  #     elsewhere and Xcode may not mint new ones.
+  #
+  # The API key is required either way: it is what uploads the build.
   # ---------------------------------------------------------------------
   signed-release:
-    name: Signed archive + TestFlight (DISABLED — needs an Apple account)
+    name: Signed archive + TestFlight (needs an Apple organisation account)
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.signed_release }}
     needs: app-simulator
     runs-on: macos-latest
     timeout-minutes: 120
     environment: apple-distribution
     steps:
-      - name: Refuse to run without the Apple Developer Program secrets
+      # The refusal. Four secrets are always required; the certificate trio
+      # is required only when a certificate is supplied at all. Values are
+      # tested for emptiness and never printed.
+      - name: Choose the signing path, or refuse to run
+        id: signing
         env:
           APPLE_APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_ID }}
           APPLE_APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
@@ -682,15 +862,29 @@ jobs:
         run: |
           set -euo pipefail
           missing=0
-          for v in APPLE_APP_STORE_CONNECT_KEY_ID APPLE_APP_STORE_CONNECT_ISSUER_ID \
-                   APPLE_APP_STORE_CONNECT_KEY_P8 APPLE_DISTRIBUTION_CERT_P12 \
-                   APPLE_DISTRIBUTION_CERT_PASSWORD APPLE_PROVISIONING_PROFILE APPLE_TEAM_ID; do
+          for v in APPLE_TEAM_ID APPLE_APP_STORE_CONNECT_KEY_ID \
+                   APPLE_APP_STORE_CONNECT_ISSUER_ID APPLE_APP_STORE_CONNECT_KEY_P8; do
             if [ -z "${!v:-}" ]; then echo "missing secret: $v"; missing=1; fi
           done
           if [ "$missing" = "1" ]; then
-            echo "::error::This job needs an Apple Developer Program organisation account. See docs/SWARM-IOS.md."
+            echo "::error::This job needs an Apple Developer Program organisation account and an App Store Connect API key. See docs/SWARM-IOS.md."
             exit 1
           fi
+
+          if [ -n "${APPLE_DISTRIBUTION_CERT_P12:-}" ]; then
+            for v in APPLE_DISTRIBUTION_CERT_PASSWORD APPLE_PROVISIONING_PROFILE; do
+              if [ -z "${!v:-}" ]; then echo "missing secret: $v"; missing=1; fi
+            done
+            if [ "$missing" = "1" ]; then
+              echo "::error::A distribution certificate was supplied but its password or provisioning profile was not. Supply all three, or none of them and let the API key provision automatically."
+              exit 1
+            fi
+            STYLE=manual
+          else
+            STYLE=automatic
+          fi
+          echo "signing style: $STYLE"
+          echo "style=$STYLE" >> "$GITHUB_OUTPUT"
 
       - name: Pin Xcode ${{ env.XCODE_VERSION }}
         uses: maxim-lobanov/setup-xcode@v1
@@ -699,6 +893,24 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+
+      # The same rule as the simulator job, so a dispatch and the push that
+      # preceded it cannot collide on a build number.
+      - name: Derive the build number
+        id: version
+        run: |
+          set -euo pipefail
+          BUILD_NUMBER=$(( ${{ github.run_number }} + BUILD_NUMBER_OFFSET ))
+          if [ "$BUILD_NUMBER" -le 1 ]; then
+            echo "::error::derived build number $BUILD_NUMBER is not greater than 1"
+            exit 1
+          fi
+          echo "marketing version: $MARKETING_VERSION"
+          echo "build number:      $BUILD_NUMBER"
+          {
+            echo "build=$BUILD_NUMBER"
+            echo "marketing=$MARKETING_VERSION"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Download the xcframework
         uses: actions/download-artifact@v4
@@ -718,10 +930,33 @@ jobs:
       - name: Pod install
         run: cd ios && pod install
 
-      # A throwaway keychain that exists only for this job. The p12, the
-      # profile and the API key are written to files outside the checkout
-      # and deleted in the cleanup step; nothing is ever echoed.
+      # Both paths need the key: automatic signing authenticates xcodebuild
+      # with it, and every path uploads with it. Written outside the
+      # checkout, in two places because xcodebuild wants a path and altool
+      # wants its own directory. Deleted in the cleanup step.
+      - name: Write the App Store Connect API key
+        id: apikey
+        env:
+          APPLE_APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_ID }}
+          APPLE_APP_STORE_CONNECT_KEY_P8: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/private_keys" "$HOME/.appstoreconnect/private_keys"
+          KEY_PATH="$RUNNER_TEMP/private_keys/AuthKey_${APPLE_APP_STORE_CONNECT_KEY_ID}.p8"
+          printf '%s' "$APPLE_APP_STORE_CONNECT_KEY_P8" | base64 --decode > "$KEY_PATH"
+          cp "$KEY_PATH" "$HOME/.appstoreconnect/private_keys/"
+          # Shape only — never the contents.
+          if [ ! -s "$KEY_PATH" ]; then
+            echo "::error::the decoded API key is empty; APPLE_APP_STORE_CONNECT_KEY_P8 must be the .p8 file, base64-encoded"
+            exit 1
+          fi
+          echo "api key written ($(wc -c < "$KEY_PATH" | tr -d ' ') bytes)"
+          echo "path=$KEY_PATH" >> "$GITHUB_OUTPUT"
+
+      # A throwaway keychain that exists only for this job. Manual path only.
       - name: Import signing material into a temporary keychain
+        if: steps.signing.outputs.style == 'manual'
         env:
           APPLE_DISTRIBUTION_CERT_P12: ${{ secrets.APPLE_DISTRIBUTION_CERT_P12 }}
           APPLE_DISTRIBUTION_CERT_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
@@ -743,7 +978,8 @@ jobs:
             > "$HOME/Library/MobileDevice/Provisioning Profiles/swarm.mobileprovision"
           rm -f "$RUNNER_TEMP/dist.p12"
 
-      - name: Archive for a physical device
+      - name: Archive for a physical device (manual signing)
+        if: steps.signing.outputs.style == 'manual'
         working-directory: ios
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -756,14 +992,65 @@ jobs:
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/SwarmWallet.xcarchive" \
+            MARKETING_VERSION="${{ steps.version.outputs.marketing }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             CODE_SIGN_STYLE=Manual
 
-      - name: Export a signed .ipa
+      # No certificate anywhere: Xcode asks App Store Connect for the
+      # signing assets with the API key and creates what it is missing.
+      - name: Archive for a physical device (automatic signing, API key)
+        if: steps.signing.outputs.style == 'automatic'
+        working-directory: ios
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_ID }}
+          APPLE_APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
         run: |
           set -euo pipefail
+          xcodebuild archive \
+            -workspace Zingo.xcworkspace \
+            -scheme Zingo \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/SwarmWallet.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "${{ steps.apikey.outputs.path }}" \
+            -authenticationKeyID "$APPLE_APP_STORE_CONNECT_KEY_ID" \
+            -authenticationKeyIssuerID "$APPLE_APP_STORE_CONNECT_ISSUER_ID" \
+            MARKETING_VERSION="${{ steps.version.outputs.marketing }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic
+
+      - name: Read the archive back
+        run: |
+          set -euo pipefail
+          PLIST="$RUNNER_TEMP/SwarmWallet.xcarchive/Products/Applications/Zingo.app/Info.plist"
+          SHORT=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")
+          BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PLIST")
+          BID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$PLIST")
+          echo "archived $BID $SHORT ($BUILD)"
+          if [ "$BUILD" != "${{ steps.version.outputs.build }}" ]; then
+            echo "::error::the archive carries build $BUILD, expected ${{ steps.version.outputs.build }}"
+            exit 1
+          fi
+          if [ "$BID" != "green.swarm.wallet" ]; then
+            echo "::error::the archive carries bundle id $BID"
+            exit 1
+          fi
+
+      - name: Export a signed .ipa
+        id: export
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_ID }}
+          APPLE_APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
+          SIGNING_STYLE: ${{ steps.signing.outputs.style }}
+        run: |
+          set -euo pipefail
+          if [ "$SIGNING_STYLE" = "manual" ]; then STYLE=manual; else STYLE=automatic; fi
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -771,32 +1058,73 @@ jobs:
             <key>method</key><string>app-store-connect</string>
             <key>teamID</key><string>${APPLE_TEAM_ID}</string>
             <key>uploadSymbols</key><true/>
-            <key>signingStyle</key><string>manual</string>
+            <key>signingStyle</key><string>${STYLE}</string>
           </dict></plist>
           PLIST
-          xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/SwarmWallet.xcarchive" \
-            -exportPath "$RUNNER_TEMP/export" \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+          # Two explicit calls rather than an argument array: macOS
+          # runners still run bash 3.2, where an EMPTY array expanded as
+          # "${arr[@]}" under `set -u` is an unbound-variable error.
+          if [ "$STYLE" = "automatic" ]; then
+            xcodebuild -exportArchive \
+              -archivePath "$RUNNER_TEMP/SwarmWallet.xcarchive" \
+              -exportPath "$RUNNER_TEMP/export" \
+              -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+              -allowProvisioningUpdates \
+              -authenticationKeyPath "${{ steps.apikey.outputs.path }}" \
+              -authenticationKeyID "$APPLE_APP_STORE_CONNECT_KEY_ID" \
+              -authenticationKeyIssuerID "$APPLE_APP_STORE_CONNECT_ISSUER_ID"
+          else
+            xcodebuild -exportArchive \
+              -archivePath "$RUNNER_TEMP/SwarmWallet.xcarchive" \
+              -exportPath "$RUNNER_TEMP/export" \
+              -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+          fi
+          IPA=$(find "$RUNNER_TEMP/export" -name '*.ipa' | sed -n '1p')
+          test -n "$IPA"
+          SHA=$(shasum -a 256 "$IPA" | cut -d' ' -f1)
+          echo "ipa:    $IPA"
+          echo "sha256: $SHA"
+          {
+            echo "ipa=$IPA"
+            echo "sha256=$SHA"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Upload to TestFlight
+        id: upload
         env:
           APPLE_APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_ID }}
           APPLE_APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
-          APPLE_APP_STORE_CONNECT_KEY_P8: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_P8 }}
         run: |
           set -euo pipefail
-          mkdir -p "$HOME/.appstoreconnect/private_keys"
-          echo -n "$APPLE_APP_STORE_CONNECT_KEY_P8" | base64 --decode \
-            > "$HOME/.appstoreconnect/private_keys/AuthKey_${APPLE_APP_STORE_CONNECT_KEY_ID}.p8"
-          IPA=$(find "$RUNNER_TEMP/export" -name '*.ipa' | sed -n '1p')
-          xcrun altool --upload-app -f "$IPA" -t ios \
+          xcrun altool --upload-app -f "${{ steps.export.outputs.ipa }}" -t ios \
             --apiKey "$APPLE_APP_STORE_CONNECT_KEY_ID" \
-            --apiIssuer "$APPLE_APP_STORE_CONNECT_ISSUER_ID"
+            --apiIssuer "$APPLE_APP_STORE_CONNECT_ISSUER_ID" 2>&1 | tee "$RUNNER_TEMP/altool.txt"
+          DELIVERY=$(sed -n 's/.*[Dd]elivery [Uu][Uu][Ii][Dd]: *\([0-9a-fA-F-]*\).*/\1/p' "$RUNNER_TEMP/altool.txt" | sed -n '1p')
+          echo "delivery=${DELIVERY:-unknown}" >> "$GITHUB_OUTPUT"
+
+      # D6 of the build requirements: the release is recorded, with the
+      # build number, the commit and the SHA-256 of what was uploaded.
+      - name: Release summary
+        if: always()
+        run: |
+          {
+            echo "### SWARM iOS signed release"
+            echo
+            echo "| item | value |"
+            echo "| --- | --- |"
+            echo "| signing style | \`${{ steps.signing.outputs.style }}\` |"
+            echo "| marketing version | \`${{ steps.version.outputs.marketing }}\` |"
+            echo "| build number | \`${{ steps.version.outputs.build }}\` |"
+            echo "| commit | \`${{ github.sha }}\` |"
+            echo "| ipa sha256 | \`${{ steps.export.outputs.sha256 }}\` |"
+            echo "| delivery uuid | \`${{ steps.upload.outputs.delivery }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Destroy the temporary keychain and key material
         if: always()
         run: |
           security delete-keychain "$RUNNER_TEMP/swarm-signing.keychain-db" || true
           rm -rf "$HOME/.appstoreconnect/private_keys" || true
+          rm -rf "$RUNNER_TEMP/private_keys" || true
+          rm -f "$RUNNER_TEMP/dist.p12" || true
           rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/swarm.mobileprovision" || true

@@ -42,7 +42,8 @@ use zcash_protocol::memo::MemoBytes;
 use zcash_protocol::value::Zatoshis;
 use zcash_protocol::{PoolType, ShieldedPool};
 use zingolib::config::{
-    ChainType, ClientConfig, WalletConfig, construct_indexer_uri, lib_birthday,
+    ChainType, ClientConfig, SWARM_TESTNET_GENESIS, SWARM_TESTNET_NAME, WalletConfig,
+    construct_indexer_uri, lib_birthday, swarm_testnet_genesis_is_placeholder,
 };
 use zingolib::data::PollReport;
 use zingolib::data::proposal::total_fee;
@@ -66,6 +67,16 @@ use zingolib::wallet::migration::{
 use zingo_common_components::protocol::ActivationHeights;
 
 const INDEXER_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// SWARM: the chain hint the app sends for SwarmTestnet. It is the SDK's own
+/// chain label, so the string the app stores, the string the SDK parses and the
+/// string the indexer reports in `GetLightdInfo.chain_name` are all one value.
+pub const SWARM_CHAIN_HINT: &str = SWARM_TESTNET_NAME;
+
+/// SWARM: the project's own indexer, and the only server this build ships. The
+/// JS layer holds the same value and a user may type a different one; this copy
+/// exists so the native layer never has to reach for a public server registry.
+pub const SWARM_DEFAULT_SERVER_URI: &str = "https://lwd.swarm.green:443";
 
 // Bounds the pending-URI redial in attach_pending_indexer.
 const PENDING_INDEXER_DIAL_TIMEOUT: Duration = Duration::from_secs(5);
@@ -543,6 +554,13 @@ fn build_connection_params(
     let chain_type = match chain_hint.as_str() {
         "main" => ChainType::Mainnet,
         "test" => ChainType::Testnet,
+        // SWARM: the network this app is built for. `ChainType::CustomTestnet`
+        // is the SDK's fixed SwarmTestnet profile — chain label `swarm-testnet`,
+        // birthday 1, every upgrade through NU6.3 at height 1, standard Zcash
+        // testnet address encodings, and its own wallet-file chain tag. The
+        // schedule is the SDK's, not a caller-supplied one, so there is no
+        // hint suffix to parse.
+        SWARM_CHAIN_HINT => ChainType::CustomTestnet,
         "regtest" => ChainType::Regtest(ActivationHeights::default()),
         hint => match hint.strip_prefix("regtest:") {
             // A regtest chain has no universal schedule: the node that was
@@ -806,12 +824,12 @@ pub fn init_from_bytes(
         // mainnet wallet opened while settings still say "test", and vice
         // versa). Online we honor the hint strictly: a chain that disagrees
         // with the selected server is a genuine mismatch and must error.
+        // SWARM: this build only ever writes SwarmTestnet wallets, and the SDK
+        // gives SwarmTestnet its own wallet-file chain tag, so a wallet from
+        // any other chain fails to deserialize here by design rather than being
+        // silently adopted. Offline therefore tries exactly one chain.
         let chain_hints: Vec<String> = if server_uri.is_empty() {
-            vec![
-                "main".to_string(),
-                "test".to_string(),
-                "regtest".to_string(),
-            ]
+            vec![SWARM_CHAIN_HINT.to_string()]
         } else {
             vec![chain_hint]
         };
@@ -931,6 +949,79 @@ pub fn save_wallet_bytes() -> Result<Option<Vec<u8>>, ZingolibError> {
 /// refusal is never-retry; the excluded-indexer exhaustion is a
 /// server-topology problem where switching servers genuinely changes
 /// eligibility, so it must NOT carry the mixnet marker.
+/// SWARM: the network identity this build ships is the SDK's, and the release
+/// gate can see whether the genesis hash is still the stand-in.
+#[cfg(test)]
+mod swarm_identity_tests {
+    use super::*;
+
+    fn identity() -> serde_json::Value {
+        serde_json::from_str(&swarm_network_identity().expect("the identity is reportable"))
+            .expect("the identity is JSON")
+    }
+
+    /// The app holds no second copy of the network identity: every field it
+    /// reports comes from the SDK it is pinned to.
+    #[test]
+    fn identity_is_the_sdk_profile() {
+        let value = identity();
+        assert_eq!(value["chain_name"], SWARM_TESTNET_NAME);
+        assert_eq!(value["chain_name"], SWARM_CHAIN_HINT);
+        assert_eq!(value["coin_ticker"], "SWM");
+        assert_eq!(value["genesis"], SWARM_TESTNET_GENESIS);
+        assert_eq!(
+            value["birthday"],
+            zingolib::config::SWARM_TESTNET_BIRTHDAY
+        );
+    }
+
+    /// The placeholder gate is reported honestly in both directions, so a
+    /// release check can refuse a build that still carries the stand-in and
+    /// the app can avoid implying a verified connection while it does.
+    #[test]
+    fn placeholder_state_is_reported_not_assumed() {
+        let value = identity();
+        assert_eq!(
+            value["genesis_is_placeholder"],
+            swarm_testnet_genesis_is_placeholder(),
+            "the reported placeholder state must be the SDK's own answer"
+        );
+        assert_eq!(
+            swarm_testnet_genesis_is_placeholder(),
+            SWARM_TESTNET_GENESIS == zingolib::config::SWARM_TESTNET_GENESIS_PLACEHOLDER,
+        );
+    }
+
+    /// The chain hint the app sends round-trips to the SwarmTestnet profile,
+    /// and a wallet built from it is on that chain and no other.
+    #[test]
+    fn the_chain_hint_resolves_to_swarm_testnet() {
+        let params = build_connection_params(
+            String::new(),
+            SWARM_CHAIN_HINT.to_string(),
+            "Medium".to_string(),
+            1,
+        )
+        .expect("the SWARM chain hint is accepted");
+        assert!(params.chain_type == ChainType::CustomTestnet);
+        assert_eq!(chain_name_short(params.chain_type), SWARM_CHAIN_HINT);
+    }
+
+    /// SwarmTestnet uses the standard Zcash TESTNET address encodings, so a
+    /// MAINNET address is not a destination this app can pay and must be
+    /// refused rather than reported as some other chain's address.
+    #[test]
+    fn a_mainnet_address_is_not_a_destination() {
+        let mainnet_transparent = "t1dUDJ3AJ1bqeq2q5oxdggApbFaqjEZ8u2y";
+        let parsed = parse_address(mainnet_transparent.to_string())
+            .expect("parsing reports a verdict rather than failing");
+        assert!(
+            parsed.contains("Invalid address"),
+            "a mainnet address must be refused, not accepted on another chain: {parsed}"
+        );
+    }
+}
+
 #[cfg(test)]
 mod ffi_error_routing_tests {
     use super::*;
@@ -1774,6 +1865,25 @@ pub fn run_rescan() -> Result<String, ZingolibError> {
     })
 }
 
+/// SWARM: what this build believes SwarmTestnet is, as JSON, so the JS layer
+/// never carries its own copy of the network identity.
+///
+/// `genesis_is_placeholder` is true while [`SWARM_TESTNET_GENESIS`] still holds
+/// the stand-in that no block can hash to. While it is true the app can talk to
+/// an indexer and sync, but it cannot prove the server is on the right chain,
+/// and it says so rather than implying a verified connection.
+pub fn swarm_network_identity() -> Result<String, ZingolibError> {
+    Ok(object! {
+        "chain_name" => SWARM_CHAIN_HINT,
+        "coin_ticker" => "SWM",
+        "default_server" => SWARM_DEFAULT_SERVER_URI,
+        "birthday" => zingolib::config::SWARM_TESTNET_BIRTHDAY,
+        "genesis" => SWARM_TESTNET_GENESIS,
+        "genesis_is_placeholder" => swarm_testnet_genesis_is_placeholder(),
+    }
+    .pretty(2))
+}
+
 pub fn info_server() -> Result<String, ZingolibError> {
     with_initialized_lightclient(|lightclient| {
         RT.block_on(async move {
@@ -1805,12 +1915,15 @@ fn ironwood_activation_height(chain: ChainType) -> Option<u32> {
 }
 
 /// The loaded wallet's chain as the short token the JS layer uses
-/// (`ChainNameEnum`: "main" / "test" / "regtest"). Read straight from the
-/// wallet, so it is reliable even Offline (no server).
+/// (`ChainNameEnum`: "swarm-testnet" / "main" / "test" / "regtest"). Read
+/// straight from the wallet, so it is reliable even Offline (no server).
 fn chain_name_short(chain: ChainType) -> &'static str {
     match chain {
         ChainType::Mainnet => "main",
         ChainType::Testnet => "test",
+        // SWARM: reported under the SDK's own chain label, the same string the
+        // indexer returns in `chain_name`, so JS compares one value everywhere.
+        ChainType::CustomTestnet => SWARM_CHAIN_HINT,
         ChainType::Regtest(_) => "regtest",
     }
 }
@@ -1871,12 +1984,13 @@ pub fn read_wallet_recovery_info(wallet_bytes: Vec<u8>) -> Result<String, Zingol
 
 /// Confirms the bytes parse as a complete wallet under one of the supported
 /// chains, reporting the failure whose parse reached the deepest byte.
+///
+/// SWARM: SwarmTestnet is the only chain this build creates wallets for, so it
+/// is the only one tried. The SDK gives SwarmTestnet its own wallet-file chain
+/// tag, so a file from another chain is refused here instead of being opened
+/// against the wrong genesis.
 pub fn validate_wallet_bytes(wallet_bytes: Vec<u8>) -> Result<(), ZingolibError> {
-    let chains = [
-        ChainType::Mainnet,
-        ChainType::Testnet,
-        ChainType::Regtest(ActivationHeights::default()),
-    ];
+    let chains = [ChainType::CustomTestnet];
     let mut deepest = (0usize, String::from("empty wallet bytes"));
     for chain in chains {
         let mut remaining = wallet_bytes.as_slice();
@@ -2011,20 +2125,15 @@ pub fn change_server(server_uri: String) -> Result<String, ZingolibError> {
     with_initialized_lightclient(|lightclient| {
         let uri = if server_uri.is_empty() {
             // Offline: no server. `http::Uri::default()` is scheme-less and
-            // `set_indexer_uri` rejects it ("bad uri: invalid scheme"), so
-            // hand it the chain's first census indexer instead —
-            // syntactically valid, and never actually dialed while offline.
-            let census_chain = match lightclient.chain_type() {
-                ChainType::Testnet => zingolib::indexers::IndexerChain::Test,
-                ChainType::Mainnet | ChainType::Regtest(_) => {
-                    zingolib::indexers::IndexerChain::Main
-                }
-            };
-            let default = zingolib::indexers::active(census_chain)
-                .next()
-                .map(|indexer| indexer.uri.to_string())
-                .ok_or_else(|| ZingolibError::InvalidInput("empty indexer census".to_string()))?;
-            construct_indexer_uri(default)
+            // `set_indexer_uri` rejects it ("bad uri: invalid scheme"), so hand
+            // it a syntactically valid stand-in that is never actually dialed
+            // while offline.
+            //
+            // SWARM: upstream drew that stand-in from the public indexer census
+            // (a registry of ZEC mainnet/testnet servers). This build has no
+            // public registry — SwarmTestnet's only default is its own indexer —
+            // so the stand-in is that constant.
+            construct_indexer_uri(SWARM_DEFAULT_SERVER_URI.to_string())
                 .map_err(|_| ZingolibError::InvalidInput("invalid server uri".to_string()))?
         } else {
             construct_indexer_uri(server_uri)
@@ -2096,23 +2205,20 @@ pub fn parse_address(address: String) -> Result<String, ZingolibError> {
                 "the address is empty".to_string(),
             ))
         } else {
+            // SWARM: only SwarmTestnet addresses are valid destinations on this
+            // network. SwarmTestnet uses the standard Zcash TESTNET encodings
+            // (`utest…`, `ztestsapling…`, `tm…`), so this accepts exactly those
+            // and rejects a mainnet address instead of silently reporting it as
+            // a different chain the user cannot actually pay.
             fn make_decoded_chain_pair(
                 address: &str,
             ) -> Option<(zcash_client_backend::address::Address, ChainType)> {
-                [
-                    ChainType::Mainnet,
-                    ChainType::Testnet,
-                    ChainType::Regtest(ActivationHeights::default()),
-                ]
-                .iter()
-                .find_map(|chain| Address::decode(chain, address).zip(Some(*chain)))
+                [ChainType::CustomTestnet]
+                    .iter()
+                    .find_map(|chain| Address::decode(chain, address).zip(Some(*chain)))
             }
             if let Some((recipient_address, chain_name)) = make_decoded_chain_pair(&address) {
-                let chain_name_string = match chain_name {
-                    ChainType::Mainnet => "main",
-                    ChainType::Testnet => "test",
-                    ChainType::Regtest(_) => "regtest",
-                };
+                let chain_name_string = chain_name_short(chain_name);
                 Ok(match recipient_address {
                     Address::Sapling(_) => object! {
                         "status" => "success",

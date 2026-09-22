@@ -427,8 +427,8 @@ exports[`Component Header - test Header Complex - snapshot 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Sora-SemiBold",
           "fontSize": 18,
-          "fontWeight": "bold",
           "opacity": 0.87,
           "paddingHorizontal": 5,
           "textAlign": "center",
@@ -614,8 +614,8 @@ exports[`Component Header - test Header Simple - snapshot 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Sora-SemiBold",
           "fontSize": 18,
-          "fontWeight": "bold",
           "opacity": 0.87,
           "paddingHorizontal": 5,
         }

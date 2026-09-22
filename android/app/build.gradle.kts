@@ -118,11 +118,20 @@ android {
     }
 
     defaultConfig {
-        applicationId = "org.ZingoLabs.Zingo" // Real
+        // SWARM: the install identity, and the only thing Android keys an app's
+        // private storage on. It differs from Zingo's, so this app can never
+        // open, overwrite or be confused with a Zingo wallet on the same phone,
+        // and the two can be installed side by side.
+        //
+        // `namespace` above stays org.ZingoLabs.Zingo on purpose: it is the
+        // Kotlin package and R class of the forked sources, it is invisible to
+        // users, and renaming it would move every Kotlin source directory and
+        // every test for no behavioural gain.
+        applicationId = "green.swarm.wallet" // Real
         minSdk = rootProject.extra["minSdkVersion"] as Int
         targetSdk = rootProject.extra["targetSdkVersion"] as Int
-        versionCode = 317 // Real (prod baseline; beta flavor overrides below)
-        versionName = "2.0.23" // Real
+        versionCode = 1 // Real (prod baseline; beta flavor overrides below)
+        versionName = "0.1.0-testnet.1" // Real
         testBuildType = System.getProperty("testBuildType", "debug")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
@@ -150,14 +159,14 @@ android {
     productFlavors {
         create("prod") {
             dimension = "channel"
-            resValue("string", "app_name", "Zingo")
+            resValue("string", "app_name", "SWARM Wallet")
         }
         create("beta") {
             dimension = "channel"
             applicationIdSuffix = ".Beta"
-            versionCode = 331 // beta override
-            versionName = "2.0.23" // beta override
-            resValue("string", "app_name", "Zingo Beta")
+            versionCode = 1 // beta override
+            versionName = "0.1.0-testnet.1" // beta override
+            resValue("string", "app_name", "SWARM Wallet Beta")
         }
     }
 
@@ -241,6 +250,13 @@ android {
             // The nym proxy shim's Kotlin wire-contract test, read from the
             // crate itself. No copy lives under src/test.
             java.srcDir("../../rust/nym-proxy-ffi/contract-tests/kotlin")
+        }
+        getByName("main") {
+            // SWARM: the design system's typefaces, staged by `stageSwarmFonts`
+            // below. React Native resolves a `fontFamily` on Android by looking
+            // for `fonts/<name>.ttf` among the packaged assets, so they have to
+            // reach the APK's asset tree under that exact path.
+            assets.srcDir(layout.buildDirectory.dir("swarmFonts"))
         }
     }
 
@@ -415,3 +431,35 @@ dependencies {
     // encrypted file storage
     implementation("androidx.security:security-crypto:1.0.0")
 }
+
+// SWARM: stage the design system's typefaces into the APK's asset tree.
+//
+// The .ttf files live once, at the repository root in `assets/fonts`, so the
+// Android and iOS builds ship the same bytes and there is no second copy to
+// drift. `react-native.config.js` names that directory, but the React Native
+// Gradle plugin does not act on it - upstream tooling copies those assets in a
+// separate `react-native-asset` step that nothing here runs. Without this task
+// the fonts would simply be absent and every `fontFamily` would fall back to
+// the device's own faces: no error, no crash, just the wrong typeface.
+//
+// React Native looks for `fonts/<family>.ttf` among the packaged assets, which
+// is why the staging directory has a `fonts` subdirectory and the source set
+// above points at its parent.
+// The Android plugin resolves asset source directories while it configures the
+// variants, and quietly ignores one that is not there yet. The staging
+// directory is produced by a task, so it would not exist at that point on a
+// clean checkout - which is the case that matters, because that is CI.
+layout.buildDirectory.dir("swarmFonts/fonts").get().asFile.mkdirs()
+
+val stageSwarmFonts by tasks.registering(Copy::class) {
+    description = "Stages assets/fonts/*.ttf into the APK assets as fonts/."
+    from(rootProject.file("../assets/fonts")) { include("*.ttf") }
+    into(layout.buildDirectory.dir("swarmFonts/fonts"))
+}
+
+tasks.named("preBuild") { dependsOn(stageSwarmFonts) }
+
+// The asset-merging tasks are created per variant after evaluation, and each
+// needs the fonts staged before it reads the source set.
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") }
+    .configureEach { dependsOn(stageSwarmFonts) }

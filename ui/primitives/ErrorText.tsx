@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, TextStyle } from 'react-native';
 import { useTheme } from '@app/theme';
+import { fontFamily } from '@app/theme/typography';
 
 type ErrorTextProps = {
   style?: TextStyle;
@@ -20,7 +21,11 @@ const ErrorText: React.FunctionComponent<ErrorTextProps> = ({
   return (
     <Text
       testID={testID}
-      style={{ color: colors.fgAccent, ...style }}
+      style={{
+        fontFamily: fontFamily.bodyMedium,
+        color: colors.fgDanger,
+        ...style,
+      }}
       selectable={selectable}
     >
       {children}

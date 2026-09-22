@@ -279,14 +279,16 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                     style={
                       {
                         "color": "#c3c3c3",
+                        "fontFamily": "JetBrainsMono-Medium",
                         "fontSize": 36,
-                        "fontWeight": "700",
+                        "letterSpacing": 1.56,
                         "margin": 0,
                         "padding": 0,
                       }
                     }
+                    testID="undefined.masked"
                   >
-                     -.----
+                     ⬢⬢⬢.⬢⬢
                   </Text>
                 </View>
               </View>
@@ -408,8 +410,8 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                 style={
                   {
                     "color": "#c3c3c3",
+                    "fontFamily": "Sora-SemiBold",
                     "fontSize": 14,
-                    "fontWeight": "bold",
                     "opacity": 0.87,
                   }
                 }
@@ -419,9 +421,9 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
               <Text
                 style={
                   {
-                    "color": "#c3c3c3",
+                    "color": "#888888",
+                    "fontFamily": "Manrope-Regular",
                     "fontSize": 12,
-                    "opacity": 0.65,
                   }
                 }
               >
@@ -736,8 +738,8 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                     style={
                       {
                         "color": "#c3c3c3",
+                        "fontFamily": "Manrope-Regular",
                         "fontSize": 15,
-                        "fontWeight": "400",
                         "marginRight": 10,
                         "opacity": 1,
                       }
@@ -969,8 +971,8 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                       style={
                         {
                           "color": "#c3c3c3",
+                          "fontFamily": "Manrope-Regular",
                           "fontSize": 15,
-                          "fontWeight": "400",
                           "opacity": 1,
                         }
                       }
@@ -1161,8 +1163,8 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                         style={
                           {
                             "color": "#c3c3c3",
+                            "fontFamily": "Manrope-Regular",
                             "fontSize": 14,
-                            "fontWeight": "400",
                             "opacity": 1,
                           }
                         }
@@ -1226,14 +1228,16 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                               style={
                                 {
                                   "color": "#FFB972",
+                                  "fontFamily": "JetBrainsMono-Medium",
                                   "fontSize": 14,
-                                  "fontWeight": "700",
+                                  "letterSpacing": 1.56,
                                   "margin": 0,
                                   "padding": 0,
                                 }
                               }
+                              testID="undefined.masked"
                             >
-                               -.----
+                               ⬢⬢⬢.⬢⬢
                             </Text>
                           </View>
                         </View>
@@ -1314,9 +1318,9 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
                       <Text
                         style={
                           {
-                            "color": "#c3c3c3",
+                            "color": "#888888",
+                            "fontFamily": "Manrope-Regular",
                             "fontSize": 12.5,
-                            "opacity": 0.65,
                           }
                         }
                       >
@@ -1479,8 +1483,8 @@ exports[`Component Send - test Send currency USD, privacy high & mode advanced -
           {
             "color": "#c3c3c3",
             "flex": 1,
+            "fontFamily": "Sora-SemiBold",
             "fontSize": 16,
-            "fontWeight": "bold",
             "lineHeight": 28,
             "opacity": 0.87,
             "textAlign": "center",
@@ -1693,6 +1697,7 @@ memo10"
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontWeight": "bold",
               "marginTop": 0,
               "opacity": 1,
@@ -1704,9 +1709,9 @@ memo10"
         <Text
           style={
             {
-              "color": "#c3c3c3",
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
               "marginTop": 0,
-              "opacity": 0.65,
             }
           }
         >
@@ -1715,9 +1720,9 @@ memo10"
         <Text
           style={
             {
-              "color": "#c3c3c3",
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
               "marginTop": 0,
-              "opacity": 0.65,
             }
           }
         >
@@ -1891,8 +1896,8 @@ memo10"
             {
               "color": "#c3c3c3",
               "flex": 1,
+              "fontFamily": "Sora-SemiBold",
               "fontSize": 16,
-              "fontWeight": "bold",
               "opacity": 0.87,
               "textAlign": "center",
             }
@@ -2555,8 +2560,8 @@ exports[`Component Send - test Send no currency, privacy normal & mode basic - s
                     style={
                       {
                         "color": "#c3c3c3",
+                        "fontFamily": "Manrope-Regular",
                         "fontSize": 15,
-                        "fontWeight": "400",
                         "marginRight": 10,
                         "opacity": 1,
                       }
@@ -2788,8 +2793,8 @@ exports[`Component Send - test Send no currency, privacy normal & mode basic - s
                       style={
                         {
                           "color": "#c3c3c3",
+                          "fontFamily": "Manrope-Regular",
                           "fontSize": 15,
-                          "fontWeight": "400",
                           "opacity": 1,
                         }
                       }
@@ -2980,8 +2985,8 @@ exports[`Component Send - test Send no currency, privacy normal & mode basic - s
                         style={
                           {
                             "color": "#c3c3c3",
+                            "fontFamily": "Manrope-Regular",
                             "fontSize": 14,
-                            "fontWeight": "400",
                             "opacity": 1,
                           }
                         }
@@ -3148,9 +3153,9 @@ exports[`Component Send - test Send no currency, privacy normal & mode basic - s
                       <Text
                         style={
                           {
-                            "color": "#c3c3c3",
+                            "color": "#888888",
+                            "fontFamily": "Manrope-Regular",
                             "fontSize": 12.5,
-                            "opacity": 0.65,
                           }
                         }
                       >
@@ -3313,8 +3318,8 @@ exports[`Component Send - test Send no currency, privacy normal & mode basic - s
           {
             "color": "#c3c3c3",
             "flex": 1,
+            "fontFamily": "Sora-SemiBold",
             "fontSize": 16,
-            "fontWeight": "bold",
             "lineHeight": 28,
             "opacity": 0.87,
             "textAlign": "center",
@@ -3527,6 +3532,7 @@ memo10"
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontWeight": "bold",
               "marginTop": 0,
               "opacity": 1,
@@ -3538,9 +3544,9 @@ memo10"
         <Text
           style={
             {
-              "color": "#c3c3c3",
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
               "marginTop": 0,
-              "opacity": 0.65,
             }
           }
         >
@@ -3549,9 +3555,9 @@ memo10"
         <Text
           style={
             {
-              "color": "#c3c3c3",
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
               "marginTop": 0,
-              "opacity": 0.65,
             }
           }
         >
@@ -3725,8 +3731,8 @@ memo10"
             {
               "color": "#c3c3c3",
               "flex": 1,
+              "fontFamily": "Sora-SemiBold",
               "fontSize": 16,
-              "fontWeight": "bold",
               "opacity": 0.87,
               "textAlign": "center",
             }

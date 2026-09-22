@@ -51,12 +51,14 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
-        <intent-filter>
-            <action   android:name="android.intent.action.VIEW" />
-            <category android:name="android.intent.category.DEFAULT" />
-            <category android:name="android.intent.category.BROWSABLE" />
-            <data     android:scheme="zcash"/>
-        </intent-filter>
+        <!--
+          SWARM: upstream claims the `zcash:` URI scheme here. This app is not a
+          Zcash wallet and cannot pay a Zcash address, so claiming that scheme
+          would put it in the Android chooser for payment links it would then
+          have to refuse - and, on a phone that also has a real Zcash wallet,
+          would offer the user the wrong one. No scheme is claimed instead of
+          inventing a `swarm:` one, because nothing produces such links yet.
+        -->
       </activity>
     </application>
 

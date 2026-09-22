@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The SWARM hive-bee mark, as the adaptive-icon foreground layer.
+
+  The mark is one cell of the hive: a hexagonal body in Hive Orange with two
+  stripes, and two honey elliptical wings. It is never tilted, never given a
+  face, and carries no gradient.
+
+  The stripes are painted in the background colour rather than being cut out,
+  which is how the design system defines them: "stripes always take the
+  background colour". The background layer of this adaptive icon is that same
+  colour, so they read as gaps at any mask shape.
+
+  Authored on the design system's 64x64 grid and placed on the 108x108
+  adaptive canvas by the nested groups below, so the geometry here is the
+  canonical geometry and can be compared with the source mark line for line.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Centre of the adaptive canvas. -->
+    <group
+        android:translateX="54"
+        android:translateY="54">
+        <!--
+          The drawn mark spans about 44 x 47 units of its 64-unit grid. At this
+          scale it occupies roughly half the canvas, which keeps it inside the
+          66dp circle every launcher mask is guaranteed to show.
+        -->
+        <group
+            android:scaleX="1.25"
+            android:scaleY="1.25">
+            <!-- Bring the mark's own visual centre (32, 32.5) onto the origin. -->
+            <group
+                android:translateX="-32"
+                android:translateY="-32.5">
+
+                <!-- Left wing: honey, rotated -28 degrees about its centre. -->
+                <group
+                    android:pivotX="21"
+                    android:pivotY="17"
+                    android:rotation="-28">
+                    <path
+                        android:fillColor="#FFB020"
+                        android:pathData="M9,17 a12,6.5 0 1,0 24,0 a12,6.5 0 1,0 -24,0 Z" />
+                </group>
+
+                <!-- Right wing: honey, mirrored. -->
+                <group
+                    android:pivotX="43"
+                    android:pivotY="17"
+                    android:rotation="28">
+                    <path
+                        android:fillColor="#FFB020"
+                        android:pathData="M31,17 a12,6.5 0 1,0 24,0 a12,6.5 0 1,0 -24,0 Z" />
+                </group>
+
+                <!-- Hexagonal body: one cell of the hive. -->
+                <path
+                    android:fillColor="#FF8A1F"
+                    android:pathData="M32,22 L46,30 L46,48 L32,56 L18,48 L18,30 Z" />
+
+                <!-- Two stripes, in the background colour. -->
+                <path
+                    android:fillColor="#0A0908"
+                    android:pathData="M18,35 H46 V39 H18 Z" />
+                <path
+                    android:fillColor="#0A0908"
+                    android:pathData="M18,44 H46 V48 H18 Z" />
+            </group>
+        </group>
+    </group>
+</vector>

@@ -135,12 +135,17 @@ type LoadingAppProps = {
   toggleTheme: (mode: ModeEnum) => void;
 };
 
+// The SwarmTestnet project indexer — `serverUris` now holds exactly one entry,
+// so this is https://lwd.swarm.green:443 on chain `swarm-testnet`.
 const SERVER_DEFAULT_0: ServerType = {
   uri: serverUris(() => {})[0].uri,
   chainName: serverUris(() => {})[0].chainName,
 } as ServerType;
 
+// Lowest legal wallet birthday per chain. SwarmTestnet activated Sapling at
+// its first block, so any birthday >= 1 is valid.
 const activationHeight = {
+  'swarm-testnet': 1,
   main: 419200,
   test: 280000,
   regtest: 1,
@@ -189,7 +194,7 @@ export default function LoadingApp(props: LoadingAppProps) {
   const [performanceLevel, setPerformanceLevel] =
     useState<RPCPerformanceLevelEnum>(RPCPerformanceLevelEnum.Medium);
   const [blockExplorer, setBlockExplorer] = useState<BlockExplorerEnum>(
-    BlockExplorerEnum.Zcashexplorer,
+    BlockExplorerEnum.Swarmexplorer,
   );
   const file = useMemo(
     () => ({
@@ -309,13 +314,13 @@ export default function LoadingApp(props: LoadingAppProps) {
         // restore derive keys chain-specifically, so onboarding must never face
         // an empty chain. The wallet-open path ignores this value anyway — it
         // tries every chain and adopts the one the wallet deserializes under.
-        // Only fall back to mainnet when a chain is genuinely absent (e.g. an
-        // old config persisted before offline carried a chain), and persist
-        // that migration once.
+        // Only fall back to SwarmTestnet when a chain is genuinely absent
+        // (e.g. an old config persisted before offline carried a chain), and
+        // persist that migration once.
         const normalizedServer: ServerType =
           settings.server.uri || settings.server.chainName
             ? settings.server
-            : { uri: '', chainName: ChainNameEnum.mainChainName };
+            : { uri: '', chainName: ChainNameEnum.swarmChainName };
         setServer(normalizedServer);
         if (!settings.server.uri && !settings.server.chainName) {
           await SettingsFileImpl.writeSettings(
@@ -398,9 +403,7 @@ export default function LoadingApp(props: LoadingAppProps) {
         );
       }
       if (
-        settings.blockExplorer === BlockExplorerEnum.Cipherscan ||
-        settings.blockExplorer === BlockExplorerEnum.Zcashexplorer ||
-        settings.blockExplorer === BlockExplorerEnum.Zexplorer ||
+        settings.blockExplorer === BlockExplorerEnum.Swarmexplorer ||
         settings.blockExplorer === BlockExplorerEnum.None
       ) {
         setBlockExplorer(settings.blockExplorer);
@@ -556,7 +559,7 @@ export class LoadingAppClass extends Component<
       walletExists: false,
       hasBackupWallet: false,
       customServerUri: '',
-      customServerChainName: ChainNameEnum.mainChainName,
+      customServerChainName: ChainNameEnum.swarmChainName,
       customServerOffline: false,
       customServerAuto: false,
       customServerCustom: false,
@@ -838,8 +841,9 @@ export class LoadingAppClass extends Component<
   };
 
   // Default server for a chain = the `default` entry for that chain in the
-  // static `serverUris` list (mainnet and testnet both have one). Same lookup
-  // for both chains, no per-chain special-casing.
+  // static `serverUris` list. SwarmTestnet is the only chain with an entry, so
+  // anything else falls through to SERVER_DEFAULT_0 — the SwarmTestnet project
+  // indexer — rather than inventing a server for a chain the app cannot reach.
   defaultServerForChain = (chainName: ChainNameEnum): ServerType => {
     const found = serverUris(this.state.translate).find(
       (s: ServerUrisType) => s.chainName === chainName && s.default,

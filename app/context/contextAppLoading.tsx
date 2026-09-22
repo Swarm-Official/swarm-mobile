@@ -50,7 +50,7 @@ export const defaultAppContextLoading: AppContextLoading = {
   zingolibVersion: '',
   performanceLevel: RPCPerformanceLevelEnum.Medium,
   setPrivacyOption: async () => {},
-  blockExplorer: BlockExplorerEnum.Zcashexplorer,
+  blockExplorer: BlockExplorerEnum.Swarmexplorer,
 };
 
 export const ContextAppLoading = React.createContext(defaultAppContextLoading);

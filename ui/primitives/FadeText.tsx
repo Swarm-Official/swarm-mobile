@@ -1,7 +1,7 @@
-/* eslint-disable react-native/no-inline-styles */
 import React from 'react';
 import { Text, TextStyle } from 'react-native';
 import { useTheme } from '@app/theme';
+import { fontFamily } from '@app/theme/typography';
 
 type FadeTextProps = {
   style?: TextStyle;
@@ -24,7 +24,11 @@ const FadeText: React.FunctionComponent<FadeTextProps> = ({
     <Text
       numberOfLines={numberOfLines}
       ellipsizeMode={ellipsizeMode}
-      style={{ opacity: 0.65, color: colors.fgDefault, ...style }}
+      style={{
+        fontFamily: fontFamily.bodyRegular,
+        color: colors.fgMuted,
+        ...style,
+      }}
       selectable={selectable}
     >
       {children}

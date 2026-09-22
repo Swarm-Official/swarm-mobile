@@ -112,8 +112,8 @@ exports[`MessageLine - snapshots MessageLine received with messageAddress, no mo
             style={
               {
                 "color": "#c3c3c3",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 15,
-                "fontWeight": "400",
                 "opacity": 1,
               }
             }
@@ -223,8 +223,8 @@ hello
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -338,8 +338,8 @@ exports[`MessageLine - snapshots MessageLine sent with memo, month header 1`] = 
     <Text
       style={
         {
-          "color": "#c3c3c3",
-          "opacity": 0.65,
+          "color": "#888888",
+          "fontFamily": "Manrope-Regular",
         }
       }
     >
@@ -475,8 +475,8 @@ exports[`MessageLine - snapshots MessageLine sent with memo, month header 1`] = 
                   style={
                     {
                       "color": "#c3c3c3",
+                      "fontFamily": "Manrope-Regular",
                       "fontSize": 15,
-                      "fontWeight": "400",
                       "opacity": 1,
                     }
                   }
@@ -535,8 +535,8 @@ exports[`MessageLine - snapshots MessageLine sent with memo, month header 1`] = 
             style={
               {
                 "color": "#c3c3c3",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 15,
-                "fontWeight": "400",
                 "opacity": 1,
               }
             }
@@ -646,8 +646,8 @@ hello
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >

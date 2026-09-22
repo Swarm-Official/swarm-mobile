@@ -208,39 +208,30 @@ export default class Utils {
     return stringValue.replace(new RegExp('\\.'), `${decimalSeparator}`);
   }
 
+  /**
+   * The SWARM block explorer. One site, one constant — SwarmTestnet is the
+   * only chain this wallet reaches, so there is no per-chain URL table any
+   * more. The site is not live yet, so callers must treat the link as
+   * possibly-unopenable (see `getBlockExplorerTxIDURL`).
+   */
+  static readonly SWARM_BLOCK_EXPLORER_URL = 'https://explore.swarm.green/';
+
   static getBlockExplorerTxIDURL(
     txid: string,
     chainName: ChainNameEnum,
     blockExplorer: BlockExplorerEnum,
   ): string {
-    // Regtest is a local dev chain no public explorer can index — never link,
-    // regardless of the selected explorer. Returning '' makes every caller
-    // hide the affordance.
-    if (chainName === ChainNameEnum.regtestChainName) {
+    // Only SwarmTestnet is explorable. Any other chain (the unreachable
+    // upstream ones, or Offline's empty chain) has no SWARM explorer page —
+    // returning '' makes every caller hide the affordance.
+    if (chainName !== ChainNameEnum.swarmChainName) {
       return '';
     }
-    if (blockExplorer === BlockExplorerEnum.Zcashexplorer) {
-      if (chainName === ChainNameEnum.testChainName) {
-        return `https://testnet.zcashexplorer.app/transactions/${txid}`;
-      } else {
-        return `https://mainnet.zcashexplorer.app/transactions/${txid}`;
-      }
-    } else if (blockExplorer === BlockExplorerEnum.Cipherscan) {
-      if (chainName === ChainNameEnum.testChainName) {
-        return `https://testnet.cipherscan.app/tx/${txid}`;
-      } else {
-        return `https://cipherscan.app/tx/${txid}`;
-      }
-    } else if (blockExplorer === BlockExplorerEnum.Zexplorer) {
-      if (chainName === ChainNameEnum.testChainName) {
-        return `https://zexplorer.app/testnet/tx/${txid}`;
-      } else {
-        return `https://zexplorer.app/mainnet/tx/${txid}`;
-      }
-    } else {
-      // BlockExplorerEnum.None (or any unknown value) → no explorer link.
-      return '';
+    if (blockExplorer === BlockExplorerEnum.Swarmexplorer) {
+      return `${Utils.SWARM_BLOCK_EXPLORER_URL}tx/${txid}`;
     }
+    // BlockExplorerEnum.None (or any unknown value) → no explorer link.
+    return '';
   }
 
   static generateColorList(numColors: number): string[] {
@@ -500,11 +491,16 @@ export default class Utils {
 
   /**
    * zingolib surfaces chain-mismatch errors with the raw `ChainNameEnum`
-   * values ("main" / "test" / "regtest") embedded in the message (e.g.
-   * "Wallet chain name main doesn't match expected test"). This helper
-   * rewrites any standalone occurrence of those tokens with the matching
-   * `settings.value-chainname-*` translation (Mainnet / Testnet / Regtest)
-   * so error alerts and snackbars read naturally to the user.
+   * values ("swarm-testnet" / "main" / "test" / "regtest") embedded in the
+   * message (e.g. "Wallet chain name main doesn't match expected
+   * swarm-testnet"). This helper rewrites any standalone occurrence of those
+   * tokens with the matching `settings.value-chainname-*` translation
+   * (SwarmTestnet / Mainnet / Testnet / Regtest) so error alerts and
+   * snackbars read naturally to the user.
+   *
+   * `swarm-testnet` is matched FIRST (alternation is ordered) so the trailing
+   * "testnet" is never chewed off by a shorter alternative, and the hyphen is
+   * inside the match so `\b` still anchors both ends of the whole token.
    *
    * The match is word-bounded, so the substitution is safe for messages
    * that don't contain a chain reference at all.
@@ -514,7 +510,7 @@ export default class Utils {
     translate: (key: string) => TranslateType,
   ): string {
     return text.replace(
-      /\b(main|test|regtest)\b/g,
+      /\b(swarm-testnet|main|regtest|test)\b/g,
       token => translate(`settings.value-chainname-${token}`) as string,
     );
   }

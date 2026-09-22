@@ -258,8 +258,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
       <Text
         style={
           {
-            "color": "#c3c3c3",
-            "opacity": 0.65,
+            "color": "#888888",
+            "fontFamily": "Manrope-Regular",
           }
         }
       >
@@ -337,8 +337,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
         style={
           {
             "color": "#18bd18",
+            "fontFamily": "Sora-SemiBold",
             "fontSize": 16,
-            "fontWeight": "bold",
             "opacity": 0.87,
             "textAlign": "center",
             "textTransform": "capitalize",
@@ -459,8 +459,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -470,8 +470,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
             style={
               {
                 "color": "#c3c3c3",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 15,
-                "fontWeight": "400",
                 "opacity": 1,
               }
             }
@@ -490,8 +490,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -501,8 +501,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
             style={
               {
                 "color": "#c3c3c3",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 15,
-                "fontWeight": "400",
                 "opacity": 1,
               }
             }
@@ -524,8 +524,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >
@@ -569,8 +569,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
             style={
               {
                 "color": "#c3c3c3",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 15,
-                "fontWeight": "400",
                 "opacity": 1,
               }
             }
@@ -592,8 +592,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >
@@ -603,8 +603,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "opacity": 1,
             }
           }
@@ -622,8 +622,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >
@@ -734,8 +734,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >
@@ -780,8 +780,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
             style={
               {
                 "color": "#c3c3c3",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 15,
-                "fontWeight": "400",
                 "opacity": 1,
               }
             }
@@ -1055,8 +1055,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
       <Text
         style={
           {
-            "color": "#c3c3c3",
-            "opacity": 0.65,
+            "color": "#888888",
+            "fontFamily": "Manrope-Regular",
           }
         }
       >
@@ -1134,8 +1134,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
         style={
           {
             "color": "#c3c3c3",
+            "fontFamily": "Sora-SemiBold",
             "fontSize": 16,
-            "fontWeight": "bold",
             "opacity": 0.87,
             "textAlign": "center",
             "textTransform": "capitalize",
@@ -1256,8 +1256,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -1267,8 +1267,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
             style={
               {
                 "color": "#c3c3c3",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 15,
-                "fontWeight": "400",
                 "opacity": 1,
               }
             }
@@ -1287,8 +1287,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -1298,8 +1298,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
             style={
               {
                 "color": "#c3c3c3",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 15,
-                "fontWeight": "400",
                 "opacity": 1,
               }
             }
@@ -1321,8 +1321,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >
@@ -1366,8 +1366,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
             style={
               {
                 "color": "#c3c3c3",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 15,
-                "fontWeight": "400",
                 "opacity": 1,
               }
             }
@@ -1387,8 +1387,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >
@@ -1488,8 +1488,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >
@@ -1561,8 +1561,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
                   style={
                     {
                       "color": "#c3c3c3",
+                      "fontFamily": "Manrope-Regular",
                       "fontSize": 15,
-                      "fontWeight": "400",
                       "opacity": 1,
                     }
                   }
@@ -1642,8 +1642,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >
@@ -1754,8 +1754,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >
@@ -1800,8 +1800,8 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
             style={
               {
                 "color": "#c3c3c3",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 15,
-                "fontWeight": "400",
                 "opacity": 1,
               }
             }

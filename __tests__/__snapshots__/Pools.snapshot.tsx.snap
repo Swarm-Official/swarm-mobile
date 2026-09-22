@@ -203,8 +203,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
         style={
           {
             "color": "#c3c3c3",
+            "fontFamily": "Sora-SemiBold",
             "fontSize": 16,
-            "fontWeight": "bold",
             "opacity": 0.87,
           }
         }
@@ -230,8 +230,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -320,8 +320,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -414,8 +414,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
         style={
           {
             "color": "#c3c3c3",
+            "fontFamily": "Sora-SemiBold",
             "fontSize": 16,
-            "fontWeight": "bold",
             "opacity": 0.87,
           }
         }
@@ -441,8 +441,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -531,8 +531,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -625,8 +625,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
         style={
           {
             "color": "#c3c3c3",
+            "fontFamily": "Sora-SemiBold",
             "fontSize": 16,
-            "fontWeight": "bold",
             "opacity": 0.87,
           }
         }
@@ -652,8 +652,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -742,8 +742,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -836,8 +836,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
         style={
           {
             "color": "#c3c3c3",
+            "fontFamily": "Sora-SemiBold",
             "fontSize": 16,
-            "fontWeight": "bold",
             "opacity": 0.87,
           }
         }
@@ -863,8 +863,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -966,8 +966,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -1098,8 +1098,8 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The monochrome layer of the launcher icon, for Android's themed icons.
+
+  The system recolours this layer, so the stripes cannot be painted in the
+  background colour the way they are in the full-colour mark: they are cut out
+  of the body instead, as even-odd holes, which is the same shape by a
+  different means. Geometry, proportions and placement are otherwise identical
+  to swarm_bee_foreground.xml.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108"
+    android:tint="?attr/colorControlNormal">
+
+    <group
+        android:translateX="54"
+        android:translateY="54">
+        <group
+            android:scaleX="1.25"
+            android:scaleY="1.25">
+            <group
+                android:translateX="-32"
+                android:translateY="-32.5">
+
+                <group
+                    android:pivotX="21"
+                    android:pivotY="17"
+                    android:rotation="-28">
+                    <path
+                        android:fillColor="#FFFFFF"
+                        android:pathData="M9,17 a12,6.5 0 1,0 24,0 a12,6.5 0 1,0 -24,0 Z" />
+                </group>
+
+                <group
+                    android:pivotX="43"
+                    android:pivotY="17"
+                    android:rotation="28">
+                    <path
+                        android:fillColor="#FFFFFF"
+                        android:pathData="M31,17 a12,6.5 0 1,0 24,0 a12,6.5 0 1,0 -24,0 Z" />
+                </group>
+
+                <!-- Body with the two stripes cut out. -->
+                <path
+                    android:fillColor="#FFFFFF"
+                    android:fillType="evenOdd"
+                    android:pathData="M32,22 L46,30 L46,48 L32,56 L18,48 L18,30 Z M18,35 H46 V39 H18 Z M18,44 H46 V48 H18 Z" />
+            </group>
+        </group>
+    </group>
+</vector>

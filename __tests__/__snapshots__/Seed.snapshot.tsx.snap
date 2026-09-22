@@ -207,8 +207,8 @@ exports[`Component Seed - test Seed Backup - snapshot 1`] = `
         style={
           {
             "color": "#c3c3c3",
+            "fontFamily": "Manrope-Regular",
             "fontSize": 15,
-            "fontWeight": "400",
             "marginTop": 12,
             "opacity": 1,
             "textAlign": "center",
@@ -429,8 +429,8 @@ exports[`Component Seed - test Seed Change - snapshot 1`] = `
         style={
           {
             "color": "#c3c3c3",
+            "fontFamily": "Manrope-Regular",
             "fontSize": 15,
-            "fontWeight": "400",
             "marginTop": 12,
             "opacity": 1,
             "textAlign": "center",
@@ -638,6 +638,7 @@ exports[`Component Seed - test Seed New - snapshot 1`] = `
       style={
         {
           "color": "#c3c3c3",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 15,
           "fontWeight": "900",
           "marginTop": 0,
@@ -698,8 +699,8 @@ exports[`Component Seed - test Seed New - snapshot 1`] = `
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "opacity": 1,
               "textAlign": "center",
             }
@@ -780,8 +781,8 @@ exports[`Component Seed - test Seed New - snapshot 1`] = `
       <Text
         style={
           {
-            "color": "#c3c3c3",
-            "opacity": 0.65,
+            "color": "#888888",
+            "fontFamily": "Manrope-Regular",
             "textAlign": "center",
           }
         }
@@ -826,8 +827,8 @@ exports[`Component Seed - test Seed New - snapshot 1`] = `
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "opacity": 1,
               "textAlign": "center",
             }
@@ -1048,8 +1049,8 @@ exports[`Component Seed - test Seed Server - snapshot 1`] = `
         style={
           {
             "color": "#c3c3c3",
+            "fontFamily": "Manrope-Regular",
             "fontSize": 15,
-            "fontWeight": "400",
             "marginTop": 12,
             "opacity": 1,
             "textAlign": "center",
@@ -1270,8 +1271,8 @@ exports[`Component Seed - test Seed View - snapshot 1`] = `
         style={
           {
             "color": "#c3c3c3",
+            "fontFamily": "Manrope-Regular",
             "fontSize": 15,
-            "fontWeight": "400",
             "marginTop": 12,
             "opacity": 1,
             "textAlign": "center",

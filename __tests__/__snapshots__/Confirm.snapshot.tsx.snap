@@ -136,8 +136,8 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "opacity": 1,
               "textAlign": "center",
               "textTransform": "capitalize",
@@ -312,8 +312,8 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -332,8 +332,8 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
               style={
                 {
                   "color": "#c3c3c3",
+                  "fontFamily": "Manrope-Regular",
                   "fontSize": 15,
-                  "fontWeight": "400",
                   "opacity": 1,
                 }
               }
@@ -346,10 +346,10 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
       <Text
         style={
           {
-            "color": "#c3c3c3",
+            "color": "#888888",
+            "fontFamily": "Manrope-Regular",
             "marginLeft": 10,
             "marginTop": 0,
-            "opacity": 0.65,
           }
         }
       >
@@ -420,14 +420,16 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
                 style={
                   {
                     "color": "#c3c3c3",
+                    "fontFamily": "JetBrainsMono-Medium",
                     "fontSize": 14,
-                    "fontWeight": "700",
+                    "letterSpacing": 1.56,
                     "margin": 0,
                     "padding": 0,
                   }
                 }
+                testID="undefined.masked"
               >
-                 -.----
+                 ⬢⬢⬢.⬢⬢
               </Text>
             </View>
           </View>
@@ -507,8 +509,8 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >
@@ -580,8 +582,8 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
                   style={
                     {
                       "color": "#c3c3c3",
+                      "fontFamily": "Manrope-Regular",
                       "fontSize": 15,
-                      "fontWeight": "400",
                       "opacity": 1,
                     }
                   }
@@ -653,9 +655,9 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
         <Text
           style={
             {
-              "color": "#c3c3c3",
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
               "marginTop": 10,
-              "opacity": 0.65,
             }
           }
         >
@@ -726,14 +728,16 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
                   style={
                     {
                       "color": "#c3c3c3",
+                      "fontFamily": "JetBrainsMono-Medium",
                       "fontSize": 14,
-                      "fontWeight": "700",
+                      "letterSpacing": 1.56,
                       "margin": 0,
                       "padding": 0,
                     }
                   }
+                  testID="undefined.masked"
                 >
-                   -.----
+                   ⬢⬢⬢.⬢⬢
                 </Text>
               </View>
             </View>
@@ -806,9 +810,9 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
         <Text
           style={
             {
-              "color": "#c3c3c3",
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
               "marginTop": 10,
-              "opacity": 0.65,
             }
           }
         >
@@ -819,8 +823,8 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "opacity": 1,
             }
           }
@@ -986,8 +990,8 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "opacity": 1,
               "textAlign": "center",
               "textTransform": "capitalize",
@@ -1098,8 +1102,8 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
-                "opacity": 0.65,
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
               }
             }
           >
@@ -1118,8 +1122,8 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
               style={
                 {
                   "color": "#c3c3c3",
+                  "fontFamily": "Manrope-Regular",
                   "fontSize": 15,
-                  "fontWeight": "400",
                   "opacity": 1,
                 }
               }
@@ -1132,10 +1136,10 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
       <Text
         style={
           {
-            "color": "#c3c3c3",
+            "color": "#888888",
+            "fontFamily": "Manrope-Regular",
             "marginLeft": 10,
             "marginTop": 0,
-            "opacity": 0.65,
           }
         }
       >
@@ -1244,8 +1248,8 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
         <Text
           style={
             {
-              "color": "#c3c3c3",
-              "opacity": 0.65,
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
             }
           }
         >
@@ -1317,8 +1321,8 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
                   style={
                     {
                       "color": "#c3c3c3",
+                      "fontFamily": "Manrope-Regular",
                       "fontSize": 15,
-                      "fontWeight": "400",
                       "opacity": 1,
                     }
                   }
@@ -1390,9 +1394,9 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
         <Text
           style={
             {
-              "color": "#c3c3c3",
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
               "marginTop": 10,
-              "opacity": 0.65,
             }
           }
         >
@@ -1494,9 +1498,9 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
         <Text
           style={
             {
-              "color": "#c3c3c3",
+              "color": "#888888",
+              "fontFamily": "Manrope-Regular",
               "marginTop": 10,
-              "opacity": 0.65,
             }
           }
         >
@@ -1507,8 +1511,8 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
           style={
             {
               "color": "#c3c3c3",
+              "fontFamily": "Manrope-Regular",
               "fontSize": 15,
-              "fontWeight": "400",
               "opacity": 1,
             }
           }

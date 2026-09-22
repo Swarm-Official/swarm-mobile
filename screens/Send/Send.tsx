@@ -14,7 +14,6 @@ import {
   TextInput,
   TouchableOpacity,
   Platform,
-  Text,
   Pressable,
   StyleSheet,
   NativeSyntheticEvent,
@@ -29,7 +28,6 @@ import {
   faAddressCard,
   faUserPlus,
   faMagnifyingGlassPlus,
-  faMoneyCheckDollar,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -2293,88 +2291,11 @@ const Send: React.FunctionComponent<SendProps> = ({
                     />
                   )}
                 </View>
-                {server.chainName === ChainNameEnum.mainChainName &&
-                  Platform.OS === GlobalConst.platformOSandroid && (
-                    <>
-                      {donation ? (
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            paddingHorizontal: 4,
-                            paddingBottom: 2,
-                            borderWidth: 1,
-                            borderColor: colors.borderAccent,
-                            borderRadius: 5,
-                          }}
-                        >
-                          <Text style={{ fontSize: 13, color: colors.fgMuted }}>
-                            {translate('donation-legend') as string}
-                          </Text>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          onPress={async () => {
-                            let update = false;
-                            if (
-                              addressText &&
-                              addressText !==
-                                (await Utils.getDonationAddress(
-                                  server.chainName,
-                                ))
-                            ) {
-                              await ShowAddressAlertAsync(translate)
-                                .then(async () => {
-                                  // fill the fields in the screen with the donation data
-                                  update = true;
-                                })
-                                .catch(() => {}); // user cancelled the alert — expected
-                            } else {
-                              // fill the fields in the screen with the donation data
-                              update = true;
-                            }
-                            if (update) {
-                              updateToField(
-                                await Utils.getDonationAddress(
-                                  server.chainName,
-                                ),
-                                Utils.getDonationAmount(),
-                                null,
-                                Utils.getDonationMemo(translate),
-                                true,
-                              );
-                            }
-                          }}
-                        >
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              paddingHorizontal: 4,
-                              paddingBottom: 2,
-                              borderWidth: 1,
-                              borderColor: colors.borderAccent,
-                              borderRadius: 5,
-                            }}
-                          >
-                            <Text
-                              style={{ fontSize: 13, color: colors.fgMuted }}
-                            >
-                              {translate('donation-button') as string}
-                            </Text>
-                            <FontAwesomeIcon
-                              style={{ marginTop: 3 }}
-                              size={16}
-                              icon={faMoneyCheckDollar}
-                              color={colors.fgAccent}
-                            />
-                          </View>
-                        </TouchableOpacity>
-                      )}
-                    </>
-                  )}
+                {/* SWARM: upstream's "Donate To ZingoLabs" prefill stood here,
+                    behind a mainnet-only gate this build never satisfies. A
+                    wallet for a valueless test coin has nothing to donate, and
+                    the address it prefilled was a Zcash MAINNET one. Removed
+                    rather than left as unreachable code. */}
               </View>
             </View>
           </ScrollView>

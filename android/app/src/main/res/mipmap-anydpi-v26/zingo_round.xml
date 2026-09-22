@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  The round launcher icon. Unlike upstream's, this one carries the warm-black
+  background rather than a transparent one: the mark's stripes are painted in
+  the background colour, so on a transparent background they would cut the body
+  open against whatever the launcher happens to show behind it.
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@android:color/transparent"/>
-    <foreground android:drawable="@mipmap/zingo_foreground_round"/>
+    <background android:drawable="@color/zingo_background"/>
+    <foreground android:drawable="@drawable/swarm_bee_foreground"/>
+    <monochrome android:drawable="@drawable/swarm_bee_monochrome"/>
 </adaptive-icon>

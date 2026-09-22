@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  The SWARM Wallet launcher icon.
+
+  The resource name stays `zingo` because AndroidManifest.xml and the forked
+  Kotlin sources reference @mipmap/zingo; renaming the resource would rename it
+  in the fork's sources for no visible gain. What it draws is the SWARM
+  hive-bee on the warm-black canvas.
+
+  minSdk is 26, so this adaptive form is what every device that can install
+  this app will use; the legacy PNG foregrounds are no longer referenced.
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/zingo_background"/>
-    <foreground android:drawable="@mipmap/zingo_foreground"/>
+    <foreground android:drawable="@drawable/swarm_bee_foreground"/>
+    <monochrome android:drawable="@drawable/swarm_bee_monochrome"/>
 </adaptive-icon>

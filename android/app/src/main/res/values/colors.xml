@@ -3,5 +3,5 @@
     <!-- Window background. Matches `bgCanvas` in app/theme/tokens.ts so the
          activity blends with the theme where it is drawn behind the system
          bars in edge-to-edge mode. -->
-    <color name="window_background">#060B12</color>
+    <color name="window_background">#0A0908</color>
 </resources>

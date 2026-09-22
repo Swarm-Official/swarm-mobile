@@ -8,6 +8,7 @@ import { sendEmail } from './services/sendEmail';
 import { TranslateType } from './AppState';
 import { sanitizePaths } from './utils/sanitizePaths';
 import { getZingoName, getZingoVersion } from './utils/ZingoAppData';
+import { fontFamily } from '@app/theme/typography';
 
 // The boundary is the React root, so the i18n context may not be mounted by
 // the time we crash. sendEmail only looks up the support address and the
@@ -17,7 +18,9 @@ import { getZingoName, getZingoVersion } from './utils/ZingoAppData';
 const boundaryTranslate = (key: string): TranslateType => {
   switch (key) {
     case 'email':
-      return 'support@zingolabs.org';
+      // SWARM's official address. This is the early-bootstrap fallback, so it
+      // must be the literal address rather than a translation lookup.
+      return 'swarmofficial@atomicmail.io';
     case 'loadedapp.email-error-title':
       return 'Email error';
     case 'loadedapp.email-error-body':
@@ -170,13 +173,13 @@ const styles = StyleSheet.create({
   detailsHeader: {
     color: advancedTokens.fgDefault,
     fontSize: 13,
-    fontFamily: 'monospace',
+    fontFamily: fontFamily.monoRegular,
     marginBottom: 6,
   },
   detailsStack: {
     color: advancedTokens.fgMuted,
     fontSize: 11,
-    fontFamily: 'monospace',
+    fontFamily: fontFamily.monoRegular,
     lineHeight: 14,
   },
   buttonRow: {

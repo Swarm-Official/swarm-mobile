@@ -59,8 +59,8 @@ exports[`Component ChainTypeToggle - test ChainTypeToggle - snapshot 1`] = `
       style={
         {
           "color": "#011401",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 12,
-          "fontWeight": "400",
           "opacity": 1,
         }
       }
@@ -114,8 +114,8 @@ exports[`Component ChainTypeToggle - test ChainTypeToggle - snapshot 1`] = `
       style={
         {
           "color": "#18bd18",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 12,
-          "fontWeight": "400",
           "opacity": 1,
         }
       }
@@ -169,8 +169,8 @@ exports[`Component ChainTypeToggle - test ChainTypeToggle - snapshot 1`] = `
       style={
         {
           "color": "#18bd18",
+          "fontFamily": "Manrope-Regular",
           "fontSize": 12,
-          "fontWeight": "400",
           "opacity": 1,
         }
       }

@@ -10,7 +10,7 @@ import { ContextAppLoaded } from '@app/context';
 import { MenuItemEnum, ModeEnum, SelectServerEnum } from '@app/AppState';
 import { sendEmail } from '@app/services/sendEmail';
 import { walletBackupExists } from '@app/walletBackend';
-import { getZingoLogo, getZingoName } from '@app/utils/ZingoAppData';
+import { getZingoName } from '@app/utils/ZingoAppData';
 import { advancedTokens, basicTokens } from '@app/theme';
 
 import AddressBookIcon from '../../assets/img/options/address-book.svg';
@@ -26,8 +26,20 @@ import RestoreBackupIcon from '../../assets/img/options/restore-backup.svg';
 import SwitchWalletIcon from '../../assets/img/options/switch-wallet.svg';
 import LoadWalletFromSeedBasicIcon from '../../assets/img/options/switch-wallet-basic.svg';
 
-const SOCIAL_X_URL = 'https://x.com/ZingoLabs';
-const SOCIAL_GITHUB_URL = 'https://github.com/zingolabs/zingo-mobile';
+// SWARM's official channels, set by the project owner. These are the only
+// accounts that speak for the project: the app links to these and to nothing
+// else, so a user who arrives at a "SWARM" account found anywhere else can
+// check it against what the wallet itself says. No Discord, no Telegram - not
+// because they are bad, but because the project does not run one, and a wallet
+// linking to a channel nobody official reads is how impersonation starts.
+//
+// The project never asks for recovery phrases, private keys or payments
+// through any channel.
+// (The website, https://swarm.green, is the fourth official channel. It is not
+// in this row because the row renders one fixed SVG glyph per id and there is
+// no site glyph; it belongs in About rather than invented here.)
+const SOCIAL_X_URL = 'https://x.com/swarm_coin';
+const SOCIAL_GITHUB_URL = 'https://github.com/brs-holding';
 
 // Legacy `menu.*` testID slugs, kept stable across the drawer→OptionsPanel
 // migration so existing Maestro flows (.maestro/*.yaml) and the detox
@@ -275,7 +287,6 @@ const LoadedAppOptionsPanelHost: React.FC<LoadedAppOptionsPanelHostProps> = ({
       walletName: getZingoName(),
       targetModeLabel: translate(`settings.value-mode-${target}`) as string,
       targetModeColor: isBasic ? advancedTokens.fgAccent : basicTokens.fgAccent,
-      logoSource: getZingoLogo(),
       // Intentionally NOT closing the panel — staying open lets the user
       // see the action grid change as it re-filters by the new mode.
       onToggle: () => setModeOption(target),

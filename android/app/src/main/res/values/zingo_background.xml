@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="zingo_background">#06162d</color>
+    <!-- The launcher icon's background layer. The hive-bee's stripes are
+         painted in this exact colour, so it must stay equal to `bgCanvas`
+         in app/theme/tokens.ts or the stripes stop reading as gaps. -->
+    <color name="zingo_background">#0A0908</color>
 </resources>

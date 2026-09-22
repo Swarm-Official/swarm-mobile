@@ -1,16 +1,52 @@
-# Zingo Android and iOS apps
+# SWARM Wallet
 
-Zingo Mobile is a shielded Zcash light-client wallet for Android and iOS, built with React Native and powered by the [Zingolib](https://github.com/zingolabs/zingolib) Rust SDK.
+A wallet for **SwarmTestnet**, a private Zcash-derived proof-of-work **test**
+network. SwarmTestnet coins have no value: this is an engineering testnet, not
+a mainnet launch and not a reason to move real money.
 
-App Store: [https://apps.apple.com/app/zingo/id1668209531](https://apps.apple.com/app/zingo/id1668209531)
+Phones do not mine. Both app stores forbid on-device mining, so this is a
+wallet only.
 
-Google Play: [https://play.google.com/store/apps/details?id=org.ZingoLabs.Zingo](https://play.google.com/store/apps/details?id=org.ZingoLabs.Zingo)
+**Android: see [docs/SWARM-ANDROID.md](./docs/SWARM-ANDROID.md)** — how to
+install the APK on a phone, what is proven and what is not, and how to build
+it yourself.
+
+| | |
+| --- | --- |
+| Network | SwarmTestnet, light-wallet chain label `swarm-testnet` |
+| Ticker | SWM |
+| Indexer | `https://lwd.swarm.green:443` |
+| Explorer | `https://explore.swarm.green/` |
+| Android package | `green.swarm.wallet` |
+
+This app is **not** distributed through any app store, and the builds it
+produces are debug-signed for private sideloading only.
+
+Official channels — and no others speak for the project:
+[swarm.green](https://swarm.green) · [github.com/brs-holding](https://github.com/brs-holding) ·
+[@swarm_coin](https://x.com/swarm_coin) · `swarmofficial@atomicmail.io`.
+The project never asks for recovery phrases, private keys or payments through
+any channel.
+
+## Upstream
+
+This is a fork of [zingolabs/zingo-mobile](https://github.com/zingolabs/zingo-mobile)
+(MIT), a shielded Zcash light-client wallet built with React Native, and it
+keeps that licence and its copyright notices — see [LICENSE](./LICENSE). The
+wallet SDK is the project's fork of
+[Zingolib](https://github.com/zingolabs/zingolib), which carries the
+SwarmTestnet identity and nothing else: key derivation, signing, proving, note
+scanning, address encoding and transaction building are upstream's, untouched.
+
+Documentation below this point is upstream's and describes the Zingo apps; the
+parts about App Store, Play Store and Zingo's release channels do not apply to
+this fork.
 
 # Security Vulnerability Disclosure
 
-If you believe you have discovered a security issue, please contact us at:
-
-zingodisclosure@proton.me
+If you believe you have discovered a security issue in this fork, contact
+`swarmofficial@atomicmail.io`. For an issue in upstream Zingo Mobile, contact
+the upstream project at zingodisclosure@proton.me.
 
 ## Building The App
 

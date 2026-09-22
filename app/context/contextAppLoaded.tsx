@@ -82,7 +82,7 @@ export const defaultAppContextLoaded: AppContextLoaded = {
   zingolibVersion: '',
   performanceLevel: RPCPerformanceLevelEnum.Medium,
   setPrivacyOption: async () => {},
-  blockExplorer: BlockExplorerEnum.Zcashexplorer,
+  blockExplorer: BlockExplorerEnum.Swarmexplorer,
   nym: false,
   setNymOption: async () => {},
   mixnetView: null,

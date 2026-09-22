@@ -99,6 +99,7 @@ exports[`AlSummaryLine - snapshots AlSummaryLine address with contact label 1`] 
             style={
               {
                 "color": "#18bd18",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 18,
                 "fontWeight": "bold",
                 "marginHorizontal": 10,
@@ -141,7 +142,8 @@ exports[`AlSummaryLine - snapshots AlSummaryLine address with contact label 1`] 
           <Text
             style={
               {
-                "color": "#c3c3c3",
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 18,
                 "fontWeight": "bold",
                 "marginHorizontal": 10,
@@ -390,6 +392,7 @@ exports[`AlSummaryLine - snapshots AlSummaryLine transparent address 1`] = `
             style={
               {
                 "color": "#18bd18",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 18,
                 "fontWeight": "bold",
                 "marginHorizontal": 10,
@@ -432,7 +435,8 @@ exports[`AlSummaryLine - snapshots AlSummaryLine transparent address 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 18,
                 "fontWeight": "bold",
                 "marginHorizontal": 10,
@@ -681,6 +685,7 @@ exports[`AlSummaryLine - snapshots AlSummaryLine unified address 1`] = `
             style={
               {
                 "color": "#18bd18",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 18,
                 "fontWeight": "bold",
                 "marginHorizontal": 10,
@@ -723,7 +728,8 @@ exports[`AlSummaryLine - snapshots AlSummaryLine unified address 1`] = `
           <Text
             style={
               {
-                "color": "#c3c3c3",
+                "color": "#888888",
+                "fontFamily": "Manrope-Regular",
                 "fontSize": 18,
                 "fontWeight": "bold",
                 "marginHorizontal": 10,

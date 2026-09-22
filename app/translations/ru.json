@@ -14,9 +14,9 @@
   "biometricsfailed-body": "В целях безопасности приложение заблокировано.",
   "biometricsfailed-footer": "Пройдите авторизацию для разблокировки.",
   "biometricsfailed-button": "Разблокировать",
-  "price-ring-live": "Цена ZEC актуальна",
-  "price-ring-stale": "Цена ZEC устарела",
-  "price-ring-paused": "Обновление цены приостановлено",
+  "price-ring-live": "Not used in this build.",
+  "price-ring-stale": "Not used in this build.",
+  "price-ring-paused": "Not used in this build.",
   "biometrics-message": "Пожалуйста, авторизуйтесь",
   "biometrics-error": "В целях безопасности для выполнения этого действия необходимо повторно пройти авторизацию. Вы всегда можете поменять эту опцию в Настройках",
   "biometrics-failure-declined": "Аутентификация была отменена или не удалась.",
@@ -32,11 +32,11 @@
   "support": "Отправить Email",
   "view-error": "Просмотреть/Сообщить об ошибке",
   "menudrawer-acc": "Открыть панель меню",
-  "donation": "Спасибо за поддержку ZingoLabs!",
+  "donation": "Not used in this build.",
   "zenny-tips-ab": "Поддержать Zenny",
   "restarting": "Error подключения к Серверу, приложение перезапустится через несколько секунд.",
   "change-privacy": "Новая политика конфиденциальности: ",
-  "email": "support@zingolabs.org",
+  "email": "swarmofficial@atomicmail.io",
   "subject": "Поддержка {name}...",
   "body": "Мне нужна помощь...",
   "syncing": "Синхронизация",
@@ -129,7 +129,7 @@
     "offline-message": "В автономном режиме вы можете создать новый кошелёк или восстановить его из семени или ключа просмотра. Он не будет синхронизироваться и показывать баланс, пока вы не выберете сервер.",
     "advancedmode": "Переключиться в расширенный режим",
     "noopenwallet-message": "Произошла ошибка, когда приложение попыталось открыть активный кошелек.",
-    "walletrepair-body": "Файл кошелька, похоже, зашифрован дважды. Это известная проблема Zingo 2.0.21. Ваши средства в безопасности. Не удаляйте приложение и не сбрасывайте кошелек. Нажмите «Починить», чтобы исправить файл.",
+    "walletrepair-body": "Your wallet file looks encrypted twice. Your funds are safe. Do not uninstall the app and do not reset the wallet. Tap Repair to fix the file in place.",
     "walletrepair-button": "Починить",
     "walletrepair-success": "Файл кошелька исправлен. Открываем кошелек.",
     "walletrepair-failed": "Починить не удалось. Не удаляйте приложение и не сбрасывайте кошелек. Отправьте этот отчет в поддержку.",
@@ -155,8 +155,8 @@
     "alert-newwallet-body": "Подтвердите, что вы действительно хотите создать новый кошелёк и потерять доступ к текущему кошельку.",
     "serverfirsttry": "Попытка выполнить соединение с другим сервером. Текущий сервер может не работать.",
     "serversecondtry": "Похоже, что с этим сервером нет никаких проблем. Проблема в чём-то другом.",
-    "alert-donation-title": "ПОДДЕРЖИВАЕМЫЕ ZINGOLABS",
-    "alert-donation-body": "Хотите помочь ZingoLabs сделать Zcash более полезным? Подпишитесь на чаевые в размере одного Zenny (0.01 ZEC) в пользу ZingoLabs за каждую транзакцию! Если да, нажмите «Подтвердить», в противном случае нажмите «Отмена».",
+    "alert-donation-title": "Not used in this build.",
+    "alert-donation-body": "Not used in this build.",
     "recoverkeys": "Восстановить последние ​​ключи",
     "recoverkeysinstall": "Восстановлены ​​ключи, которые ранее использовались на этом устройстве:",
     "customserver-unreachable": "Ваш пользовательский сервер не ответил, а кошелёк вернул ошибку. Откройте Настройки, чтобы выбрать другой, или повторите попытку позже.",
@@ -179,12 +179,12 @@
     "insight": "Аналитика",
     "loadwalletfromseed-basic": "восстановить другой кошелек",
     "addressbook": "Адресная книга",
-    "tipzingolabs-basic": "Поддержать ZingoLabs",
+    "tipzingolabs-basic": "Not used in this build.",
     "support": "Email поддержки {name}",
     "changeservernew-error": "Error при попытке изменить сервер на другой: ",
     "readingwallet-error": "Error при попытке прочитать кошелёк с новым сервером:",
     "differentchain-error": "ВНИМАНИЕ! Если вы перейдёте на сервер в другой сети, у вас больше не будет доступа к данному кошельку без наличия начальной фразы.",
-    "serverchain-mismatch": "Сервер сообщает о другой сети, отличной от выбранной. Проверьте селектор сети и попробуйте снова.",
+    "serverchain-mismatch": "Этот сервер не в сети SwarmTestnet. Он сообщает о другой цепочке, поэтому кошелек его не использует.",
     "changingwallet-label": "Error при смене кошелька",
     "restoringwallet-label": "Error при восстановлении кошелька",
     "computingtx": "Обработка транзакции...",
@@ -203,7 +203,7 @@
     "syncing": "Синхронизация остановлена в целях сброса кошелька... Займёт несколько секунд.",
     "connection-error": "Эта опция требует подключения к интернету для выполнения.",
     "tryingnewserver": "Попытка подключиться к новому серверу... Займёт несколько секунд.",
-    "tryingnewserver-error": "Новый сервер не ответил в течение 15 секунд.",
+    "tryingnewserver-error": "Сервер не ответил за 15 секунд. Проверьте адрес или попробуйте снова позже.",
     "readingwallet": "Успешное соединение с этим сервером:",
     "restorewallet-title": "Расширенные настройки",
     "restorewallet-alert": "Подтвердите, что вы хотите восстановить новый кошелек с помощью вашей начальной фразы.",
@@ -246,11 +246,11 @@
     "currencies": [
       {
         "value": "",
-        "text": "Не показывать сумму в фиатных валютах, только ZEC."
+        "text": "Not used in this build."
       },
       {
         "value": "USD",
-        "text": "Цену в долларах США можно узнать из интернета."
+        "text": "Not used in this build."
       }
     ],
     "languages": [
@@ -288,11 +288,11 @@
     "donations": [
       {
         "value": true,
-        "text": "Чаевые для ZingoLabs в размере (0.01 ZEC) за каждую транзакцию."
+        "text": "Not used in this build."
       },
       {
         "value": false,
-        "text": "Чаевые позволяют улучшать кошелёк и повышать его безопасность."
+        "text": "Not used in this build."
       }
     ],
     "privacys": [
@@ -355,16 +355,8 @@
     ],
     "blockexplorers": [
       {
-        "value": "Zcashexplorer",
-        "text": "ZcashExplorer.App"
-      },
-      {
-        "value": "Cipherscan",
-        "text": "CipherScan.App"
-      },
-      {
-        "value": "Zexplorer",
-        "text": "ZExplorer.App"
+        "value": "Swarmexplorer",
+        "text": "explore.swarm.green"
       },
       {
         "value": "None",
@@ -397,16 +389,16 @@
     "value-memo-none": "отсутствует",
     "value-memo-wallet": "кошелек",
     "value-memo-all": "все",
-    "currency-title": "Цена Валюты",
+    "currency-title": "Not used in this build.",
     "language-title": "Язык",
     "islanguage": "Выберите язык для приложения.",
     "sendall-title": "Включить отправку всех средств",
-    "donation-title": "Поддержать ZingoLabs",
+    "donation-title": "Not used in this build.",
     "privacy-title": "High Privacy",
     "mode-title": "Переключение между основным или расширенным режимом",
     "rescanmenu-title": "Показать кнопку повторного сканирования",
     "recoverywalletinfoondevice-title": "Сохраните данные для восстановления кошелька",
-    "performancelevel-title": "Zingolib Performance Level",
+    "performancelevel-title": "Wallet performance level",
     "blockexplorer-title": "Block Explorer",
     "value-currency-": "Без указания валюты",
     "value-currency-USD": "Доллар США",
@@ -423,6 +415,7 @@
     "value-mode-basic": "Обычный",
     "value-mode-advanced": "Расширенный",
     "mode": "Режим: ",
+    "value-chainname-swarm-testnet": "SwarmTestnet",
     "value-chainname-main": "Основная сеть",
     "value-chainname-test": "Тестовая сеть",
     "value-chainname-regtest": "Регтест",
@@ -437,9 +430,6 @@
     "value-performancelevel-High": "High",
     "value-performancelevel-Medium": "Medium",
     "value-performancelevel-Low": "Low",
-    "value-blockexplorer-Zcashexplorer": "Zcashexplorer",
-    "value-blockexplorer-Cipherscan": "Cipherscan",
-    "value-blockexplorer-Zexplorer": "Zexplorer",
     "value-blockexplorer-None": "Нет",
     "security-title": "Apply Device Security",
     "security-all": "Все",
@@ -475,7 +465,8 @@
     "nym-disable-warning": "Отключение режима Mixnet направляет ваши транзакции через открытую сеть и связывает вашу активность с вашим IP-адресом.",
     "nym-network": "NYM Mixnet",
     "nym-enhanced-privacy": "Повышенная конфиденциальность",
-    "nym-diagnostics": "Запустить диагностику микснета"
+    "nym-diagnostics": "Запустить диагностику микснета",
+    "value-blockexplorer-Swarmexplorer": "explore.swarm.green"
   },
   "mixnet": {
     "status": {
@@ -497,7 +488,7 @@
     "report-copied": "Отчёт скопирован в буфер обмена"
   },
   "header": {
-    "lastupdate": "Последнее обновление:"
+    "lastupdate": "Not used in this build."
   },
   "info": {
     "version": "Версия",
@@ -505,10 +496,10 @@
     "zainod": "URL-адрес сервера",
     "network": "Сеть",
     "serverblock": "Высота блока сервера",
-    "zecprice": "Цена ZEC",
+    "zecprice": "Not used in this build.",
     "unknown": "Неизвестно",
     "title": "Данные сервера",
-    "zingolib": "Версия Zingolib"
+    "zingolib": "Wallet SDK version"
   },
   "rescan": {
     "title": "Пересканировать",
@@ -518,7 +509,9 @@
   },
   "seed": {
     "buttontexts": {
-      "new": ["Я сохранил \n начальную фразу"],
+      "new": [
+        "Я сохранил \n начальную фразу"
+      ],
       "change": [
         "",
         "Открыть новый",
@@ -531,8 +524,12 @@
         "Вы действительно хотите \n изменить свой \n текущий сервер?",
         "Вы уверены?"
       ],
-      "view": ["Я сохранил \n начальную фразу"],
-      "restore": ["Восстановить кошелёк"],
+      "view": [
+        "Я сохранил \n начальную фразу"
+      ],
+      "restore": [
+        "Восстановить кошелёк"
+      ],
       "backup": [
         "",
         "Восстановить",
@@ -583,8 +580,8 @@
     "title": "Отправить",
     "toaddress": "На адрес",
     "invalidaddress": "Некорректный адрес!",
-    "znsnamenotfound": "Такого имени .zcash/.zec не существует!",
-    "addressplaceholder": "Адрес или имя.zcash/.zec",
+    "znsnamenotfound": "SwarmTestnet has no name service, so only addresses work here.",
+    "addressplaceholder": "SwarmTestnet address",
     "invalidamount": "Недопустимая сумма!",
     "invalidnumber": "Некорректное значение!",
     "spendable": "Доступно: ",
@@ -604,7 +601,7 @@
     "title-acc": "Экран отправки",
     "address-acc": "Поле адреса",
     "scan-acc": "Сканировать адрес",
-    "zec-acc": "Поле суммы ZEC",
+    "zec-acc": "SWM amount field",
     "usd-acc": "Поле суммы в USD",
     "memo-acc": "Поле заметки",
     "sendall": "Отправить всё",
@@ -620,8 +617,8 @@
     "deshielded": "Деэкранировано",
     "lose-address-title": "ВЫБЕРИТЕ НОВЫЙ АДРЕС",
     "lose-address-alert": "У вас уже есть действительный адрес в поле для адреса. Вы желаете его заменить?",
-    "confirm-donation": "Пожертвование",
-    "donation-minimum-message": "Минимальная сумма пожертвований — зенни (0,01 ZEC). Попробуйте еще раз и спасибо.",
+    "confirm-donation": "Not used in this build.",
+    "donation-minimum-message": "Not used in this build.",
     "nym-processing-title": "Обработка через NYM",
     "nym-enhanced": "NYM Улучшенный",
     "nym-warning": "Эта транзакция будет направлена через NYM-миксер для повышения конфиденциальности. Это может занять немного больше времени, чем стандартные транзакции."
@@ -728,7 +725,7 @@
     "pool": "Пул",
     "contactcopied": "Контакт скопирован в буфер обмена",
     "address-http": "{name} не знает, кто отправил вам этот адрес! Только вы можете проверить подлинность отправителя.",
-    "address-https": "Zingo-аутентифицированный адрес",
+    "address-https": "Authenticated address",
     "type": "Тип",
     "not-confirmed": "Транзакция пока не подтверждена",
     "calculated": "Подтверждено",
@@ -780,9 +777,9 @@
   },
   "about": {
     "copyright": [
-      "Права защищены (с) 2026, ZingoLabs.",
-      "Используется React Native.",
-      "Лицензия MIT Copyright (c) 2026 Zingo",
+      "SWARM Wallet - a wallet for SwarmTestnet, a test network. SWM test coins have no value.",
+      "Based on Zingo Mobile by ZingoLabs (MIT licence). Built with React Native.",
+      "The MIT License (MIT) Copyright (c) 2026 ZingoLabs",
       "Настоящим предоставляется свободное и безвозмездное согласие любому лицу, получившему копию данного программного обеспечения и связанных с ним файлов документации (Далее - ПО), совершать действия с ПО без ограничений, включая права на использование, копирование, модификацию, объединение, публикацию, распространение, сублицензирование и/или продажу ПО, а также право совершать указанные действия при соблюдении следующих условий:",
       "Вышеуказанное уведомление об авторских правах и данное уведомление о разрешениях должны быть включены во все копии ПО или его значимых кусков кода.",
       "ПРОГРАММНОЕ ОБЕСПЕЧЕНИЕ ПРЕДОСТАВЛЯЕТСЯ \"КАК ЕСТЬ\", БЕЗ КАКИХ-ЛИБО ГАРАНТИЙ, ЯВНЫХ ИЛИ ПОДРАЗУМЕВАЕМЫХ, ВКЛЮЧАЯ, НО НЕ ОГРАНИЧИВАЯСЬ, ГАРАНТИЯМИ ТОВАРНОГО СОСТОЯНИЯ, ПРИГОДНОСТИ ДЛЯ КОНКРЕТНОЙ ЦЕЛИ И НЕНАРУШЕНИЯ ПРАВ. НИ ПРИ КАКИХ ОБСТОЯТЕЛЬСТВАХ АВТОРЫ ИЛИ ПРАВООБЛАДАТЕЛИ НЕ НЕСУТ ОТВЕТСТВЕННОСТИ ЗА ЛЮБЫЕ ПРЕТЕНЗИИ, УБЫТКИ ИЛИ ДРУГИЕ ОБЯЗАТЕЛЬСТВА, БУДЬ ТО ДОГОВОРНЫЕ, ГРАЖДАНСКО-ПРАВОВЫЕ ИЛИ ИНЫЕ, ВОЗНИКАЮЩИЕ ИЗ ПРОГРАММНОГО ОБЕСПЕЧЕНИЯ, ЕГО ИСПОЛЬЗОВАНИЯ ИЛИ ДРУГИХ ОПЕРАЦИЙ С НИМ ИЛИ В СВЯЗИ С НИМИ."
@@ -790,11 +787,13 @@
   },
   "scanner": {
     "text": "Сканировать Унифицированный ключ полного просмотра",
-    "scanaddress": "Сканировать Zcash адрес"
+    "scanaddress": "Scan a SwarmTestnet address"
   },
   "ufvk": {
     "buttontexts": {
-      "view": ["Я сохранил \n ключ просмотра"],
+      "view": [
+        "Я сохранил \n ключ просмотра"
+      ],
       "change": [
         "",
         "Открыть новый",
@@ -843,14 +842,14 @@
     "transparent-title": "ПРОЗРАЧНЫЙ (T-адрес)",
     "transparent-balance": "Общий баланс",
     "transparent-confirmed-balance": "Подтвержденный баланс",
-    "dust": "Сумма прозрачных ZEC недостаточна для экранирования."
+    "dust": "Сумма прозрачных SWM недостаточна для экранирования."
   },
   "meetironwood": {
     "title": "Знакомьтесь: Ironwood",
     "title2": "Что вы можете сделать",
     "orchard": "ORCHARD",
     "ironwood": "IRONWOOD",
-    "step1-body-1": "**Ironwood** — новый, более приватный дом для вашего Zcash. Его приватность математически доказана.",
+    "step1-body-1": "**Ironwood** is a new, more private home for your coins. Its privacy is mathematically proven to work.",
     "step1-body-2": "После обновления **NU6.3** старый пул **Orchard** перестаёт принимать новые средства, а новые платежи поступают в Ironwood.",
     "option1-label": "Продолжать как обычно",
     "option1-body": "Продолжайте пользоваться кошельком как обычно. Каждая транзакция раскроет свою сумму.",
@@ -1000,7 +999,7 @@
     "replanned": "Ваши ноты изменились. Проверьте обновлённое расписание.",
     "review": "Просмотреть расписание",
     "dust-title": "Мигрировать больше нечего",
-    "dust-body": "Оставшиеся в Orchard {amount} ZEC меньше суммы, которую стоит перемещать. Комиссии обойдутся дороже, чем сами средства.",
+    "dust-body": "Оставшиеся в Orchard {amount} SWM меньше суммы, которую стоит перемещать. Комиссии обойдутся дороже, чем сами средства.",
     "unconfirmed-title": "Ваши ноты ещё не подтверждены",
     "unconfirmed-body": "Транзакции разделения уже в сети, но кошелёк сможет потратить их ноты только через блок-другой. Повторите попытку через несколько минут.",
     "back": "Назад",
@@ -1016,7 +1015,7 @@
     "tech-line-now": "якорь {anchor} · текущее окно",
     "miss-note": "Если вы пропустите окно, партия просто дождётся следующего — это ожидаемо, а не ошибка.",
     "reminder-title": "Пора отправить партию {n}",
-    "reminder-body": "Откройте Zingo, чтобы отправить эту партию в Ironwood.",
+    "reminder-body": "Откройте {name}, чтобы отправить эту партию в Ironwood.",
     "armed": "Напоминания запланированы.",
     "denied": "Уведомления выключены. Вернитесь через баннер на главном экране, когда будете готовы.",
     "back": "Назад",
@@ -1084,7 +1083,7 @@
   },
   "uris": {
     "baduri": "Error: нерабочий URI-адрес.",
-    "notvalid": "Не является допустимым адресом zcash",
+    "notvalid": "That is not a valid SwarmTestnet address.",
     "notvalidparameter": "недопустимый параметр",
     "notvalidvalue": "Значение параметра непонятно",
     "noindex": "Неизвестный индекс",
@@ -1097,6 +1096,6 @@
     "memo-too-long": "Слишком длинный memo в параметре",
     "error-http-not-allowed": "Error: Незащищённый HTTP разрешён только для localhost. Для удалённых серверов используйте HTTPS."
   },
-  "donation-button": "Задонатить на разработку ZingoLabs ",
-  "donation-legend": "Вы вносите пожертвования ZingoLabs активно, спасибо"
+  "donation-button": "Not used in this build.",
+  "donation-legend": "Not used in this build."
 }

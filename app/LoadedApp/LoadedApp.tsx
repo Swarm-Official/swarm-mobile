@@ -67,7 +67,6 @@ import {
   NetInfoType,
   ValueTransferType,
   ValueTransferKindEnum,
-  CurrencyNameEnum,
   UnifiedAddressClass,
   TransparentAddressClass,
   AddressKindEnum,
@@ -142,6 +141,7 @@ import Confirm from '@screens/Confirm';
 import { AppStackParamList } from '@app/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RPCValueTransfersStatusEnum } from '@app/walletBackend/enums/RPCValueTransfersStatusEnum';
+import { currencyNameForChain } from '@app/AppState/enums/CurrencyNameEnum';
 
 const About = React.lazy(() => import('@screens/About'));
 const MixnetDoctor = React.lazy(() => import('@screens/MixnetDoctor'));
@@ -238,7 +238,7 @@ export default function LoadedApp(props: LoadedAppProps) {
   const [performanceLevel, setPerformanceLevel] =
     useState<RPCPerformanceLevelEnum>(RPCPerformanceLevelEnum.Medium);
   const [blockExplorer, setBlockExplorer] = useState<BlockExplorerEnum>(
-    BlockExplorerEnum.Zcashexplorer,
+    BlockExplorerEnum.Swarmexplorer,
   );
   const [nym, setNym] = useState<boolean>(false);
   const [zenniesDonationAddress, setZenniesDonationAddress] =
@@ -473,9 +473,7 @@ export default function LoadedApp(props: LoadedAppProps) {
         );
       }
       if (
-        settings.blockExplorer === BlockExplorerEnum.Cipherscan ||
-        settings.blockExplorer === BlockExplorerEnum.Zcashexplorer ||
-        settings.blockExplorer === BlockExplorerEnum.Zexplorer ||
+        settings.blockExplorer === BlockExplorerEnum.Swarmexplorer ||
         settings.blockExplorer === BlockExplorerEnum.None
       ) {
         setBlockExplorer(settings.blockExplorer);
@@ -1578,10 +1576,7 @@ export class LoadedAppClass extends Component<
         if (this.state.info.currencyName) {
           newInfo.currencyName = this.state.info.currencyName;
         } else {
-          newInfo.currencyName =
-            fallbackChain === ChainNameEnum.mainChainName
-              ? CurrencyNameEnum.ZEC
-              : CurrencyNameEnum.TAZ;
+          newInfo.currencyName = currencyNameForChain(fallbackChain);
         }
       }
       if (!newInfo.chainName) {

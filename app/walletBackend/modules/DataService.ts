@@ -13,8 +13,6 @@
 import {
   TotalBalanceClass,
   InfoType,
-  ChainNameEnum,
-  CurrencyNameEnum,
   AddressKindEnum,
   GlobalConst,
   ValueTransferType,
@@ -38,6 +36,7 @@ import { RPCWalletVersionType } from '@app/walletBackend/types/RPCWalletVersionT
 import { WalletBackendConfig } from '@app/walletBackend/config/WalletBackendConfig';
 import { transformValueTransfer } from '@app/walletBackend/transforms/valueTransferTransform';
 import { fetchWallet } from '@app/walletBackend/utils/walletUtils';
+import { currencyNameForChain } from '@app/AppState/enums/CurrencyNameEnum';
 
 export class DataService {
   config: WalletBackendConfig;
@@ -285,10 +284,10 @@ export class DataService {
         version: `${infoJSON.vendor}/${infoJSON.git_commit ? infoJSON.git_commit.substring(0, 6) : ''}/${
           infoJSON.version
         }`,
-        currencyName:
-          infoJSON.chain_name === ChainNameEnum.mainChainName
-            ? CurrencyNameEnum.ZEC
-            : CurrencyNameEnum.TAZ,
+        // The ticker the server's chain goes by. One shared mapping, so the
+        // three places that need it cannot drift apart and tell the user the
+        // wallet holds a coin it does not.
+        currencyName: currencyNameForChain(infoJSON.chain_name),
         // `?? null` collapses both "no activation scheduled" (null) and "older
         // native lib that doesn't report it" (undefined) into the same
         // not-yet-active answer.

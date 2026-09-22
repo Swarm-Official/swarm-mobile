@@ -18,7 +18,7 @@ Privacy
 The app has no analytics and no tracking. It talks to one server to sync blocks and send transactions: the SWARM wallet server (lwd.swarm.green) or a server you choose yourself. The camera is used only to read QR codes on your phone. Fingerprint or screen-lock unlock is handled by Android and never leaves the device. Details: https://swarm.green/wallet/privacy/
 
 Open source
-SWARM Wallet is a fork of Zingo, an MIT-licensed wallet, adapted for SwarmTestnet. Source code: https://github.com/brs-holding/swarm-mobile
+SWARM Wallet is a fork of Zingo, an MIT-licensed wallet, adapted for SwarmTestnet. Source code: https://github.com/Swarm-Official/swarm-mobile
 
 Please note
 • Write your recovery words on paper. If you lose them, nobody can restore your wallet.
@@ -27,4 +27,4 @@ Please note
 
 SWARM is not affiliated with or endorsed by the Electric Coin Company, the Zcash Foundation, Zingo Labs, Foursquare's Swarm app or the Ethereum Swarm project.
 
-Official channels: https://swarm.green, https://github.com/brs-holding, @swarm_coin on X, swarmofficial@atomicmail.io. Nobody will ever ask you for your recovery words.
+Official channels: https://swarm.green, https://github.com/Swarm-Official, @swarm_coin on X, swarmofficial@atomicmail.io. Nobody will ever ask you for your recovery words.

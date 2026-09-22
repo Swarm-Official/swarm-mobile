@@ -876,14 +876,9 @@ jobs:
           disk-size: 8G
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
-          script: |
-            bash scripts/swarm_smoke_test.sh "$(ls dist/*.apk | head -1)" debug-signed
-            RELEASE_APK="$(ls dist-play/*.apk 2>/dev/null | head -1 || true)"
-            if [ -n "$RELEASE_APK" ]; then
-              bash scripts/swarm_smoke_test.sh "$RELEASE_APK" release-signed
-            else
-              echo "no release-signed APK in this run - only the debug-signed one was checked"
-            fi
+          # One line on purpose: the action runs each script line in its own
+          # `sh -c`, so control flow lives in scripts/swarm_smoke_ci.sh.
+          script: bash scripts/swarm_smoke_ci.sh
 
       - name: Upload smoke test evidence
         if: always()

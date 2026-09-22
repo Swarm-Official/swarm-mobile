@@ -104,7 +104,37 @@ wings, on warm black. **Never tilt it and never give it a face.**
    Release and not Debug so the JavaScript is bundled into the app: the
    artifact is standalone and the screenshot is real evidence rather than a
    Debug build's error screen about a missing Metro server.
-4. **`signed-release`** — **disabled**. Section 4.
+4. **`string-sweep`** — reads the **built** app and fails while anything a
+   person can see still says Zingo: the bundled JavaScript (Hermes
+   bytecode keeps its string table, so `strings` finds it), the
+   user-visible `Info.plist` keys, and the `.strings`/`.storyboard`/`.xib`
+   resources. Licence and attribution lines are allow-listed — keeping the
+   MIT notices is required, not a leak. Internal identifiers are
+   deliberately out of scope and are **not** renamed: the React Native
+   root module name, background-task identifiers, keychain service names,
+   storage keys, the Xcode target and scheme, and SDK symbols such as
+   `ZingolibError`.
+   It is a separate job so that "does the app build" stays a readable
+   answer independent of "is the rebrand finished". It complements
+   `scripts/check_no_upstream_branding.mjs` on the shared side rather than
+   duplicating it: that one reads the source, this one reads the artifact
+   that would actually ship.
+5. **`signed-release`** — **disabled**. Section 4.
+
+### A note on the Actions cache, for whoever hits it next
+
+A repository gets **10 GB of Actions cache in total**, shared by every
+branch and both agents, and GitHub evicts least-recently-used without
+warning. On 2026-09-21 the Android workflow saved three ~2.2 GB per-ABI
+caches and evicted this pipeline's xcframework cache minutes after it was
+written.
+
+So the xcframework travels between the two iOS jobs as a **run-scoped
+artifact**, not through the cache. The cache is kept purely as a
+build-skip optimisation: when it survives, the hour-long Rust build is
+skipped; when it does not, the build simply runs again. Nothing fails
+because of an eviction. Do not reintroduce `fail-on-cache-miss` on the
+consumer side.
 
 Pinned versions and why:
 
@@ -275,18 +305,55 @@ TestFlight has two paths:
 * Anything on a physical iPhone. No device has ever run this build.
 * Anything about App Review's actual response. The guidelines are quoted;
   reviewers decide.
-* Wallet behaviour against a live SWARM network. **The network's genesis
-  hash does not exist yet**; the SDK carries a placeholder constant and the
-  app is READY FOR HASH. Until the hash is real and the SDK is re-pinned,
-  a launched wallet cannot sync, and the screenshots prove that the app
-  starts — not that it works against a chain.
+* Wallet behaviour against a live SWARM network. The genesis hash is no
+  longer a placeholder — the merged SDK pin carries SwarmTestnet's real
+  genesis `045993f5c91ea160c7ebda573dd97b0016816bca68d395bfff202779b88e2a28`
+  — but no iOS build has yet synced a block. The screenshots prove the app
+  starts and reaches its authentication gate; they prove nothing about
+  syncing, sending or receiving. That needs `lwd.swarm.green` reachable
+  and a run that gets past the gate.
 
-## 6. What remains
+## 6. What is shared and what is iOS-only
 
-**After the genesis hash exists** — re-pin the SDK constant and the
-light-wallet chain label, rebuild, and re-run the pipeline. The workflow
-needs no change: the xcframework cache key is the Rust source hash, so a
-new pin rebuilds it automatically.
+Two agents work in this repository. Getting this boundary wrong means the
+same job done twice, or differently on each platform.
+
+**iOS-only — changed here, and nowhere else:**
+
+| Area | File |
+| --- | --- |
+| Display name, bundle id, version, team | `ios/Zingo.xcodeproj/project.pbxproj` |
+| Permission prompts, URL schemes, fonts, launch storyboard, copyright | `ios/Zingo/Info.plist` |
+| Launch screen | `ios/Zingo/LaunchScreen.storyboard` |
+| App icon + launch mark (vector and renderer) | `ios/branding/`, `ios/scripts/` |
+| Bundling the shared typefaces into the app | `ios/Zingo.xcodeproj` folder reference + `UIAppFonts` |
+| The pipeline | `.github/workflows/swarm-ios.yml` |
+
+**Shared — owned by the `swarm-mobile` branch, consumed here:** the
+network identity and SDK pin (`rust/`), every screen and string
+(`app/`, `screens/`, `ui/`, `app/translations/*.json`), the palette and
+type scale (`app/theme/`), the typeface files themselves
+(`assets/fonts/`), and the removal of the fiat picker and donation
+surfaces. The iOS build renders those; it does not define them.
+
+Two specifically worth naming, because they look iOS-shaped and are not:
+
+* **The typefaces.** The `.ttf` files and `app/theme/typography.ts` are
+  shared. But `react-native.config.js` declares `project: { android: {} }`
+  and the app does no runtime font loading, so linking them into the iOS
+  bundle is iOS work, done here. Without it every `fontFamily: 'Sora-…'`
+  falls back to the system face — silently, which is why the build now
+  fails if a face named in `UIAppFonts` is missing from the app.
+* **The authentication prompt.** The title on the iOS passcode sheet is
+  `CFBundleDisplayName` (iOS-only, fixed here). The subtitle under it is
+  the `localizedReason` passed in from shared JavaScript.
+
+## 7. What remains
+
+**The genesis hash is in.** The SDK pin
+`8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f` carries the real
+`045993f5…` and keeps `swarm_testnet_genesis_is_placeholder()` as a
+release gate, which this build reports rather than assumes.
 
 **After the owner has an organisation account** — add the seven secrets,
 create the `apple-distribution` environment with required reviewers, run

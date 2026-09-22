@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		12BF9D27B26430347C700A81 /* libPods-Zingo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 293E2F479737E71EC621F947 /* libPods-Zingo.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		AAF0170000000000000000F2 /* fonts in Resources */ = {isa = PBXBuildFile; fileRef = AAF0170000000000000000F1 /* fonts */; };
 		1F0338192C48782D00A3FC49 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0338182C48782D00A3FC49 /* Constants.swift */; };
 		1F03381A2C49575900A3FC49 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0338182C48782D00A3FC49 /* Constants.swift */; };
 		1F0893FF2BA4C4380089FD88 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 1F0893FE2BA4C4380089FD88 /* PrivacyInfo.xcprivacy */; };
@@ -59,6 +60,7 @@
 		0C085A69425A9ACC8EF808C2 /* Pods-Zingo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Zingo.release.xcconfig"; path = "Target Support Files/Pods-Zingo/Pods-Zingo.release.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* Zingo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Zingo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Zingo/Images.xcassets; sourceTree = "<group>"; };
+		AAF0170000000000000000F1 /* fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = fonts; path = ../assets/fonts; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Zingo/Info.plist; sourceTree = "<group>"; };
 		1F0338182C48782D00A3FC49 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		1F0893FE2BA4C4380089FD88 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -147,6 +149,7 @@
 				D07A0007DA1CE0DE00000001 /* DeviceAuth.swift */,
 				D07A0007DA1CE0DE00000002 /* DeviceAuthBridge.m */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
+				AAF0170000000000000000F1 /* fonts */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				1F5569252BBCB4D900F2CD6C /* RPCModule-Bridging-Header.h */,
@@ -322,6 +325,7 @@
 				1F0893FF2BA4C4380089FD88 /* PrivacyInfo.xcprivacy in Resources */,
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				AAF0170000000000000000F2 /* fonts in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

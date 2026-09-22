@@ -67,6 +67,32 @@
 	<string>SWARM Wallet saves a receive-address QR code to your photos when you ask it to. It reads nothing else from your library.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
+	<!-- The three SWARM typefaces, bundled in the app so nothing is
+	     fetched at runtime (a font request would leak that the wallet was
+	     opened, and by whom, before it had done anything else).
+
+	     react-native.config.js links assets/fonts for Android only
+	     (`project: { android: {} }`), and this app does no runtime font
+	     loading, so without these two pieces — the folder reference in
+	     Zingo.xcodeproj and this list — every `fontFamily: 'Sora-…'` in
+	     app/theme/typography.ts would silently fall back to the system
+	     face and the design system would simply not appear on iOS.
+
+	     The paths carry the `fonts/` prefix because the Xcode project
+	     copies assets/fonts in as a folder reference, which keeps the
+	     directory in the bundle and picks up any face added later
+	     without another project edit. -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>fonts/Sora-Regular.ttf</string>
+		<string>fonts/Sora-SemiBold.ttf</string>
+		<string>fonts/Sora-Bold.ttf</string>
+		<string>fonts/Manrope-Regular.ttf</string>
+		<string>fonts/Manrope-Medium.ttf</string>
+		<string>fonts/Manrope-SemiBold.ttf</string>
+		<string>fonts/JetBrainsMono-Regular.ttf</string>
+		<string>fonts/JetBrainsMono-Medium.ttf</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

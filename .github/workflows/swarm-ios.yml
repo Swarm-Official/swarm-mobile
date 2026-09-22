@@ -434,6 +434,25 @@ jobs:
           fi
           echo "ok  UILaunchStoryboardName = $LSN"
 
+          # Every face named in UIAppFonts must actually be in the bundle.
+          # A missing one is silent at runtime — iOS just falls back to the
+          # system face — so it has to be caught here or not at all.
+          echo "--- bundled typefaces ---"
+          missing=0
+          for f in $(/usr/libexec/PlistBuddy -c 'Print :UIAppFonts' "$APP/Info.plist" \
+                     | sed -n 's/^ *\(fonts\/.*\.ttf\) *$/\1/p'); do
+            if [ -f "$APP/$f" ]; then
+              echo "ok      $f"
+            else
+              echo "MISSING $f"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            echo "::error::$missing font(s) declared in UIAppFonts are not in the app bundle; the SWARM typefaces would silently fall back to the system face"
+            exit 1
+          fi
+
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl launch --terminate-running-process "$UDID" "$BID"
 

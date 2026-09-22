@@ -25,7 +25,17 @@ import { join } from 'node:path';
 // identifier - a translation key, a symbol, a file name - and the instruction
 // is explicitly to leave internal identifiers and storage keys alone. Text a
 // user reads is capitalised.
-const FORBIDDEN = ['Zingo', 'ZingoLabs', 'Zecwallet', 'zecwallet'];
+// `Zenny`/`Zennies` is upstream's donation unit. It is donation branding
+// for a network that cannot be donated on, so it counts as upstream
+// branding even though it does not contain the word Zingo.
+const FORBIDDEN = [
+  'Zingo',
+  'ZingoLabs',
+  'Zecwallet',
+  'zecwallet',
+  'Zenny',
+  'Zennies',
+];
 
 // The only contexts in which upstream's name is allowed to survive.
 //

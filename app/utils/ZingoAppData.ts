@@ -53,9 +53,13 @@ export function getZingoName(): string {
  * which is what the design system means by "stripes always take the
  * background colour". Metro picks the density variant.
  *
- * There is no per-channel variant. The beta channel differs by name, not by
- * mark, and upstream's channel-specific logo was the one thing here that
- * still compared against a hard-coded "Zingo Beta" app name.
+ * There is no per-channel variant, and that is the fix rather than an
+ * omission. Upstream picked between a production and a beta logo by comparing
+ * the running app's name against a hard-coded upstream beta name - a string
+ * that stopped being true the moment this app was renamed, so the beta build
+ * would silently have taken the production branch forever. The two channels
+ * differ by name; one mark serves both, and there is no comparison left to go
+ * stale.
  */
 const SWARM_MARK = require('../../assets/img/swarm-bee.png');
 

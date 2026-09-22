@@ -494,25 +494,24 @@ export default function LoadedApp(props: LoadedAppProps) {
       setBackgroundSyncInfo(backgroundSyncInfoJson);
 
       let sort: boolean = false;
+      // SWARM: upstream inserted a "Zenny Tips" contact into the user's
+      // address book on every start, pointing at its own donation address.
+      // That address is mainnet-only, so on SwarmTestnet it resolves to the
+      // empty string and the insertion wrote a named contact with no address
+      // at all - a donation entry the user never asked for, for a network it
+      // cannot be paid on.
+      //
+      // The lookup itself stays. `zenniesDonationAddress` is still read by
+      // the address book, history, send and transfer-detail screens as a
+      // marker to exclude that contact from lists, and it is shared code the
+      // iOS build compiles too. With no address to match, those comparisons
+      // simply never fire.
       const zenniesAddress = await Utils.getZenniesDonationAddress(
         server.chainName,
       );
       setZenniesDonationAddress(zenniesAddress);
 
-      // adding `Zenny Tips` address always.
       let ab = await AddressBookFileImpl.readAddressBook();
-      if (
-        ab.filter((a: AddressBookFileClass) => a.address === zenniesAddress)
-          .length === 0
-      ) {
-        ab = await AddressBookFileImpl.writeAddressBookItem(
-          translate('zenny-tips-ab') as string,
-          zenniesAddress,
-          '',
-          false,
-        );
-        sort = true;
-      }
 
       // now make no sense to have two UA's in the same contact
       // if `uOrchardAddress` exists then it will be removed.

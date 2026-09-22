@@ -91,7 +91,7 @@ exports[`Confirm - snapshots Confirm USD currency, privacy on 1`] = `
           <Image
             source={
               {
-                "testUri": "../../../assets/img/logobig-zingo.png",
+                "testUri": "../../../assets/img/swarm-bee.png",
               }
             }
             style={
@@ -945,7 +945,7 @@ exports[`Confirm - snapshots Confirm no currency, privacy off 1`] = `
           <Image
             source={
               {
-                "testUri": "../../../assets/img/logobig-zingo.png",
+                "testUri": "../../../assets/img/swarm-bee.png",
               }
             }
             style={

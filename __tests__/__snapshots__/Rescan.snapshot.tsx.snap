@@ -84,7 +84,7 @@ exports[`Component Rescan - test Rescan - snapshot 1`] = `
         <Image
           source={
             {
-              "testUri": "../../../assets/img/logobig-zingo.png",
+              "testUri": "../../../assets/img/swarm-bee.png",
             }
           }
           style={

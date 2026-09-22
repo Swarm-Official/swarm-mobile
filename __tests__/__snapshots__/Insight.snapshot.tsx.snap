@@ -162,7 +162,7 @@ exports[`Component Insight - test Insight - snapshot 1`] = `
         <Image
           source={
             {
-              "testUri": "../../../assets/img/logobig-zingo.png",
+              "testUri": "../../../assets/img/swarm-bee.png",
             }
           }
           style={

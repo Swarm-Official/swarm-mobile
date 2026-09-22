@@ -25,7 +25,17 @@ import { join } from 'node:path';
 // identifier - a translation key, a symbol, a file name - and the instruction
 // is explicitly to leave internal identifiers and storage keys alone. Text a
 // user reads is capitalised.
-const FORBIDDEN = ['Zingo', 'ZingoLabs', 'Zecwallet', 'zecwallet'];
+// `Zenny`/`Zennies` is upstream's donation unit. It is donation branding
+// for a network that cannot be donated on, so it counts as upstream
+// branding even though it does not contain the word Zingo.
+const FORBIDDEN = [
+  'Zingo',
+  'ZingoLabs',
+  'Zecwallet',
+  'zecwallet',
+  'Zenny',
+  'Zennies',
+];
 
 // The only contexts in which upstream's name is allowed to survive.
 //
@@ -49,12 +59,29 @@ const ALLOWED = [
 
 const CONTEXT = 60;
 
-function scan(buffer, label) {
+// A compiled Hermes bundle carries a string table in which every JS identifier
+// is stored as plain text, run together with no separators: `getZingoName`,
+// `substituteZingoName`, `fetchZingolibVersionLock`, `TipZingoLabs`. Renaming
+// those is explicitly out of scope, and they are not text anyone reads.
+//
+// What distinguishes a sentence from an identifier is what follows the word.
+// Prose continues with a space or punctuation; camelCase continues with a
+// letter. So in binary mode a hit only counts when the term ends a word.
+// "Zingo PC is locked" is caught; "getZingoName" is not.
+const ENDS_A_WORD = /[\s,.;:!?'")\]}—-]/;
+
+function scan(buffer, label, { wholeWordOnly = false } = {}) {
   const text = buffer.toString('latin1');
   const problems = [];
   for (const term of FORBIDDEN) {
     let i = -1;
     while ((i = text.indexOf(term, i + 1)) !== -1) {
+      if (wholeWordOnly) {
+        const next = text[i + term.length];
+        // End of buffer is ambiguous in a concatenated table; treat it as an
+        // identifier rather than raise a hit nobody can act on.
+        if (next === undefined || !ENDS_A_WORD.test(next)) continue;
+      }
       const around = text.slice(
         Math.max(0, i - CONTEXT),
         Math.min(text.length, i + term.length + CONTEXT),
@@ -117,7 +144,13 @@ if (!existsSync(arg)) {
 }
 
 const work = mkdtempSync(join(tmpdir(), 'swarm-branding-'));
-execFileSync('unzip', ['-o', '-q', arg, 'assets/*', '-d', work], { stdio: 'inherit' });
+// unzip exits 11 when nothing matches the pattern, which is not an error
+// worth failing a build over - the walk below simply finds nothing.
+try {
+  execFileSync('unzip', ['-o', '-q', arg, 'assets/*', '-d', work], { stdio: 'inherit' });
+} catch (e) {
+  if (e.status !== 11) throw e;
+}
 
 const problems = [];
 const assets = join(work, 'assets');
@@ -125,7 +158,7 @@ const walk = dir => {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const p = join(dir, entry.name);
     if (entry.isDirectory()) walk(p);
-    else problems.push(...scan(readFileSync(p), `apk:assets/${entry.name}`));
+    else problems.push(...scan(readFileSync(p), `apk:assets/${entry.name}`, { wholeWordOnly: true }));
   }
 };
 if (existsSync(assets)) walk(assets);

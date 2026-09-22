@@ -70,6 +70,14 @@ jobs:
       - name: No upstream branding in the shipped text
         run: node scripts/check_no_upstream_branding.mjs --sources
 
+      # A font the code names but does not ship renders as the system face
+      # with no error at all, which is how iOS shipped three declared-but-
+      # absent typefaces on a green build. This binds every link at once:
+      # typography.ts, assets/fonts, react-native.config.js, the Gradle
+      # staging task, and the iOS Info.plist, so the platforms cannot drift.
+      - name: Fonts are shipped and registered
+        run: node scripts/check_fonts_registered.mjs
+
   rust:
     name: Rust ${{ matrix.abi }}
     runs-on: ubuntu-latest
@@ -116,7 +124,19 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Cargo and rustup cache
+      # ONE cache for all three ABIs, and only the downloaded sources plus the
+      # two helper binaries - never the target directory.
+      #
+      # This repository's Actions cache budget is 10 GB and the iOS pipeline
+      # shares it. Caching `rust/target` per ABI cost about 2.2 GB each: three
+      # of those filled the budget on their own and evicted the iOS agent's
+      # cache. It bought roughly three minutes per ABI on a nine-minute build,
+      # which is not worth taking the budget from another pipeline.
+      #
+      # The registry and the `bindgen`/`cargo-ndk` binaries are the same bytes
+      # for every ABI, so one entry serves all three. The three jobs race to
+      # save it; the losers log "cache already exists", which is harmless.
+      - name: Cargo registry and tools cache
         uses: actions/cache@v4
         with:
           path: |
@@ -124,21 +144,8 @@ jobs:
             ${{ github.workspace }}/.cargo/registry/index
             ${{ github.workspace }}/.cargo/registry/cache
             ${{ github.workspace }}/.cargo/git/db
-          key: swarm-cargo-${{ matrix.abi }}-${{ hashFiles('rust/Cargo.lock') }}
-          restore-keys: |
-            swarm-cargo-${{ matrix.abi }}-
-            swarm-cargo-
-
-      - name: Rust target cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            rust/target
-            rust/nym-proxy-ffi/target
-          key: swarm-target-${{ matrix.abi }}-${{ hashFiles('rust/Cargo.lock') }}-${{ github.sha }}
-          restore-keys: |
-            swarm-target-${{ matrix.abi }}-${{ hashFiles('rust/Cargo.lock') }}-
-            swarm-target-${{ matrix.abi }}-
+          key: swarm-cargo-${{ hashFiles('rust/Cargo.lock') }}
+          restore-keys: swarm-cargo-
 
       - name: Toolchain
         run: |
@@ -339,10 +346,10 @@ jobs:
         working-directory: android
         run: ./gradlew assembleProdRelease -PreactNativeArchitectures=${{ env.RN_ARCHS }} --no-daemon --stacktrace
 
-      - name: Assemble the AAB
-        working-directory: android
-        continue-on-error: true
-        run: ./gradlew bundleProdRelease -PreactNativeArchitectures=${{ env.RN_ARCHS }} --no-daemon
+      # No AAB. The brief asked for an unsigned release bundle "if cheap", and
+      # it is not: with no release keystore in this repository the bundle comes
+      # out debug-signed, which no store will accept, and it roughly doubled
+      # the download - the artifact was 482 MB of which the owner needed 200.
 
       # Everything asserted here is something this app claims about itself and
       # could get wrong silently. A missing font does not fail a build - it
@@ -355,6 +362,8 @@ jobs:
           APK="$(find android/app/build/outputs -name '*.apk' | head -1)"
           echo "inspecting $APK"
           unzip -l "$APK" > /tmp/apk-list.txt
+          unzip -Z1 "$APK" > /tmp/apk-list-names.txt
+          echo "APK entries: $(wc -l < /tmp/apk-list-names.txt)"
 
           echo "--- the three design-system typefaces are bundled ---"
           for f in Sora-Regular Sora-SemiBold Sora-Bold \
@@ -391,6 +400,21 @@ jobs:
             echo "  note: aapt2 unavailable, skipped the manifest assertions"
           fi
 
+          echo "--- the APK carries no wallet, seed or key material ---"
+          # A wallet file or a test seed accidentally packaged into a build
+          # people sideload would be a real disclosure, and it is the kind of
+          # thing that arrives through a stray fixture rather than on purpose.
+          if grep -qiE '(^|/)(wallet\.dat|wallet\.backup\.dat|wallet\.swap|.*\.jks|.*\.keystore|.*seed.*\.(txt|json|dat))$' /tmp/apk-list-names.txt; then
+            echo "ERROR: the APK contains wallet or key material:" >&2
+            grep -iE '(wallet\.|\.jks|\.keystore|seed)' /tmp/apk-list-names.txt >&2
+            exit 1
+          fi
+          echo "  ok no wallet file, keystore or seed fixture is packaged"
+          # The debug keystore signs the APK; it must not be INSIDE it.
+          if grep -q 'debug.keystore' /tmp/apk-list-names.txt; then
+            echo "ERROR: the debug keystore is packaged inside the APK" >&2; exit 1; fi
+          echo "  ok the signing keystore is not packaged"
+
           echo "--- no upstream branding reaches a user ---"
           # Reads the bundled JS (Hermes bytecode, whose string table is still
           # plain ASCII) and the app label, because the sources are not what
@@ -411,18 +435,19 @@ jobs:
           set -eu
           mkdir -p dist
           find android/app/build/outputs -name '*.apk' -exec cp {} dist/ \;
-          find android/app/build/outputs -name '*.aab' -exec cp {} dist/ \; || true
           ls -l dist
           APK="$(ls dist/*.apk | head -1)"
           mv "$APK" "dist/swarm-wallet-${SWARM_VERSION}-android.apk"
-          if ls dist/*.aab >/dev/null 2>&1; then
-            mv "$(ls dist/*.aab | head -1)" "dist/swarm-wallet-${SWARM_VERSION}-android.aab"
-          fi
           node -e '
             const fs = require("fs");
             const manifest = {
               app: "SWARM Wallet (Android)",
               version: process.env.SWARM_VERSION,
+              // What the app itself prints, and what Android records. Kept
+              // equal to the iOS build so the two platforms report one
+              // version to the person testing them side by side.
+              app_version_name: "0.1.0",
+              app_version_code: 1,
               network: {
                 name: "SwarmTestnet",
                 light_wallet_chain_label: "swarm-testnet",
@@ -504,6 +529,11 @@ jobs:
           arch: x86_64
           profile: pixel_5
           ram-size: 4096M
+          # The APK is ~200 MB: three uncompressed copies of a 60 MB Rust
+          # library. The default userdata partition on some system images is
+          # smaller than that, and the install fails with INSUFFICIENT_STORAGE
+          # rather than anything that points at the real cause.
+          disk-size: 8G
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           script: bash scripts/swarm_smoke_test.sh "$(ls dist/*.apk | head -1)"

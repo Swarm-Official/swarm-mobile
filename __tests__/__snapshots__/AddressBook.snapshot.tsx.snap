@@ -84,7 +84,7 @@ exports[`Component Address Book - test Address Book - snapshot 1`] = `
         <Image
           source={
             {
-              "testUri": "../../../assets/img/logobig-zingo.png",
+              "testUri": "../../../assets/img/swarm-bee.png",
             }
           }
           style={

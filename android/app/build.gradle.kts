@@ -131,7 +131,7 @@ android {
         minSdk = rootProject.extra["minSdkVersion"] as Int
         targetSdk = rootProject.extra["targetSdkVersion"] as Int
         versionCode = 1 // Real (prod baseline; beta flavor overrides below)
-        versionName = "0.1.0-testnet.1" // Real
+        versionName = "0.1.0" // Real
         testBuildType = System.getProperty("testBuildType", "debug")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
@@ -165,7 +165,7 @@ android {
             dimension = "channel"
             applicationIdSuffix = ".Beta"
             versionCode = 1 // beta override
-            versionName = "0.1.0-testnet.1" // beta override
+            versionName = "0.1.0" // beta override
             resValue("string", "app_name", "SWARM Wallet Beta")
         }
     }

@@ -29,7 +29,7 @@ const FORBIDDEN = [/Zingo/i, /Zcash wallet/i];
 // projects this one is not.
 const ALLOWED = [
   /fork of Zingo, an MIT-licensed wallet/,
-  /fork de Zingo, una billetera con licencia MIT/,
+  /bifurcación de Zingo, una billetera con licencia MIT/,
   /Zingo Labs, Foursquare/,
   /Zingo Labs, la aplicación Swarm/,
 ];

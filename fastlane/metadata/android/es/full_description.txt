@@ -1,30 +1,30 @@
-SWARM Wallet es la billetera para teléfono de SwarmTestnet, la red de prueba de SWARM: dinero privado, de prueba de trabajo, gestionado por su comunidad.
+SWARM Wallet es la billetera para el teléfono de SwarmTestnet, la red de pruebas de SWARM: dinero privado, de prueba de trabajo, gestionado por su comunidad.
 
-ESTO ES UNA RED DE PRUEBA. Las monedas SWM de prueba no tienen valor monetario, no se pueden comprar ni vender, y pueden desaparecer cuando la red de prueba se reinicie. Nada en esta aplicación es una oferta, una inversión ni una forma de ganar dinero.
+ESTA ES UNA RED DE PRUEBAS. Las monedas de prueba SWM no tienen valor monetario, no se pueden comprar ni vender y pueden desaparecer cuando la red de pruebas se reinicie. Nada en esta aplicación es una oferta, una inversión ni una forma de ganar dinero.
 
-Lo que puedes hacer
+Qué puedes hacer
 • Crear una billetera en tu teléfono. Tus palabras de recuperación se quedan contigo; nadie más las tiene.
 • Recibir SWM en una dirección blindada y mostrarla como código QR.
 • Enviar SWM a otra dirección de SwarmTestnet, con un memo cifrado opcional.
 • Ver tu saldo y tu historial de transacciones.
-• Bloquear la aplicación con el bloqueo de pantalla o la huella digital de tu teléfono.
+• Bloquear la aplicación con el bloqueo de pantalla o la huella de tu teléfono.
 
-Lo que esta aplicación no hace
-• No mina. Los teléfonos no minan SWARM; la minería se ejecuta en un ordenador con el programa SWARM Node, que es aparte.
-• No guarda tus monedas por ti. Es autocustodia: tus claves se generan y se quedan en tu teléfono, y tus palabras de recuperación son la única copia de seguridad.
-• No tiene cuentas, ni registro, ni casa de cambio, ni intercambio, ni precios en moneda fiduciaria, ni anuncios, ni programa de referidos o recompensas.
+Qué no hace esta aplicación
+• No mina. Los teléfonos no minan SWARM; la minería se hace en un ordenador con el programa aparte SWARM Node.
+• No guarda tus monedas por ti. Es de autocustodia: tus claves se generan y se guardan en tu teléfono, y tus palabras de recuperación son la única copia de seguridad.
+• No tiene cuentas, ni registro, ni exchange, ni intercambio, ni precios en moneda fiat, ni anuncios, ni programa de referidos o recompensas.
 
 Privacidad
-La aplicación no tiene analítica ni rastreo. Habla con un solo servidor para sincronizar bloques y enviar transacciones: el servidor de billetera de SWARM (lwd.swarm.green) o un servidor que elijas tú. La cámara se usa solo para leer códigos QR en tu teléfono. El desbloqueo por huella digital o bloqueo de pantalla lo gestiona Android y nunca sale del dispositivo. Detalles: https://swarm.green/wallet/privacy/
+La aplicación no tiene analíticas ni rastreo. Habla con un solo servidor para sincronizar bloques y enviar transacciones: el servidor de billetera de SWARM (lwd.swarm.green) o un servidor que elijas tú. La cámara se usa solo para leer códigos QR en tu teléfono. El desbloqueo por huella o bloqueo de pantalla lo gestiona Android y nunca sale del dispositivo. Detalles: https://swarm.green/wallet/privacy/
 
 Código abierto
-SWARM Wallet es un fork de Zingo, una billetera con licencia MIT, adaptada para SwarmTestnet. Código fuente: https://github.com/brs-holding/swarm-mobile
+SWARM Wallet es una bifurcación de Zingo, una billetera con licencia MIT, adaptada a SwarmTestnet. Código fuente: https://github.com/brs-holding/swarm-mobile
 
 Ten en cuenta
 • Escribe tus palabras de recuperación en papel. Si las pierdes, nadie puede restaurar tu billetera.
-• La red de prueba puede reiniciarse en cualquier momento; las monedas de prueba no se conservan.
-• Este es software experimental, provisto tal cual, sin garantía. Condiciones: https://swarm.green/wallet/terms/
+• La red de pruebas puede reiniciarse en cualquier momento; las monedas de prueba no se conservan.
+• Es software experimental que se ofrece tal cual, sin garantía. Condiciones: https://swarm.green/wallet/terms/
 
-SWARM no está afiliada ni respaldada por Electric Coin Company, la Fundación Zcash, Zingo Labs, la aplicación Swarm de Foursquare ni el proyecto Ethereum Swarm.
+SWARM no está afiliado ni respaldado por Electric Coin Company, Zcash Foundation, Zingo Labs, la aplicación Swarm de Foursquare ni el proyecto Ethereum Swarm.
 
 Canales oficiales: https://swarm.green, https://github.com/brs-holding, @swarm_coin en X, swarmofficial@atomicmail.io. Nadie te pedirá nunca tus palabras de recuperación.

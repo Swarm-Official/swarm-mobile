@@ -26,6 +26,27 @@ wallet only — mining happens on a PC with the SWARM Node app.
 | Explorer | `https://explore.swarm.green/` |
 | Android package | `green.swarm.wallet` |
 
+### Where the default server comes from
+
+A fresh install must already know its server; the user configures nothing. The
+value lives in two places, one per language:
+
+- `app/uris/serverUris.ts` — the single TypeScript entry,
+  `uri: 'https://lwd.swarm.green:443'`, the whole list the app ships with.
+  `app/uris/fetchServerList.ts` returns `[]` on purpose, so nothing overrides
+  it from the network.
+- `rust/lib/src/lib.rs` — `SWARM_DEFAULT_SERVER_URI`, the native copy, so the
+  SDK never reaches for a public server registry either.
+
+On the first launch `app/LoadingApp/LoadingApp.tsx` finds no `server` key in
+`settings.json` and writes that default before anything else runs;
+`app/services/SettingsFileImpl.ts` fills it in again for a settings file that
+predates the key. The emulator smoke test asserts the result rather than the
+mechanism: it installs from nothing, drives the first launch to a wallet, and
+reads the server back off the Settings screen. The desktop wallet shipped a
+fresh install reading "NOT CONNECTED - No server configured" because only its
+launcher script wrote the default, which is the defect that check exists for.
+
 The app speaks **only** SwarmTestnet. There is no mainnet, no ZEC, no fiat
 price, no currency picker, no donation toggle, no exchange or swap, and no
 public server registry: the app never asks a third party which server to
@@ -166,6 +187,12 @@ than no wallet.
 - The APK installs on an Android emulator, launches, loads the native wallet
   library, runs its JS bundle and reaches its first screen without crashing.
   This is asserted by `scripts/swarm_smoke_test.sh` on every CI run.
+- A fresh install already holds `https://lwd.swarm.green:443` with nothing
+  configured by hand. The same smoke test uninstalls first, drives the first
+  launch to a wallet with `uiautomator`, and reads the server back off the
+  Settings screen. It measures whether the runner can reach that server, and
+  when it can, it also requires the app to report a connected state rather
+  than "Offline".
 - The app is pinned to the SWARM SDK, not upstream's. CI fails the build if the
   pin points back at `zingolabs/zingolib`.
 - No upstream branding reaches a user. `scripts/check_no_upstream_branding.mjs`
@@ -180,11 +207,10 @@ than no wallet.
 
 ### Not proven
 
-- **Nothing on a real chain.** `lwd.swarm.green:443` answers and speaks gRPC,
-  but no sync, no balance, no send and no receive has been exercised against
-  SwarmTestnet *from this app*. That the endpoint is up is not the same as the
-  app working against it — and it is the app's behaviour that is unproven
-  here, not the server's.
+- **Nothing on a real chain.** The smoke test proves the app comes up pointed
+  at `lwd.swarm.green:443` and, when CI can reach it, reports a connected
+  state. No balance, no send and no receive has been exercised against
+  SwarmTestnet *from this app*.
 - **Nothing on real hardware.** The emulator smoke test runs on x86_64. The
   `arm64-v8a` and `armeabi-v7a` libraries are built and packaged but have not
   been executed on a phone.

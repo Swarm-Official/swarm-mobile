@@ -535,6 +535,8 @@ jobs:
     needs: [rust]
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    outputs:
+      configured: ${{ steps.gate.outputs.configured }}
     steps:
       # A job-level `if` cannot read `secrets`, so the gate is a step that
       # writes one output the rest of the job reads. Without the upload key
@@ -820,9 +822,9 @@ jobs:
 
   smoke:
     name: Emulator smoke test
-    needs: [apk]
+    needs: [apk, bundle]
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.run-emulator-smoke }}
     steps:
       - uses: actions/checkout@v4
@@ -845,12 +847,21 @@ jobs:
           name: swarm-wallet-android-${{ env.SWARM_VERSION }}
           path: dist
 
+      - name: Download the release-signed APK
+        if: needs.bundle.outputs.configured == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: swarm-wallet-play-${{ env.SWARM_VERSION }}
+          path: dist-play
+
       # The APK carries an x86_64 slice, so a stock x86_64 emulator image runs
-      # it. The test asserts the app installs, launches, stays up and renders
-      # its first screen. It does NOT assert any wallet behaviour: the indexer
-      # at lwd.swarm.green is not reachable from CI, so the only network
-      # outcome available here is the unreachable-server path.
-      - name: Install and launch
+      # it. Beyond installing, launching and rendering, the test drives the
+      # first launch to a wallet and asserts the app already holds
+      # https://lwd.swarm.green:443 with nothing configured by hand - the
+      # defect the desktop wallet shipped as "NOT CONNECTED - No server
+      # configured". Whether that server answers the runner is measured in the
+      # script rather than assumed either way.
+      - name: Install, launch and prove a fresh install connects
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 30
@@ -865,7 +876,14 @@ jobs:
           disk-size: 8G
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
-          script: bash scripts/swarm_smoke_test.sh "$(ls dist/*.apk | head -1)"
+          script: |
+            bash scripts/swarm_smoke_test.sh "$(ls dist/*.apk | head -1)" debug-signed
+            RELEASE_APK="$(ls dist-play/*.apk 2>/dev/null | head -1 || true)"
+            if [ -n "$RELEASE_APK" ]; then
+              bash scripts/swarm_smoke_test.sh "$RELEASE_APK" release-signed
+            else
+              echo "no release-signed APK in this run - only the debug-signed one was checked"
+            fi
 
       - name: Upload smoke test evidence
         if: always()

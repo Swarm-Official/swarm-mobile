@@ -1,27 +1,42 @@
 #!/bin/bash
 #
-# string-sweep.sh — fail the build if a USER-VISIBLE string in the built
-# iOS app still says Zingo.
+# string-sweep.sh — fail while a person can still see upstream branding in
+# the built iOS app.
 #
 # Usage: bash ios/scripts/string-sweep.sh <path/to/Built.app>
 #
-# What it looks at, and only this:
-#   1. the bundled JavaScript inside the .app (Hermes bytecode, read with
-#      `strings`, which still carries the string table);
-#   2. the user-visible keys of the app's Info.plist — the display name,
-#      the bundle name, the permission prompts, any URL-scheme claim;
-#   3. the iOS string resources — .strings, .storyboard, .xib text.
+# HOW THIS RELATES TO scripts/check_no_upstream_branding.mjs
 #
-# What it deliberately does NOT look at, because the brief says not to
-# rename internal identifiers and renaming them would break things:
-#   - Swift/ObjC source comments and file headers;
-#   - the React Native root module name registered in index.js;
-#   - background-task identifiers, keychain service names, storage keys;
-#   - the Xcode target, scheme and product name;
-#   - symbol names from the SDK (ZingolibError, zingoFFI.h, …).
+# That script is the shared, cross-platform check and it is the source of
+# truth for the shared JavaScript. This one runs it (in --sources mode)
+# rather than reimplementing it, and then adds the two things it cannot
+# reach:
 #
-# Allow-list: licence and attribution text. Keeping the MIT notices and
-# one honest line of provenance is required, not a leak.
+#   * the iOS-native surfaces — the user-visible Info.plist keys and the
+#     .strings / .storyboard / .xib resources. Its artifact mode unzips an
+#     APK; there is no iOS equivalent in it.
+#   * the terms it does not list. Its FORBIDDEN set is Zingo / ZingoLabs /
+#     Zecwallet. "Zenny" — upstream's name for its 0.01 ZEC donation unit —
+#     is not in it, so "Zenny Tips" and its four translations pass that
+#     check while still being upstream donation branding on a screen.
+#
+# WHY THE BUNDLE RULE LOOKS ODD
+#
+# Hermes packs every string into one table with no separators, so `strings`
+# returns megabyte-long runs and simple adjacency proves nothing:
+# DEFAULT_DYNAMIC_SIZING followed by O_SEED_BIRTHDAY reads as "SIZINGO",
+# and _getZenniesDonationAddress is a bridge method name, not a label.
+# So a bundle hit only FAILS when the term is immediately followed by a
+# space — a word inside a phrase, which is what a sentence looks like and
+# what an identifier never does. Everything else is reported as advisory.
+# Case matters for the same reason: user-visible text is capitalised,
+# lowercase `zingo` in a bundle is an identifier, and the brief says to
+# leave internal identifiers alone.
+#
+# Not swept, deliberately: Swift/ObjC comments, the React Native root
+# module name, background-task identifiers, keychain service names,
+# storage keys, the Xcode target/scheme/product name, and SDK symbols
+# such as ZingolibError and zingoFFI.h.
 
 set -uo pipefail
 
@@ -32,108 +47,124 @@ if [ -z "$APP" ] || [ ! -d "$APP" ]; then
 fi
 
 IOS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_DIR="$(cd "$IOS_DIR/.." && pwd)"
 
-# Strings that must not reach a person's screen.
-BANNED='Zingo|ZINGO|zingolabs\.org|support@zingolabs|Zenny|Zennies|Zcashexplorer|ZcashExplorer'
-# Lines that may legitimately contain them.
-ALLOWED='MIT|[Cc]opyright|[Ll]icen[cs]e|Based on Zingo Mobile'
+# Phrase-shaped: the term ends a word and a phrase continues after it.
+PHRASE='(Zingo|ZingoLabs|Zenny|Zennies|Zecwallet) '
+# Unambiguous regardless of shape.
+ABSOLUTE='zingolabs\.org|support@zingolabs|Zcashexplorer|ZcashExplorer'
+# Attribution, which is required to survive.
+ALLOWED='Based on Zingo Mobile|MIT|[Cc]opyright|[Ll]icen[cs]e'
 
 fails=0
-report() { printf '%s\n' "$*"; }
 
-report "=============================================================="
-report "SWARM iOS user-visible string sweep"
-report "app: $APP"
-report "=============================================================="
+echo "=============================================================="
+echo "SWARM iOS user-visible string sweep"
+echo "app: $APP"
+echo "=============================================================="
+
+# --------------------------------- 0. the shared check, not a copy of it
+echo ""
+echo "--- 0. shared translations (scripts/check_no_upstream_branding.mjs) ---"
+if [ -f "$REPO_DIR/scripts/check_no_upstream_branding.mjs" ]; then
+    if ( cd "$REPO_DIR" && node scripts/check_no_upstream_branding.mjs --sources ); then
+        echo "ok: the shared check passes"
+    else
+        echo "FAIL: the shared check reports upstream branding in the translations"
+        fails=$((fails + 1))
+    fi
+else
+    echo "note: the shared check is not on this branch yet; skipped"
+fi
 
 # ---------------------------------------------------------------- 1. JS
-report ""
-report "--- 1. bundled JavaScript ---"
+echo ""
+echo "--- 1. bundled JavaScript ---"
 bundle=""
 for candidate in "$APP/main.jsbundle" "$APP"/*.jsbundle; do
     if [ -f "$candidate" ]; then bundle="$candidate"; break; fi
 done
 
 if [ -z "$bundle" ]; then
-    report "NO JS BUNDLE FOUND in the app — a Release build must embed one."
+    echo "NO JS BUNDLE FOUND in the app — a Release build must embed one."
     fails=$((fails + 1))
 else
-    report "bundle: $bundle ($(wc -c < "$bundle" | tr -d ' ') bytes)"
-    js_hits=$(strings -a "$bundle" | grep -nE "$BANNED" | grep -vE "$ALLOWED" || true)
-    js_count=$(printf '%s' "$js_hits" | grep -c . || true)
-    if [ "$js_count" -gt 0 ]; then
-        report "FAIL: $js_count banned string(s) in the bundled JavaScript."
-        report "These live in the SHARED JavaScript (app/translations/*.json and"
-        report "the donation screens), not in ios/. They are the other agent's"
-        report "to remove, once, for both platforms."
-        report ""
-        printf '%s\n' "$js_hits" | head -40
-        [ "$js_count" -gt 40 ] && report "... and $((js_count - 40)) more"
+    echo "bundle: $bundle ($(wc -c < "$bundle" | tr -d ' ') bytes)"
+
+    # -o keeps the match plus a little context, never the whole packed run.
+    hard=$(strings -a "$bundle" \
+        | grep -oE ".{0,45}(${PHRASE}|${ABSOLUTE}).{0,45}" \
+        | grep -vE "$ALLOWED" | sort -u || true)
+    n=$(printf '%s' "$hard" | grep -c . || true)
+    if [ "$n" -gt 0 ]; then
+        echo "FAIL: $n user-visible phrase(s) in the bundled JavaScript:"
+        printf '%s\n' "$hard" | sed 's/^/    /'
+        echo ""
+        echo "  These are SHARED JavaScript (app/translations/*.json and the"
+        echo "  screens that use them), not ios/. Fix once, for both platforms."
         fails=$((fails + 1))
     else
-        report "OK: no banned string in the bundled JavaScript."
+        echo "OK: no user-visible upstream phrase in the bundled JavaScript."
+    fi
+
+    soft=$(strings -a "$bundle" \
+        | grep -oE ".{0,30}(Zingo|Zenny|Zennies).{0,30}" \
+        | grep -vE "$ALLOWED" | sort -u | head -25 || true)
+    if [ -n "$soft" ]; then
+        echo ""
+        echo "  advisory (NOT failing) — identifier-shaped, left alone by design:"
+        printf '%s\n' "$soft" | sed 's/^/      /'
     fi
 fi
 
 # ------------------------------------------------------- 2. Info.plist
-report ""
-report "--- 2. Info.plist, user-visible keys only ---"
+echo ""
+echo "--- 2. Info.plist, user-visible keys only ---"
 plist="$APP/Info.plist"
 for key in CFBundleDisplayName CFBundleName NSCameraUsageDescription \
            NSFaceIDUsageDescription NSPhotoLibraryUsageDescription \
            NSLocationWhenInUseUsageDescription NSHumanReadableCopyright; do
     value=$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist" 2>/dev/null || true)
     [ -z "$value" ] && continue
-    if printf '%s' "$value" | grep -qE "$BANNED" && ! printf '%s' "$value" | grep -qE "$ALLOWED"; then
-        report "FAIL  $key = $value"
+    if printf '%s' "$value" | grep -qE "${PHRASE}|${ABSOLUTE}" \
+       && ! printf '%s' "$value" | grep -qE "$ALLOWED"; then
+        echo "FAIL  $key = $value"
         fails=$((fails + 1))
     else
-        report "ok    $key = $value"
+        echo "ok    $key = $value"
     fi
 done
 
 url_types=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes' "$plist" 2>/dev/null || true)
 if [ -n "$url_types" ]; then
-    report "FAIL  CFBundleURLTypes is present; this build must claim no URL scheme:"
+    echo "FAIL  CFBundleURLTypes is present; this build must claim no URL scheme:"
     printf '%s\n' "$url_types"
     fails=$((fails + 1))
 else
-    report "ok    CFBundleURLTypes absent — no zcash: claim"
+    echo "ok    CFBundleURLTypes absent — no zcash: claim"
 fi
 
 # -------------------------------------------- 3. iOS string resources
-report ""
-report "--- 3. iOS string resources in ios/ ---"
-res_hits=$(grep -rnE "$BANNED" \
+echo ""
+echo "--- 3. iOS string resources in ios/ ---"
+res=$(grep -rnE "${PHRASE}|${ABSOLUTE}" \
     --include='*.strings' --include='*.storyboard' --include='*.xib' \
     "$IOS_DIR" 2>/dev/null | grep -vE "$ALLOWED" | grep -v '/Pods/' || true)
-res_count=$(printf '%s' "$res_hits" | grep -c . || true)
-if [ "$res_count" -gt 0 ]; then
-    report "FAIL: $res_count banned string(s) in iOS string resources:"
-    printf '%s\n' "$res_hits"
+n=$(printf '%s' "$res" | grep -c . || true)
+if [ "$n" -gt 0 ]; then
+    echo "FAIL: $n banned string(s) in iOS string resources:"
+    printf '%s\n' "$res"
     fails=$((fails + 1))
 else
-    report "OK: no banned string in .strings / .storyboard / .xib under ios/."
+    echo "OK: no banned string in .strings / .storyboard / .xib under ios/."
 fi
 
-# --------------------------------------------------- advisory counters
-report ""
-report "--- advisory (NOT failing): chain vocabulary in the JS bundle ---"
-report "Zcash / ZEC / TAZ can be legitimate in address-format help text, so"
-report "these are counted and shown, never failed on. SWARM's ticker is SWM."
-if [ -n "$bundle" ]; then
-    for word in Zcash ZEC TAZ; do
-        n=$(strings -a "$bundle" | grep -cE "\\b${word}\\b" || true)
-        report "  $word: $n occurrence(s) in the bundle's string table"
-    done
-fi
-
-report ""
-report "=============================================================="
+echo ""
+echo "=============================================================="
 if [ "$fails" -gt 0 ]; then
-    report "STRING SWEEP FAILED: $fails area(s) still show Zingo to a person."
-    report "=============================================================="
+    echo "STRING SWEEP FAILED in $fails area(s)."
+    echo "=============================================================="
     exit 1
 fi
-report "STRING SWEEP PASSED"
-report "=============================================================="
+echo "STRING SWEEP PASSED"
+echo "=============================================================="

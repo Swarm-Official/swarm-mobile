@@ -348,6 +348,35 @@ Two specifically worth naming, because they look iOS-shaped and are not:
   `CFBundleDisplayName` (iOS-only, fixed here). The subtitle under it is
   the `localizedReason` passed in from shared JavaScript.
 
+### Open items for the shared branch (found by the iOS sweep)
+
+Both are shared JavaScript, so they are fixed on `swarm-mobile`, once, for
+both platforms — not here.
+
+1. **"Zenny Tips" still ships, in four languages.** `app/translations/`
+   carries `zenny-tips-ab` = "Zenny Tips" (en), "Zenny Propinas" (es),
+   "Zenny Gorjetas" (pt), "Zenny Tavsiyeleri" (tr), and
+   "Поддержать Zenny" (ru). A *Zenny* is upstream's name for its 0.01 ZEC
+   donation unit, so this is donation branding on a screen after the
+   donation surfaces were removed. `scripts/check_no_upstream_branding.mjs`
+   passes on it because `Zenny` is not in its `FORBIDDEN` list — adding it
+   there is the fix, plus deleting the strings.
+2. **`app/utils/ZingoAppData.ts:59` is now dead logic.** It reads
+   `getApplicationName() === 'Zingo Beta' ? BETA_LOGO : PROD_LOGO`. The
+   display name is now "SWARM Wallet" / "SWARM Wallet Beta", so that
+   comparison can never be true and the beta build silently shows the
+   production logo. This is a behavioural consequence of the rename, not
+   cosmetics.
+
+Also worth a decision on the shared side: `zennies` is still referenced in
+ten files (`app/LoadedApp`, `app/walletBackend`, `screens/AddressBook`,
+`screens/History`, …), and the iOS bridge still exposes
+`getZenniesDonationAddress` / `getDonationAddress` in `ios/RPCModule.swift`
+because they forward to the SDK. Those native methods were left in place
+deliberately: removing them while the shared JavaScript still calls them at
+startup would break iOS only, which is exactly the platform divergence to
+avoid. They should go when the shared callers do.
+
 ## 7. What remains
 
 **The genesis hash is in.** The SDK pin

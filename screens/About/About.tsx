@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useCallback, useContext, useRef, useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { Linking, View, TouchableOpacity } from 'react-native';
 
 import { useTheme } from '@app/theme';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -9,6 +9,7 @@ import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 
 import FadeText from '@ui/primitives/FadeText';
 import BoldText from '@ui/primitives/BoldText';
+import RegText from '@ui/primitives/RegText';
 import AppSheet from '@ui/primitives/AppSheet';
 import { AppDrawerParamList } from '@app/types';
 import { ContextAppLoaded } from '@app/context';
@@ -21,9 +22,14 @@ import { useFullSheetSnapPoints } from '@app/hooks/useFullSheetSnapPoints';
 
 type AboutProps = NativeStackScreenProps<AppDrawerParamList, RouteEnum.About>;
 
+// Google Play requires the privacy policy to be reachable from inside the
+// app, not only from the store listing.
+const PRIVACY_URL = 'https://swarm.green/wallet/privacy/';
+const TERMS_URL = 'https://swarm.green/wallet/terms/';
+
 const About: React.FunctionComponent<AboutProps> = ({ navigation }) => {
   const context = useContext(ContextAppLoaded);
-  const { zingolibVersion, translate } = context;
+  const { zingolibVersion, translate, addLastSnackbar } = context;
   const { colors } = useTheme();
   const screenName = ScreenEnum.About;
 
@@ -42,6 +48,17 @@ const About: React.FunctionComponent<AboutProps> = ({ navigation }) => {
       navigation.goBack();
     }
   }, [navigation]);
+
+  const openLegal = useCallback(
+    async (url: string) => {
+      try {
+        await Linking.openURL(url);
+      } catch {
+        addLastSnackbar(translate('about.link-unavailable') as string);
+      }
+    },
+    [addLastSnackbar, translate],
+  );
 
   const aboutSnapPoints = useFullSheetSnapPoints(containerH, headerH);
 
@@ -118,6 +135,36 @@ const About: React.FunctionComponent<AboutProps> = ({ navigation }) => {
             label={translate('info.zingolib') as string}
             value={zingolibVersion}
           />
+          <View
+            style={{
+              marginTop: 20,
+              borderTopWidth: 1,
+              borderTopColor: colors.borderMuted,
+            }}
+          >
+            <TouchableOpacity
+              testID="about.privacy-policy"
+              onPress={() => openLegal(PRIVACY_URL)}
+              style={{ paddingVertical: 12 }}
+            >
+              <RegText color={colors.fgAccent}>
+                {translate('about.privacy-policy') as string}
+              </RegText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              testID="about.terms"
+              onPress={() => openLegal(TERMS_URL)}
+              style={{
+                paddingVertical: 12,
+                borderTopWidth: 1,
+                borderTopColor: colors.borderMuted,
+              }}
+            >
+              <RegText color={colors.fgAccent}>
+                {translate('about.terms') as string}
+              </RegText>
+            </TouchableOpacity>
+          </View>
           <View style={{ marginTop: 20 }}>
             {arrayTxt.map((txt: string, ind: number) => (
               <View key={txt.substring(0, 10)}>

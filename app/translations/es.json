@@ -775,6 +775,9 @@
     "birthday-acc": "Campo Cumpleaños"
   },
   "about": {
+    "privacy-policy": "Política de privacidad",
+    "terms": "Condiciones de uso",
+    "link-unavailable": "No se pudo abrir esa página.",
     "copyright": [
       "SWARM Wallet - a wallet for SwarmTestnet, a test network. SWM test coins have no value.",
       "Based on Zingo Mobile by ZingoLabs (MIT licence). Built with React Native.",

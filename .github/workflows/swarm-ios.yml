@@ -446,6 +446,19 @@ jobs:
           echo "$INDEXER_HOST resolves to: ${IPS:-(nothing)}"
           echo "indexer_host=$INDEXER_HOST" >> "$GITHUB_OUTPUT"
           echo "indexer_ips=$IPS" >> "$GITHUB_OUTPUT"
+          # Asked before the app is blamed for not connecting: run
+          # 35757559500 captured zero packets to the indexer, which reads
+          # the same whether the app never tried or the runner cannot get
+          # there. Never fatal — this is the network's answer, not the
+          # build's.
+          echo "--- can this runner reach the indexer? ---"
+          for ip in $IPS; do
+            if nc -z -G 8 -w 8 "$ip" 443 2>&1; then
+              echo "ok      TCP 443 to $ip is open from this runner"
+            else
+              echo "::warning::TCP 443 to $ip is NOT reachable from this runner; the app cannot sync here whatever it does"
+            fi
+          done
           IFACE=any
           # DNS plus the indexer's own addresses, nothing else. A blanket
           # 'port 443' on a runner is mostly the runner's own log and
@@ -545,8 +558,11 @@ jobs:
           # waiting for a tap. Both are worth photographing: the notice is the
           # screen App Review sees first, and the screens after it are the
           # fresh-install evidence C9 asks for.
+          # Six minutes, not three. Run 35757559500 sat on "Creating a new
+          # wallet" for the whole of three and that was not long enough to
+          # tell a stall from a slow first sync.
           echo "--- settling the fresh install ---"
-          for t in 1 2 3 4 5 6; do
+          for t in $(seq 1 12); do
             sleep 30
             xcrun simctl io "$UDID" screenshot "artifacts/05-fresh-install-$((t * 30))s.png" || true
           done
@@ -590,11 +606,11 @@ jobs:
           # strand the flow behind it.
           - extendedWaitUntil:
               visible:
-                id: "risknotice.acknowledge"
-              timeout: 120000
+                text: "Before you start"
+              timeout: 300000
           - takeScreenshot: risknotice
           - tapOn:
-              id: "risknotice.acknowledge"
+              text: "I understand"
           - extendedWaitUntil:
               visible:
                 id: "receive.title"
@@ -608,9 +624,19 @@ jobs:
             echo "::warning::the Maestro walk did not finish; the screenshots below are whatever it reached"
             echo "ok=false" >> "$GITHUB_OUTPUT"
           fi
-          mkdir -p artifacts
+          mkdir -p artifacts evidence
           cp ./*.png artifacts/ 2>/dev/null || true
           xcrun simctl io "$UDID" screenshot artifacts/06-after-maestro.png || true
+          # Maestro's own debug directory holds the view hierarchy at the
+          # point it gave up, which is the only way to find out what was
+          # actually on screen and which testIDs existed.
+          maestro --device "$UDID" hierarchy > evidence/view-hierarchy.txt 2>&1 || true
+          LATEST=$(ls -dt "$HOME"/.maestro/tests/*/ 2>/dev/null | sed -n '1p')
+          if [ -n "${LATEST:-}" ]; then
+            mkdir -p evidence/maestro
+            cp -R "$LATEST"/. evidence/maestro/ 2>/dev/null || true
+            ls -la evidence/maestro | head -30
+          fi
 
       # THE assertion of C9: on a fresh install, with nothing typed and nothing
       # chosen, is the server already lwd.swarm.green on swarm-testnet, and did
@@ -628,8 +654,9 @@ jobs:
 
           CONTAINER=$(xcrun simctl get_app_container "$UDID" "$BID" data)
           echo "data container: $CONTAINER"
-          echo "--- files the fresh install wrote ---"
-          ls -la "$CONTAINER/Documents" || true
+          echo "--- everything the fresh install wrote ---"
+          find "$CONTAINER" -maxdepth 4 | sed "s|$CONTAINER|<container>|" | head -80
+          find "$CONTAINER" -maxdepth 4 | sed "s|$CONTAINER|<container>|" > evidence/container-tree.txt 2>/dev/null || true
 
           SETTINGS="$CONTAINER/Documents/settings.json"
           if [ ! -f "$SETTINGS" ]; then
@@ -913,19 +940,31 @@ jobs:
           # compilation condition that gates every call site is absent, and
           # this repository's own code contains no location API at all.
           echo "--- location: the gate, not the symbol table ---"
-          XCCONFIGS=$(find "ios/Pods/Target Support Files" -name 'VisionCamera*.xcconfig' 2>/dev/null || true)
-          if [ -z "$XCCONFIGS" ]; then
-            echo "::error::no VisionCamera xcconfig under ios/Pods/Target Support Files — cannot prove the location gate either way"
+          # The path has spaces in it, so the file list travels NUL-separated
+          # and each name is quoted. Run 35757559500 did neither: every grep
+          # failed with "No such file or directory", the failing `grep -l`
+          # sent the `if` down the ok branch, and the check passed without
+          # ever reading a file.
+          XCDIR="ios/Pods/Target Support Files"
+          COUNT=$(find "$XCDIR" -name 'VisionCamera*.xcconfig' 2>/dev/null | grep -c . || true)
+          if [ "$COUNT" = "0" ]; then
+            echo "::error::no VisionCamera xcconfig under $XCDIR — cannot prove the location gate either way"
             exit 1
           fi
-          echo "$XCCONFIGS"
-          if grep -l 'VISION_CAMERA_ENABLE_LOCATION' $XCCONFIGS >/dev/null 2>&1; then
-            grep -n 'SWIFT_ACTIVE_COMPILATION_CONDITIONS' $XCCONFIGS | sed 's/^/    /'
-            echo "::error::VISION_CAMERA_ENABLE_LOCATION is set in VisionCamera's generated xcconfig, so its location call sites ARE compiled. Either \$VCEnableLocation = false has been removed from ios/Podfile, or a pod update changed the flag — and NSLocationWhenInUseUsageDescription plus the privacy policy would have to come back with it"
+          echo "$COUNT VisionCamera xcconfig(s):"
+          gate_on=0
+          while IFS= read -r -d '' f; do
+            echo "    $f"
+            grep -n 'SWIFT_ACTIVE_COMPILATION_CONDITIONS' "$f" | sed 's/^/        /' || true
+            if grep -q 'VISION_CAMERA_ENABLE_LOCATION' "$f"; then
+              gate_on=$((gate_on + 1))
+            fi
+          done < <(find "$XCDIR" -name 'VisionCamera*.xcconfig' -print0 2>/dev/null)
+          if [ "$gate_on" -gt 0 ]; then
+            echo "::error::VISION_CAMERA_ENABLE_LOCATION appears in $gate_on VisionCamera xcconfig(s), so its location call sites ARE compiled. Either \$VCEnableLocation = false has been removed from ios/Podfile, or a pod update changed the flag — and NSLocationWhenInUseUsageDescription plus the privacy policy would have to come back with it"
             exit 1
           fi
-          grep -n 'SWIFT_ACTIVE_COMPILATION_CONDITIONS' $XCCONFIGS | sed 's/^/    /' || true
-          echo "ok      VISION_CAMERA_ENABLE_LOCATION is unset: every VisionCamera location call site is compiled out"
+          echo "ok      VISION_CAMERA_ENABLE_LOCATION is unset in all $COUNT: every VisionCamera location call site is compiled out"
 
           OWN=$(grep -rnE 'CLLocationManager|requestWhenInUseAuthorization|requestAlwaysAuthorization|startUpdatingLocation|isLocationEnabled|getAvailableLocationProviders|Geolocation' \
                 app screens ui ios/*.swift 2>/dev/null || true)
@@ -956,10 +995,14 @@ jobs:
             fi
           done
           printf '%s' "$SYMS" | grep -E 'CLLocation|PHPhoto|PHAsset' | sed 's/^/    /' || echo "    (no CoreLocation or Photos class references)"
-          if printf '%s' "$SYMS" | grep -qE 'PHPhotoLibrary|PHAssetCreationRequest'; then
-            echo "note    a photo-library class is referenced — NSPhotoLibraryAddUsageDescription earns its place"
+          # PHAsset counts. Run 35757559500 printed _OBJC_CLASS_$_PHAsset two
+          # lines above a note saying there was no photo-library reference,
+          # because the pattern only looked for PHPhotoLibrary and
+          # PHAssetCreationRequest.
+          if printf '%s' "$SYMS" | grep -qE 'PHPhotoLibrary|PHAsset|PHImageManager'; then
+            echo "note    a Photos class is referenced, so something in the build can reach the library — NSPhotoLibraryAddUsageDescription stays"
           else
-            echo "note    no photo-library class reference: NSPhotoLibraryAddUsageDescription may describe a feature that does not exist. Left in place because deleting a purpose string a pod reaches dynamically is a crash, not a warning."
+            echo "note    no Photos class reference at all: NSPhotoLibraryAddUsageDescription may describe a feature that does not exist. Left in place because deleting a purpose string a pod reaches dynamically is a crash, not a warning."
           fi
 
           echo

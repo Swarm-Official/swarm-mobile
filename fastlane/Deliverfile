@@ -5,7 +5,7 @@
 # (fastlane pilot, or xcrun altool in the workflow), because a listing can be
 # prepared and reviewed long before a signed build exists.
 
-app_identifier "green.swarm.wallet"
+app_identifier "green.swarm.swarmwallet"
 
 # The standard layout, and it is the standard on purpose: deliver reads
 # fastlane/metadata/<locale>/, supply reads fastlane/metadata/android/<locale>/,

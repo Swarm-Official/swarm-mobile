@@ -643,7 +643,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = green.swarm.wallet;
+				PRODUCT_BUNDLE_IDENTIFIER = green.swarm.swarmwallet;
 				PRODUCT_NAME = Zingo;
 				SWIFT_OBJC_BRIDGING_HEADER = "RPCModule-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -686,7 +686,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = green.swarm.wallet;
+				PRODUCT_BUNDLE_IDENTIFIER = green.swarm.swarmwallet;
 				PRODUCT_NAME = Zingo;
 				SWIFT_OBJC_BRIDGING_HEADER = "RPCModule-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
@@ -885,7 +885,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = green.swarm.wallet.beta;
+				PRODUCT_BUNDLE_IDENTIFIER = green.swarm.swarmwallet.beta;
 				PRODUCT_NAME = Zingo;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ZINGO_BETA";
 				SWIFT_OBJC_BRIDGING_HEADER = "RPCModule-Bridging-Header.h";
@@ -929,7 +929,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = green.swarm.wallet.beta;
+				PRODUCT_BUNDLE_IDENTIFIER = green.swarm.swarmwallet.beta;
 				PRODUCT_NAME = Zingo;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ZINGO_BETA";
 				SWIFT_OBJC_BRIDGING_HEADER = "RPCModule-Bridging-Header.h";

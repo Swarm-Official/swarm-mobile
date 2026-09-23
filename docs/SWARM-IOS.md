@@ -37,7 +37,7 @@ says **SWARM Wallet**.
 | Setting | Upstream | SWARM |
 | --- | --- | --- |
 | Display name | `Zingo` | **SWARM Wallet** (`SWARM Wallet Beta` for the beta configurations) |
-| Bundle identifier | `org.ZingoLabs.Zingo` | **`green.swarm.wallet`** (`green.swarm.wallet.beta`) |
+| Bundle identifier | `org.ZingoLabs.Zingo` | **`green.swarm.swarmwallet`** (`green.swarm.swarmwallet.beta`) |
 | `DEVELOPMENT_TEAM` | `788KRST4S8` (Zingo Labs) | empty — this project has no team |
 | `zcash:` URL scheme | claimed | **removed** |
 | `LSApplicationQueriesSchemes` | `zcash` | removed |
@@ -193,7 +193,7 @@ launch asks to install "additional components" — let it.
 5. Install and launch:
    ```sh
    xcrun simctl install booted Zingo.app
-   xcrun simctl launch booted green.swarm.wallet
+   xcrun simctl launch booted green.swarm.swarmwallet
    ```
 6. The app opens on its privacy shutter and asks you to authenticate. On a
    simulator, enrol a face first — Simulator menu → **Features → Face ID →
@@ -246,7 +246,7 @@ Budget weeks, not hours. It is the long pole in the whole iOS path.
 In the Apple Developer portal, once enrolled:
 
 1. **Identifiers → App IDs → +** → App, explicit bundle ID
-   **`green.swarm.wallet`**. It must match the project exactly. Enable only
+   **`green.swarm.swarmwallet`**. It must match the project exactly. Enable only
    the capabilities the app actually uses; the app adds **no** entitlement
    beyond upstream's push-notification `aps-environment`.
 2. Either **(a)** an **App Store Connect API key** (Users and Access →
@@ -257,7 +257,7 @@ In the Apple Developer portal, once enrolled:
    disabled job in the workflow expects **both**: the certificate and
    profile to sign, the API key to upload.
 3. In **App Store Connect**, create the app record for
-   `green.swarm.wallet`, name it *SWARM Wallet*, and set the primary
+   `green.swarm.swarmwallet`, name it *SWARM Wallet*, and set the primary
    category (Utilities is what the project declares).
 
 ### 4.3 Add the repository secrets

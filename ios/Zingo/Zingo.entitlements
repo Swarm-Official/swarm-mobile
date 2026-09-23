@@ -22,7 +22,7 @@
   what continues wallet synchronisation.
 
   If a real push feature is ever added, put `aps-environment` back AND
-  enable Push Notifications on the `green.swarm.wallet` App ID.
+  enable Push Notifications on the `green.swarm.swarmwallet` App ID.
 -->
 <dict/>
 </plist>

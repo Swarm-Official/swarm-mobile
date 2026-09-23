@@ -842,11 +842,11 @@ jobs:
             echo "::error::CFBundleDisplayName is '$NAME', expected 'SWARM Wallet' — the iOS authentication sheet would show the wrong name"
             exit 1
           fi
-          if [ "$BID" != "green.swarm.wallet" ]; then
-            echo "::error::CFBundleIdentifier is '$BID', expected 'green.swarm.wallet'"
+          if [ "$BID" != "green.swarm.swarmwallet" ]; then
+            echo "::error::CFBundleIdentifier is '$BID', expected 'green.swarm.swarmwallet'"
             exit 1
           fi
-          echo "ok      SWARM Wallet / green.swarm.wallet"
+          echo "ok      SWARM Wallet / green.swarm.swarmwallet"
 
           # C10: the project references the ROOT ios/PrivacyInfo.xcprivacy,
           # not the one in ios/Zingo/. Apple reads the manifest that is
@@ -1205,7 +1205,7 @@ jobs:
   # It cannot run today and is not meant to: it needs an Apple Developer
   # Program ORGANISATION account (App Review guideline 3.1.5(b) accepts
   # crypto wallets only from organisation accounts), an App ID
-  # green.swarm.wallet, an App Store Connect API key, and the repository
+  # green.swarm.swarmwallet, an App Store Connect API key, and the repository
   # secrets named below. Two independent locks keep it shut: a manual
   # workflow_dispatch input that defaults to false, and a first step that
   # hard-fails when the secrets are absent, before any signing step is
@@ -1433,7 +1433,7 @@ jobs:
             echo "::error::the archive carries build $BUILD, expected ${{ steps.version.outputs.build }}"
             exit 1
           fi
-          if [ "$BID" != "green.swarm.wallet" ]; then
+          if [ "$BID" != "green.swarm.swarmwallet" ]; then
             echo "::error::the archive carries bundle id $BID"
             exit 1
           fi

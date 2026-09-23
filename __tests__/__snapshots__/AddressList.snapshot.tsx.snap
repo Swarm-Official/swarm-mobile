@@ -84,7 +84,7 @@ exports[`Component Unified Address List - test Address Transparent List - snapsh
         <Image
           source={
             {
-              "testUri": "../../../assets/img/swarm-bee.png",
+              "testUri": "../../../assets/img/swarm-mark.png",
             }
           }
           style={
@@ -233,7 +233,7 @@ exports[`Component Unified Address List - test Address Unified List - snapshot 1
         <Image
           source={
             {
-              "testUri": "../../../assets/img/swarm-bee.png",
+              "testUri": "../../../assets/img/swarm-mark.png",
             }
           }
           style={

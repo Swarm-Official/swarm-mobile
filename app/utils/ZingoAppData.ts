@@ -61,7 +61,7 @@ export function getZingoName(): string {
  * differ by name; one mark serves both, and there is no comparison left to go
  * stale.
  */
-const SWARM_MARK = require('../../assets/img/swarm-bee.png');
+const SWARM_MARK = require('../../assets/img/swarm-mark.png');
 
 export function getSwarmMark() {
   return SWARM_MARK;

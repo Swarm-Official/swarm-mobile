@@ -19,7 +19,7 @@ import XSocial from '../../assets/img/options/x.svg';
 import Github from '../../assets/img/options/github.svg';
 import Mail from '../../assets/img/options/mail.svg';
 import Refresh from '../../assets/img/options/refresh.svg';
-import SwarmBee from '../../assets/img/swarm-bee.svg';
+import SwarmMark from '../../assets/img/swarm-mark.svg';
 
 export type OptionsPanelAction = {
   /** Unique key for the action (typically a MenuItemEnum value). */
@@ -267,13 +267,14 @@ const OptionsPanel: React.FC<OptionsPanelProps> = ({
               alignItems: 'center',
             }}
           >
-            {/* The SWARM hive-bee, drawn rather than rasterised so it stays
-                sharp at any density. Its stripes are painted in the canvas
-                colour, which is what the design system means by "stripes
-                always take the background colour". */}
-            <SwarmBee
-              width={32}
-              height={32}
+            {/* The SWARM mark: the amber chevron over the hive's two eyes
+                (owner's mark of 2026-09-22), the same vector the app icons are
+                cut from. Drawn rather than rasterised, so it stays sharp at any
+                density; it carries its own two colours, and the earlier note
+                here about stripes taking the canvas colour went with the bee. */}
+            <SwarmMark
+              width={44}
+              height={21}
               style={{ marginRight: 12 }}
             />
             <Pressable

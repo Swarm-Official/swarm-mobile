@@ -169,7 +169,7 @@ exports[`Component ShowUfvk - test ShowUfvk Backup - snapshot 1`] = `
           <Image
             source={
               {
-                "testUri": "../../../assets/img/swarm-bee.png",
+                "testUri": "../../../assets/img/swarm-mark.png",
               }
             }
             style={
@@ -428,7 +428,7 @@ exports[`Component ShowUfvk - test ShowUfvk Change - snapshot 1`] = `
           <Image
             source={
               {
-                "testUri": "../../../assets/img/swarm-bee.png",
+                "testUri": "../../../assets/img/swarm-mark.png",
               }
             }
             style={
@@ -687,7 +687,7 @@ exports[`Component ShowUfvk - test ShowUfvk Server - snapshot 1`] = `
           <Image
             source={
               {
-                "testUri": "../../../assets/img/swarm-bee.png",
+                "testUri": "../../../assets/img/swarm-mark.png",
               }
             }
             style={
@@ -946,7 +946,7 @@ exports[`Component ShowUfvk - test ShowUfvk View - snapshot 1`] = `
           <Image
             source={
               {
-                "testUri": "../../../assets/img/swarm-bee.png",
+                "testUri": "../../../assets/img/swarm-mark.png",
               }
             }
             style={

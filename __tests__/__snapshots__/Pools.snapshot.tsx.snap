@@ -162,7 +162,7 @@ exports[`Component Pools - test Pools - snapshot 1`] = `
         <Image
           source={
             {
-              "testUri": "../../../assets/img/swarm-bee.png",
+              "testUri": "../../../assets/img/swarm-mark.png",
             }
           }
           style={

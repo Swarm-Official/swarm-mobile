@@ -162,7 +162,7 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail received transactio
         <Image
           source={
             {
-              "testUri": "../../../assets/img/swarm-bee.png",
+              "testUri": "../../../assets/img/swarm-mark.png",
             }
           }
           style={
@@ -959,7 +959,7 @@ exports[`ValueTransferDetail - snapshots ValueTransferDetail sent transaction 1`
         <Image
           source={
             {
-              "testUri": "../../../assets/img/swarm-bee.png",
+              "testUri": "../../../assets/img/swarm-mark.png",
             }
           }
           style={

@@ -84,7 +84,7 @@ exports[`Component SyncReport - test SyncReport - snapshot 1`] = `
         <Image
           source={
             {
-              "testUri": "../../../assets/img/swarm-bee.png",
+              "testUri": "../../../assets/img/swarm-mark.png",
             }
           }
           style={

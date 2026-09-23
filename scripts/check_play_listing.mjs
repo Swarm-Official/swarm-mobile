@@ -13,7 +13,9 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = 'fastlane/metadata/android';
-const LOCALES = ['en-US', 'es'];
+// Play's locale codes, not fastlane's and not the app's: Spanish is "es-ES",
+// and a folder called "es" is refused by supply before it uploads anything.
+const LOCALES = ['en-US', 'es-ES'];
 
 const LIMITS = {
   'title.txt': 30,

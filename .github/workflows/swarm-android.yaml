@@ -107,6 +107,13 @@ jobs:
       - name: Play listing fits and carries no upstream wording
         run: node scripts/check_play_listing.mjs
 
+      # The images are the other half of the same funnel: Play refuses an icon
+      # that is not 512x512 32-bit PNG, a feature graphic that is not
+      # 1024x500, a screenshot whose long side is more than twice its short
+      # side, or a second screenshot that does not exist at all.
+      - name: Play assets are the sizes Play accepts
+        run: node scripts/store/check_store_art.mjs --store play
+
   rust:
     name: Rust ${{ matrix.abi }}
     runs-on: ubuntu-latest
@@ -887,4 +894,18 @@ jobs:
           name: swarm-smoke-evidence
           path: smoke-out/
           retention-days: 7
+          if-no-files-found: ignore
+
+      # The screens Play will show, photographed from the app this run built on
+      # an emulator that can reach the wallet server. Best effort by design:
+      # scripts/swarm_store_screens.sh never fails the job, and whatever it
+      # reached is uploaded for a human to compose into the listing with
+      # scripts/store/build_store_art.py.
+      - name: Upload the store screens
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-store-screens
+          path: store-out/
+          retention-days: 30
           if-no-files-found: ignore

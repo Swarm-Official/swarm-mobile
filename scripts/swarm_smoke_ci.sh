@@ -24,3 +24,9 @@ if [ -n "$RELEASE_APK" ]; then
 else
   echo "no release-signed APK in this run - only the debug-signed one was checked"
 fi
+
+# The emulator is up and the app is installed and already connected, so this is
+# the one moment in the pipeline when the screens Play will show can be
+# photographed for real. Best effort: the script always exits 0.
+bash scripts/swarm_store_screens.sh store-out || true
+

@@ -1,0 +1,44 @@
+[
+  {
+    "file": "01-receive.png",
+    "slug": "receive",
+    "eyebrow": "RECEIVE",
+    "caption": "Receive SWM at a private address",
+    "sub": "Shielded by default. Scan the code or copy the address."
+  },
+  {
+    "file": "02-settings.png",
+    "slug": "settings",
+    "eyebrow": "YOUR CHOICE OF SERVER",
+    "caption": "Point it at a server you trust",
+    "sub": "The default is lwd.swarm.green:443. You can run your own."
+  },
+  {
+    "file": "03-home.png",
+    "slug": "home",
+    "eyebrow": "SWARM TESTNET",
+    "caption": "Your balance, shielded",
+    "sub": "SWM test coins have no value on this network."
+  },
+  {
+    "file": "04-history.png",
+    "slug": "history",
+    "eyebrow": "HISTORY",
+    "caption": "Every transaction, with memos",
+    "sub": "Mined rewards are marked as mined rewards."
+  },
+  {
+    "file": "05-send.png",
+    "slug": "send",
+    "eyebrow": "SEND",
+    "caption": "Send with an encrypted memo",
+    "sub": "Keys stay on your phone; we hold nothing."
+  },
+  {
+    "file": "06-about.png",
+    "slug": "about",
+    "eyebrow": "OPEN SOURCE",
+    "caption": "Based on Zingo Mobile",
+    "sub": "MIT licence. Not affiliated with Zingo Labs or the Electric Coin Company."
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "file": "01-launch.png",
+    "slug": "launch",
+    "eyebrow": "SWARM WALLET",
+    "caption": "A shielded wallet for SWARM",
+    "sub": "Currently a public test network. SWM test coins have no value."
+  },
+  {
+    "file": "02-unlock.png",
+    "slug": "unlock",
+    "eyebrow": "NO ACCOUNT, NO EMAIL",
+    "caption": "Unlocked with Face ID or your passcode",
+    "sub": "Keys are created on this phone and never leave it."
+  },
+  {
+    "file": "03-creating-wallet.png",
+    "slug": "creating-wallet",
+    "eyebrow": "24 WORDS, ON YOUR PHONE",
+    "caption": "A wallet that only you hold",
+    "sub": "We never see the words and cannot recover them."
+  },
+  {
+    "file": "04-risk-notice.png",
+    "slug": "risk-notice",
+    "eyebrow": "READ THIS FIRST",
+    "caption": "Told plainly, before you start",
+    "sub": "Test coins have no value. Nobody sells them."
+  },
+  {
+    "file": "05-home.png",
+    "slug": "home",
+    "eyebrow": "SWARM TESTNET",
+    "caption": "Shielded by default",
+    "sub": "Receive, send and keep your history private."
+  },
+  {
+    "file": "06-receive.png",
+    "slug": "receive",
+    "eyebrow": "RECEIVE",
+    "caption": "One address, one QR code",
+    "sub": "Copy it, scan it or share it."
+  },
+  {
+    "file": "07-history.png",
+    "slug": "history",
+    "eyebrow": "HISTORY",
+    "caption": "Every transaction, with memos",
+    "sub": "Mined rewards are marked as mined rewards."
+  },
+  {
+    "file": "08-settings.png",
+    "slug": "settings",
+    "eyebrow": "YOUR CHOICE OF SERVER",
+    "caption": "Point it at a server you trust",
+    "sub": "The default is lwd.swarm.green. You can run your own."
+  }
+]

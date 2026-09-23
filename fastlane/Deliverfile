@@ -27,5 +27,5 @@ price_tier 0
 primary_category "Finance"
 secondary_category "Utilities"
 
-# Review notes and the contact live in fastlane/metadata/review_information/.
-# do_not_upload nothing: every file in the tree is meant to be published.
+# Review notes and the App Review contact live in
+# fastlane/metadata/review_information/ and are uploaded with the rest.

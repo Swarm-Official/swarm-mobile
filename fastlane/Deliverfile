@@ -1,0 +1,31 @@
+# fastlane deliver settings for SWARM Wallet (iOS).
+#
+# `fastlane metadata` reads this file and uploads the listing WITHOUT a build:
+# text, URLs and screenshots only. Uploading the .ipa is a separate step
+# (fastlane pilot, or xcrun altool in the workflow), because a listing can be
+# prepared and reviewed long before a signed build exists.
+
+app_identifier "green.swarm.wallet"
+
+# The standard layout, and it is the standard on purpose: deliver reads
+# fastlane/metadata/<locale>/, supply reads fastlane/metadata/android/<locale>/,
+# so one repository carries both stores' files without either tool seeing the
+# other's.
+metadata_path "fastlane/metadata"
+screenshots_path "fastlane/screenshots"
+
+# This project has no Mac of its own and no signed build yet. Nothing may be
+# submitted by accident from a metadata run.
+skip_binary_upload true
+submit_for_review false
+automatic_release false
+
+# Free, no in-app purchases, and Apple should not touch the price.
+price_tier 0
+
+# The App Store category, kept in step with docs/ios/05-APP-STORE-LISTING.md.
+primary_category "Finance"
+secondary_category "Utilities"
+
+# Review notes and the contact live in fastlane/metadata/review_information/.
+# do_not_upload nothing: every file in the tree is meant to be published.

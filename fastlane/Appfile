@@ -1,0 +1,17 @@
+# SWARM Wallet — the App Store identity, in one place.
+#
+# Everything here is a name, never a secret. The owner's Apple ID, the team and
+# the App Store Connect API key arrive at run time as environment variables
+# (DELIVER_USER, FASTLANE_TEAM_ID, and the API key path) so that no credential
+# ever lands in this repository.
+
+app_identifier("green.swarm.wallet")
+
+for_platform :ios do
+  apple_id(ENV["DELIVER_USER"]) if ENV["DELIVER_USER"]
+  team_id(ENV["FASTLANE_TEAM_ID"]) if ENV["FASTLANE_TEAM_ID"]
+end
+
+for_platform :android do
+  json_key(ENV["PLAY_JSON_KEY"]) if ENV["PLAY_JSON_KEY"]
+end

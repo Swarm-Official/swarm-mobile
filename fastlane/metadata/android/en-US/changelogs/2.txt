@@ -1,0 +1,1 @@
+First Google Play build of SWARM Wallet for SwarmTestnet. Test coins have no value.

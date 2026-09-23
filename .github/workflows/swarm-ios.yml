@@ -638,6 +638,54 @@ jobs:
             ls -la evidence/maestro | head -30
           fi
 
+      # The store screenshots come from THIS build on THIS simulator. Nothing
+      # is retouched and nothing is a mock-up: whatever the run can reach is
+      # what the listing may show.
+      #
+      # What this runner can reach is little, and the artefacts of run
+      # 35762436839 say so plainly: the app parks behind the device passcode
+      # sheet, Maestro's XCUITest driver never connects (127.0.0.1:22087
+      # refused for 14 minutes), the container holds settings.json but no
+      # wallet .dat file after six minutes of "Creating a new wallet", and the
+      # workflow's own probe cannot open TCP 443 to lwd.swarm.green. So the
+      # captures are the screens the app genuinely shows here, named exactly
+      # as scripts/store/screens.json names them; the composer turns them into
+      # Apple's 6.9-inch class in one command the day a capture of the wallet
+      # itself exists:
+      #   python scripts/store/build_store_art.py --preset ios69 \
+      #     --raw <captures> --out fastlane/screenshots/en-US
+      - name: Collect the store screens
+        if: always()
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          mkdir -p store-out
+          cp artifacts/00-launchscreen-1s.png store-out/01-launch.png 2>/dev/null || true
+          cp artifacts/01-auth-sheet-15s.png store-out/02-unlock.png 2>/dev/null || true
+          cp artifacts/04-after-unlock-attempt.png store-out/03-creating-wallet.png 2>/dev/null || true
+          xcrun simctl io "$UDID" screenshot store-out/04-final-state.png 2>/dev/null || true
+          ls -la store-out || true
+          echo "ok      the screens this build produced on this runner are in store-out/"
+
+      # The store files are checked in the same run that produces the screens,
+      # so a wrong size, an alpha channel or a stale Zingo sentence fails here
+      # rather than at the upload, after the build.
+      - name: Check the store submission files
+        if: always()
+        run: |
+          set -uo pipefail
+          node scripts/store/check_store_art.mjs --store ios
+
+      - name: Upload the store screens
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-ios-store-screens
+          path: store-out/
+          retention-days: 30
+          if-no-files-found: ignore
+
       # THE assertion of C9: on a fresh install, with nothing typed and nothing
       # chosen, is the server already lwd.swarm.green on swarm-testnet, and did
       # the app actually go there?

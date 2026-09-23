@@ -1,0 +1,96 @@
+# SWARM Wallet — fastlane lanes for both stores.
+#
+# Nothing in this file decides what the app is; it only moves files that are
+# already in the repository to the two stores, and refuses to move them if
+# scripts/store/check_store_art.mjs or scripts/check_play_listing.mjs says the
+# store would reject them. Every command that needs a credential reads it from
+# the environment, never from a file in the tree:
+#
+#   iOS      DELIVER_USER                      the owner's Apple ID (email)
+#            FASTLANE_TEAM_ID                  the organisation's team id
+#            ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH   App Store Connect API key
+#   Android  PLAY_JSON_KEY                     Play service account JSON, path
+#
+# Run `bundle install` first (the Gemfile pins fastlane). Then:
+#
+#   bundle exec fastlane ios verify        # is the listing sized for the store?
+#   bundle exec fastlane ios metadata      # upload the listing, no build
+#   bundle exec fastlane ios beta          # upload an .ipa to TestFlight
+#   bundle exec fastlane android verify
+#   bundle exec fastlane android play track:internal aab:/path/to.aab
+
+default_platform(:ios)
+
+def asc_api_key
+  app_store_connect_api_key(
+    key_id: ENV.fetch("ASC_KEY_ID"),
+    issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+    key_filepath: ENV.fetch("ASC_KEY_PATH"),
+    duration: 1200,
+    in_house: false,
+  )
+end
+
+platform :ios do
+  desc "Check every App Store file against Apple's sizes and limits, before upload"
+  lane :verify do
+    sh("node", "scripts/store/check_store_art.mjs", "--store", "ios")
+  end
+
+  desc "Upload the listing (name, description, URLs, screenshots). No build."
+  lane :metadata do
+    verify
+    deliver
+  end
+
+  desc "Upload a signed .ipa to TestFlight. The path comes from SWARM_IPA."
+  lane :beta do
+    verify
+    ipa = ENV["SWARM_IPA"]
+    UI.user_error!("set SWARM_IPA to the .ipa the SWARM iOS workflow built") if ipa.nil? || ipa.empty?
+    pilot(
+      api_key: asc_api_key,
+      ipa: ipa,
+      skip_waiting_for_build_processing: true,
+      # Testers are added by hand in App Store Connect: the public link is
+      # created only after the first external build passes Beta App Review.
+      distribute_external: false,
+    )
+  end
+
+  desc "Say what is in the store trees, without talking to Apple"
+  lane :inspect do
+    sh("node", "scripts/store/check_store_art.mjs")
+  end
+end
+
+platform :android do
+  desc "Check the Play texts and assets against Play's limits"
+  lane :verify do
+    sh("node", "scripts/check_play_listing.mjs")
+    sh("node", "scripts/store/check_store_art.mjs", "--store", "play")
+  end
+
+  desc "Upload an .aab to a Play track (default: internal testing)"
+  lane :play do |options|
+    verify
+    aab = options[:aab] || ENV["SWARM_AAB"]
+    UI.user_error!("pass aab:/path/to.aab or set SWARM_AAB") if aab.nil? || aab.empty?
+    supply(
+      aab: aab,
+      track: options[:track] || ENV["PLAY_TRACK"] || "internal",
+      # Google holds the app-signing key; this only needs an upload key, which
+      # the owner creates with scripts/play/create-upload-key.ps1.
+      json_key: ENV["PLAY_JSON_KEY"],
+      package_name: "green.swarm.wallet",
+      skip_upload_apk: true,
+      skip_upload_aab: false,
+      # The listing is uploaded by hand the first time, so a first release can
+      # never publish unfinished text by accident.
+      skip_upload_metadata: !ENV.key?("PLAY_UPLOAD_METADATA"),
+      skip_upload_images: !ENV.key?("PLAY_UPLOAD_IMAGES"),
+      skip_upload_screenshots: !ENV.key?("PLAY_UPLOAD_SCREENSHOTS"),
+      skip_upload_changelogs: false,
+    )
+  end
+end

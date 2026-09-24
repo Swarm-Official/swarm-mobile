@@ -1,5 +1,9 @@
 # SWARM Wallet on iOS
 
+> This document records the 2026-09-21 simulator work. Its account and
+> release status is outdated. Use [the 2026-09-24 TestFlight handoff](ios/TESTFLIGHT-HANDOFF-2026-09-24.md)
+> for the current branch, Apple setup, and open checks.
+
 Status of this document: written by the iOS build agent on 2026-09-21,
 extended on 2026-09-22 with the upload-readiness work (section 9).
 Everything under "Proven" was executed in GitHub Actions and has a run URL.

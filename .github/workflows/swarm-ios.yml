@@ -638,20 +638,14 @@ jobs:
             ls -la evidence/maestro | head -30
           fi
 
-      # The store screenshots come from THIS build on THIS simulator. Nothing
-      # is retouched and nothing is a mock-up: whatever the run can reach is
-      # what the listing may show.
+      # These screenshots come from this build on this simulator. They record
+      # first-launch state for review.
       #
-      # What this runner can reach is little, and the artefacts of run
-      # 35762436839 say so plainly: the app parks behind the device passcode
-      # sheet, Maestro's XCUITest driver never connects (127.0.0.1:22087
-      # refused for 14 minutes), the container holds settings.json but no
-      # wallet .dat file after six minutes of "Creating a new wallet", and the
-      # workflow's own probe cannot open TCP 443 to lwd.swarm.green. So the
-      # captures are the screens the app genuinely shows here, named exactly
-      # as scripts/store/screens.json names them; the composer turns them into
-      # Apple's 6.9-inch class in one command the day a capture of the wallet
-      # itself exists:
+      # Earlier runs reached the iOS passcode sheet, then stayed on "Creating
+      # a new wallet" without a wallet file. The TCP check in run 35909981590
+      # reached lwd.swarm.green:443. The first-launch path needs a physical
+      # device check. These captures document the runner state. The composer
+      # can produce Apple's 6.9-inch class after real wallet screens are captured:
       #   python scripts/store/build_store_art.py --preset ios69 \
       #     --raw <captures> --out fastlane/screenshots/en-US
       - name: Collect the store screens

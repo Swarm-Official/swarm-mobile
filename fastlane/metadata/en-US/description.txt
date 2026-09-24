@@ -6,6 +6,6 @@ SWM test coins have no monetary value. The test network may reset, and a reset m
 
 Shielded transactions hide sender, receiver, and amount on the chain. Your wallet server can see your internet connection. The privacy features on this network have not had an independent security audit.
 
-SWARM Wallet is open source and based on Zingo Mobile and zingolib. SWARM is independent of the Electric Coin Company, the Zcash Foundation, and Zingo Labs.
+Based on Zingo Mobile (MIT licence) and zingolib, SWARM Wallet is open source.
 
 Support: https://swarm.green/support

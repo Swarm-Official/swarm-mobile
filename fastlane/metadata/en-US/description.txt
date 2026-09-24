@@ -1,11 +1,16 @@
-SWARM Wallet is a self-custody wallet for SwarmTestnet, an experimental proof-of-work network.
+SWARM Wallet brings SWARM to your iPhone. Create or restore a self-custody wallet, send and receive SWM, and manage your wallet activity from one app.
 
-Create a wallet or restore one with a 24-word recovery phrase. Receive test SWM at a unified address, send test funds with an optional memo, and review your transaction history. The app supports device authentication and lets you choose a wallet server.
+SEND AND RECEIVE SWM
+Share a shielded address or QR code to receive SWM. Enter or scan a recipient address, choose an amount, and add an optional memo when sending.
 
-SWM test coins have no monetary value. The test network may reset, and a reset may erase balances. Keep your recovery phrase private. Anyone who has it can control your wallet, and the SWARM team cannot recover it for you.
+YOUR WALLETS, TOGETHER
+Create multiple wallets and switch between them on your iPhone. View your addresses, save address book entries, and review your balance and transaction history.
 
-Shielded transactions hide sender, receiver, and amount on the chain. Your wallet server can see your internet connection. The privacy features on this network have not had an independent security audit.
+CONTROL YOUR WALLET
+Your recovery phrase gives you control of your wallet. Restore an existing wallet, use device authentication, adjust privacy settings, and choose your wallet server.
 
-Based on Zingo Mobile (MIT licence) and zingolib, SWARM Wallet is open source.
+Based on Zingo Mobile (MIT licence) and zingolib, SWARM Wallet is open source. Read the privacy policy, terms, and open-source notices inside the app.
+
+Keep every recovery phrase private and backed up offline. Anyone with a recovery phrase can control its wallet. The SWARM team cannot recover a lost phrase for you.
 
 Support: https://swarm.green/support

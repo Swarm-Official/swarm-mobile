@@ -1,1 +1,1 @@
-SwarmTestnet is experimental. Test SWM has no monetary value. Create a wallet, receive test funds, and send a small amount to try it.
+SWARM on your iPhone. Send and receive SWM, manage multiple wallets, share QR codes, and keep control of your recovery phrases.

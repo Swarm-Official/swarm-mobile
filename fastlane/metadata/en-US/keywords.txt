@@ -1,1 +1,1 @@
-swarm,swm,wallet,shielded,privacy,testnet,proof of work,crypto
+swarm,swm,wallet,shielded,privacy,self custody,crypto,send,receive,qr

@@ -1412,12 +1412,6 @@ jobs:
       # No certificate anywhere: Xcode asks App Store Connect for the
       # signing assets with the API key and creates what it is missing.
       #
-      # CODE_SIGN_IDENTITY is forced because the project inherits
-      # CODE_SIGN_IDENTITY[sdk=iphoneos*] = "iPhone Developer" from
-      # upstream's template. Left alone, automatic signing would go
-      # looking for a DEVELOPMENT certificate for a build destined for
-      # the App Store. The API key must therefore be an Admin key: an
-      # App Manager key can upload but cannot mint certificates.
       - name: Archive for a physical device (automatic signing, API key)
         if: steps.signing.outputs.style == 'automatic'
         working-directory: ios
@@ -1441,8 +1435,7 @@ jobs:
             MARKETING_VERSION="${{ steps.version.outputs.marketing }}" \
             CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution"
+            CODE_SIGN_STYLE=Automatic
 
       - name: Read the archive back
         run: |

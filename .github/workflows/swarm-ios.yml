@@ -594,11 +594,8 @@ jobs:
             echo "bundle_id=$BID"
           } >> "$GITHUB_OUTPUT"
 
-      # Best effort, and said so in the log either way. Maestro is the only
-      # way to tap a button on a headless simulator, and the risk notice needs
-      # one tap before a wallet is created. It is NOT allowed to fail the job:
-      # the assertions in the next step are the ones that must hold.
-      - name: Tap through the risk notice with Maestro (best effort)
+      # The final gate checks this result after collecting the evidence.
+      - name: Walk wallet creation, Send and Receive with Maestro
         id: maestro
         continue-on-error: true
         timeout-minutes: 25

@@ -213,7 +213,9 @@ jobs:
       - name: Verify SWARM address compatibility
         if: steps.xcf.outputs.cache-hit != 'true'
         working-directory: rust
-        run: cargo test --locked -p zingo swarm_prefix_tests --lib
+        run: |
+          cargo test --locked -p zingo swarm_prefix_tests --lib
+          cargo test --locked -p zingo pause_idle_wallet --lib -- --test-threads=1
 
       - name: Build the iOS xcframeworks (upstream script, unmodified)
         if: steps.xcf.outputs.cache-hit != 'true'
@@ -610,33 +612,28 @@ jobs:
           UDID="${{ steps.sim.outputs.udid }}"
           BID="${{ steps.launch.outputs.bundle_id }}"
           export MAESTRO_DRIVER_STARTUP_TIMEOUT=180000
-          if ! curl -fsSL "https://get.maestro.mobile.dev" | bash; then
+          export MAESTRO_CLI_NO_ANALYTICS=1
+          if ! curl -fsSL "https://get.maestro.mobile.dev" | MAESTRO_VERSION=2.10.0 bash; then
             echo "::warning::could not install Maestro; skipping the UI walk"
             echo "ok=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           export PATH="$PATH:$HOME/.maestro/bin"
           maestro --version || true
-          if maestro --device "$UDID" test -e APP_ID="$BID" .maestro/ios_fresh_install.yaml; then
+          mkdir -p artifacts evidence
+          if maestro --device "$UDID" test --test-output-dir "$RUNNER_TEMP/maestro-flow" \
+            --format JUNIT --output evidence/maestro.xml \
+            -e APP_ID="$BID" .maestro/ios_fresh_install.yaml; then
             echo "Maestro walked the fresh install to the home screen"
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::the Maestro walk did not finish; the screenshots below are whatever it reached"
             echo "ok=false" >> "$GITHUB_OUTPUT"
           fi
-          mkdir -p artifacts evidence
-          cp ./*.png artifacts/ 2>/dev/null || true
+          find "$RUNNER_TEMP/maestro-flow" -path '*/takeScreenshot/*.png' \
+            -exec cp {} artifacts/ \;
           xcrun simctl io "$UDID" screenshot artifacts/06-after-maestro.png || true
-          # Maestro's own debug directory holds the view hierarchy at the
-          # point it gave up, which is the only way to find out what was
-          # actually on screen and which testIDs existed.
           maestro --device "$UDID" hierarchy > evidence/view-hierarchy.txt 2>&1 || true
-          LATEST=$(ls -dt "$HOME"/.maestro/tests/*/ 2>/dev/null | sed -n '1p')
-          if [ -n "${LATEST:-}" ]; then
-            mkdir -p evidence/maestro
-            cp -R "$LATEST"/. evidence/maestro/ 2>/dev/null || true
-            ls -la evidence/maestro | head -30
-          fi
 
       # These screenshots come from this build on this simulator. They record
       # first-launch state for review.

@@ -5,18 +5,28 @@ appId: ${APP_ID}
       id: "welcome.title"
     timeout: 300000
 - takeScreenshot: welcome
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: "loadingapp.createnewwallet"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible: "Before you start"
     timeout: 30000
-- tapOn: "I understand"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: "I understand"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "newseed.continue"
     timeout: 600000
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: "newseed.continue"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "home.welcome"
@@ -26,53 +36,80 @@ appId: ${APP_ID}
 - assertVisible:
     id: "header.addresses"
 - takeScreenshot: home-synced
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: "tab.send"
+    retryTapIfNoChange: true
 - takeScreenshot: send-empty-wallet
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: "tab.receive"
+    retryTapIfNoChange: true
 - assertVisible:
     id: "receive.title"
 - takeScreenshot: receive
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: "header.wallets"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "wallets.active.1"
     timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: "wallets.create"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "welcome.title"
     timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: "loadingapp.createnewwallet"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "newseed.continue"
     timeout: 600000
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: "newseed.continue"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "home.welcome"
     timeout: 300000
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: "header.wallets"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "wallets.active.2"
     timeout: 30000
 - takeScreenshot: two-wallets
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: "wallets.open.1"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "home.welcome"
     timeout: 300000
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: "header.wallets"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "wallets.active.1"

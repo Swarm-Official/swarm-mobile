@@ -106,14 +106,21 @@ describe('resolveZnsName', () => {
     ).resolves.toEqual({ ok: false, reason: 'network' });
   });
 
-  it('does not reach the indexer on regtest, which has none', async () => {
-    const resolveName = jest.spyOn(ZNS.prototype, 'resolveName');
+  it.each([
+    ['SwarmTestnet', ChainNameEnum.swarmChainName],
+    ['regtest', ChainNameEnum.regtestChainName],
+  ])(
+    'Tests that ZNS remains idle when the chain is %s',
+    async (_label, chain) => {
+      const resolveName = jest.spyOn(ZNS.prototype, 'resolveName');
 
-    await expect(
-      resolveZnsName('alice.zcash', ChainNameEnum.regtestChainName),
-    ).resolves.toEqual({ ok: false, reason: 'unsupported-chain' });
-    expect(resolveName).not.toHaveBeenCalled();
-  });
+      await expect(resolveZnsName('alice.zcash', chain)).resolves.toEqual({
+        ok: false,
+        reason: 'unsupported-chain',
+      });
+      expect(resolveName).not.toHaveBeenCalled();
+    },
+  );
 
   it('does not reach the indexer for a name the protocol would refuse', async () => {
     const resolveName = jest.spyOn(ZNS.prototype, 'resolveName');

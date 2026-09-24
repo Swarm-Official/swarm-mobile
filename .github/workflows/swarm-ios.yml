@@ -426,6 +426,11 @@ jobs:
               }, out)
           PY
 
+      - name: Check saved-wallet recovery
+        run: |
+          swiftc ios/WalletStore.swift ios/tests/WalletStoreChecks.swift -o "$RUNNER_TEMP/wallet-store-checks"
+          "$RUNNER_TEMP/wallet-store-checks"
+
       - name: Build for the simulator (ad-hoc signed)
         working-directory: ios
         run: |
@@ -578,6 +583,7 @@ jobs:
           security = settings['security']
           security['startApp'] = False
           security['foregroundApp'] = False
+          security['changeWalletScreen'] = False
           with open(path, 'w') as target:
               json.dump(settings, target)
           PY
@@ -611,35 +617,7 @@ jobs:
           fi
           export PATH="$PATH:$HOME/.maestro/bin"
           maestro --version || true
-          mkdir -p "$RUNNER_TEMP/flows"
-          cat > "$RUNNER_TEMP/flows/ios_fresh_install.yaml" <<FLOW
-          appId: $BID
-          ---
-          # Deliberately NO launchApp: the app is already running and already
-          # past the LocalAuthentication shutter, which Maestro cannot dismiss
-          # because it is a system sheet. Relaunching would put it back up and
-          # strand the flow behind it.
-          - extendedWaitUntil:
-              visible:
-                text: "Before you start"
-              timeout: 300000
-          - takeScreenshot: risknotice
-          - tapOn:
-              text: "I understand"
-          - extendedWaitUntil:
-              visible:
-                id: "receive.title"
-              timeout: 600000
-          - takeScreenshot: home-synced
-          - tapOn:
-              id: "tab.send"
-          - takeScreenshot: send-empty-wallet
-          - tapOn:
-              id: "tab.receive"
-          - assertVisible:
-              id: "receive.title"
-          FLOW
-          if maestro --device "$UDID" test "$RUNNER_TEMP/flows/ios_fresh_install.yaml"; then
+          if maestro --device "$UDID" test -e APP_ID="$BID" .maestro/ios_fresh_install.yaml; then
             echo "Maestro walked the fresh install to the home screen"
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else

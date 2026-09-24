@@ -49,13 +49,14 @@ The `apple-distribution` GitHub environment accepts only
 Admin API key for this upload. All four temporary environment secrets were
 deleted after upload. GitHub's API returned a remaining secret count of zero.
 The runner also completed its key-file cleanup. Apple finished processing
-with status `VALID`. Its internal and external beta states are both
-`MISSING_EXPORT_COMPLIANCE`.
+with status `VALID`. Its stored encryption declaration for this build is
+`usesNonExemptEncryption=false`. Its internal beta state is `IN_BETA_TESTING`.
 The `SWARM Internal` TestFlight group has bjoern as its first tester. Automatic
-distribution is off. Apple rejected assignment of build 1023 with HTTP 422,
-`Build is not in an internally testable state.` Complete the owner's
-encryption declaration, then assign the build to this group. The sole internal
-tester remains `NOT_INVITED` until that step succeeds.
+distribution is off. Build 1023 is assigned to this group, and the sole
+internal tester has status `INVITED`. Apple initially held the build for
+export compliance. The declaration cleared before successful group
+assignment. Installation and funded testing on the owner's iPhone remain
+pending.
 The beta description, feedback email, and wallet marketing URL are saved in
 TestFlight. Apple requires a review phone and email before it will save review
 notes. Draft notes:
@@ -133,13 +134,14 @@ for iOS uploads after 2026-04-28.
    `APPLE_APP_STORE_CONNECT_ISSUER_ID`, and `APPLE_APP_STORE_CONNECT_KEY_P8`.
    GitHub's API confirmed zero environment secrets. The original local Apple
    key file remains with its owner.
-3. Have the account owner answer Apple's encryption export questions. The
-   unverified `ITSAppUsesNonExemptEncryption=false` declaration was removed
-   from `Info.plist`, allowing App Store Connect to request the answer.
-   `docs/ios/ENCRYPTION-REVIEW.md` records the dependency inventory.
+3. Apple has accepted the encryption declaration for build 1023. The source
+   still leaves the answer to App Store Connect. Review the declaration again
+   when cryptography or distribution changes. `docs/ios/ENCRYPTION-REVIEW.md`
+   records the dependency inventory.
 4. The upload hash and delivery result are recorded above. Processing is
-   complete. After the encryption declaration clears, assign build 1023 to
-   `SWARM Internal` and verify the tester invitation. The test notes are saved.
+   complete, build 1023 is in `SWARM Internal`, and the tester is invited.
+   The test notes are saved. Open the invitation on the iPhone and install
+   SWARM Wallet through TestFlight.
 
 The workflow runs only after a signed dispatch, and its first step checks the
 required secret names. A successful upload establishes delivery to Apple.

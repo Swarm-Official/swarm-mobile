@@ -12,7 +12,41 @@ version](https://developer.apple.com/help/app-store-connect/manage-builds/upload
 so a store submission against the `1.0` record needs a `1.0` build
 or an edited store version. Keep SwarmTestnet and existing wallet storage.
 
-## Build status
+## Feedback release: build 1028
+
+[Release run 36063684334](https://github.com/Swarm-Official/swarm-mobile/actions/runs/36063684334)
+passed all five jobs. The hosted iOS 26.5 test created two wallets, opened Send
+and Receive, switched back to Wallet 1 and retained Wallet 2. The native
+idle-sync regression, saved-wallet recovery, default-server, bundle and
+visible-string checks passed. Apple Vision decoded the Receive QR with its
+centered SWARM logo. The signed archive contains the app icon and launch mark.
+
+| Upload record | Recorded result |
+| --- | --- |
+| Source commit | `526a37f52ec5a97932ac249d5ab850d864b6cf8f` |
+| Version/build | `0.1.0 (1028)` |
+| IPA SHA-256 | `48e46443b27378e80191f0dbd2fc1ad378ded92aa15c6e368f6e8f7fe3c1eef4` |
+| Delivery UUID | `87df0f11-5a3e-42de-989a-bf2d89ca7e9f` |
+| Uploaded bytes | `96772450` |
+| Upload accepted | `2026-09-24 23:52:48 UTC` |
+
+Apple reported `UPLOAD SUCCEEDED with no errors`. All four temporary secrets
+were removed from `apple-distribution` after upload. GitHub's API confirmed a
+remaining secret count of zero. The runner completed its key-file cleanup.
+Apple finished processing with status `VALID`. The build uses the unchanged
+encryption declaration from build 1023: `usesNonExemptEncryption=false`.
+Build 1028 is assigned to `SWARM Internal`, with internal state
+`IN_BETA_TESTING`. The updated What to Test notes cover the feedback fixes and
+switching immediately after creation and after sync finishes.
+
+Bjoern reported detailed app testing and approved the release on 24 September
+2026. The feedback fixes are recorded in `TESTFLIGHT-FEEDBACK-2026-09-24.md`.
+The subsequent `ea43f891d` commit adds the approved Store artwork and revised
+listing. The App Store and TestFlight app descriptions now describe SWARM
+Wallet for iPhone. This Mac's generated native frameworks match the build
+1028 artifacts.
+
+## Initial release: build 1023
 
 The [hosted simulator run](https://github.com/Swarm-Official/swarm-mobile/actions/runs/36020885180)
 passed on Xcode 26.5 with ad hoc simulator entitlements. Maestro accepted the
@@ -26,7 +60,7 @@ signing. Commit `233037798` removed that override. The
 [first retry](https://github.com/Swarm-Official/swarm-mobile/actions/runs/36030326489)
 built and launched, then failed the Store copy check on the open-source
 attribution. Commit `ffad77054` corrected the text. The
-[current signed run](https://github.com/Swarm-Official/swarm-mobile/actions/runs/36037294585)
+[build 1023 run](https://github.com/Swarm-Official/swarm-mobile/actions/runs/36037294585)
 passed the Store file check, simulator build, wallet creation, Send/Receive
 screen walk, and string sweep at commit `15f847387`. The simulator reports
 `0.1.0 (1023)`. The signed archive, bundle checks, IPA export, and upload all
@@ -150,12 +184,17 @@ TestFlight availability follows Apple's processing and account checks.
 ## Store preparation
 
 The privacy, terms, risks, and notices URLs under `https://swarm.green/wallet/`
-returned HTTP 404 on 2026-09-24. Publish and review those pages before the
-store listing. App Store Connect currently has no Privacy Policy URL or App
-Privacy answers. The Store page has a draft description, promotional text,
+are published and return HTTP 200. The App Store draft points to
+`https://swarm.green/wallet/privacy`. App Privacy answers still require the
+owner's server logging and retention information. The Store page has a draft description, promotional text,
 keywords, subtitle, and wallet marketing URL from `fastlane/metadata/en-US`.
-The four final angled Store screenshots finished processing in the
-English (U.S.) draft. It still
+The four approved angled Store screenshots, including the revised top captions,
+finished processing in the English (U.S.) draft. Their order and checksums match
+the committed PNGs. The description, subtitle, promotional text and keywords
+describe SWARM Wallet for iPhone. The subtitle is “Your SWARM wallet on iPhone”.
+Those listing fields contain no testnet wording. The approved phone captures
+retain their original UI, including the Send network placeholder. The
+production submission requires a matching build and captures. The draft still
 needs the age rating and the App Review phone and email. The primary
 category is Finance, the support URL is `https://swarm.green/support`, and the
 release mode is manual. The Store review form no longer requires a sign-in.
@@ -174,6 +213,6 @@ Review the draft text in `fastlane/metadata` and supply an App Review phone
 number and instructions.
 The testnet requires a working indexer and disposable test coins for review.
 
-The first signed upload is an internal TestFlight candidate. App Store
-submission follows physical device acceptance, legal pages, privacy answers,
+The signed uploads are internal TestFlight candidates. App Store submission
+requires physical device acceptance, completed privacy answers, final Store
 screenshots, and App Review material.

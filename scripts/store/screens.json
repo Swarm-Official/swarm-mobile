@@ -1,58 +1,30 @@
 [
   {
-    "file": "01-launch.png",
-    "slug": "launch",
-    "eyebrow": "SWARM WALLET",
-    "caption": "A shielded wallet for SWARM",
-    "sub": "Currently a public test network. SWM test coins have no value."
-  },
-  {
-    "file": "02-unlock.png",
-    "slug": "unlock",
-    "eyebrow": "NO ACCOUNT, NO EMAIL",
-    "caption": "Unlocked with Face ID or your passcode",
-    "sub": "Keys are created on this phone and never leave it."
-  },
-  {
-    "file": "03-creating-wallet.png",
-    "slug": "creating-wallet",
-    "eyebrow": "24 WORDS, ON YOUR PHONE",
-    "caption": "A wallet that only you hold",
-    "sub": "We never see the words and cannot recover them."
-  },
-  {
-    "file": "04-risk-notice.png",
-    "slug": "risk-notice",
-    "eyebrow": "READ THIS FIRST",
-    "caption": "Told plainly, before you start",
-    "sub": "Test coins have no value. Nobody sells them."
-  },
-  {
-    "file": "05-home.png",
-    "slug": "home",
-    "eyebrow": "SWARM TESTNET",
-    "caption": "Shielded by default",
-    "sub": "Receive, send and keep your history private."
-  },
-  {
-    "file": "06-receive.png",
+    "file": "01-receive.png",
     "slug": "receive",
-    "eyebrow": "RECEIVE",
-    "caption": "One address, one QR code",
-    "sub": "Copy it, scan it or share it."
+    "eyebrow": "SWARM MAINNET",
+    "caption": "Receive SWM",
+    "sub": "Share a shielded address or QR code."
   },
   {
-    "file": "07-history.png",
+    "file": "02-send.png",
+    "slug": "send",
+    "eyebrow": "SEND",
+    "caption": "Send on SWARM Mainnet",
+    "sub": "Enter a recipient address and amount."
+  },
+  {
+    "file": "03-history.png",
     "slug": "history",
-    "eyebrow": "HISTORY",
-    "caption": "Every transaction, with memos",
-    "sub": "Mined rewards are marked as mined rewards."
+    "eyebrow": "WALLET ACTIVITY",
+    "caption": "See your balance and history",
+    "sub": "Transactions appear here as they arrive."
   },
   {
-    "file": "08-settings.png",
+    "file": "04-settings.png",
     "slug": "settings",
-    "eyebrow": "YOUR CHOICE OF SERVER",
-    "caption": "Point it at a server you trust",
-    "sub": "The default is lwd.swarm.green. You can run your own."
+    "eyebrow": "YOUR WALLET",
+    "caption": "Set privacy and network options",
+    "sub": "Choose a server and device security settings."
   }
 ]

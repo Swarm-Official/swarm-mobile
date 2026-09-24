@@ -10,6 +10,8 @@ import { NativeModules } from 'react-native';
 interface RPCModuleAPI {
   // Wallet lifecycle
   walletExists(): Promise<string>;
+  savedWallets(): Promise<string>;
+  selectWallet(id: string): Promise<string>;
   walletBackupExists(): Promise<string>;
   createNewWallet(
     serverUri: string,

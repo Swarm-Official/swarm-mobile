@@ -1,25 +1,16 @@
-SWARM Wallet is the wallet for SWARM, a proof-of-work network with shielded transactions, currently running as a public TEST network (SwarmTestnet).
+SWARM Wallet brings SWARM to your iPhone. Create or restore a self-custody wallet, send and receive SWM, and manage your wallet activity from one app.
 
-Read this first
-• SWM test coins have no monetary value. Nobody sells them, and nobody should buy them.
-• The test network can be reset at any time and every balance with it.
-• No account, no email, no sign-up. The app creates a 24-word recovery phrase on your phone. Whoever holds those words controls the wallet. We never see them and cannot recover them.
+SEND AND RECEIVE SWM
+Share a shielded address or QR code to receive SWM. Enter or scan a recipient address, choose an amount, and add an optional memo when sending.
 
-What the app does
-• Creates or restores a wallet from a 24-word recovery phrase.
-• Receives SWM at a unified address; shielded by default.
-• Sends SWM with an optional encrypted memo to the recipient.
-• Shows your history, with mined rewards marked as such.
-• Unlocks with Face ID, Touch ID or your passcode; hides balances in "High privacy" mode.
-• Lets you choose the wallet server, including one you run yourself.
+YOUR WALLETS, TOGETHER
+Create multiple wallets and switch between them on your iPhone. View your addresses, save address book entries, and review your balance and transaction history.
 
-Where the coins come from
-Blocks are mined on ordinary computers with SWARM Node (a separate desktop program). Phones do not mine, and this app contains no miner. Every block pays 80 % to the miner and 20 % to three published project addresses; the rules are public and verified block by block.
+CONTROL YOUR WALLET
+Your recovery phrase gives you control of your wallet. Restore an existing wallet, use device authentication, adjust privacy settings, and choose your wallet server.
 
-Privacy, honestly
-Shielded transactions hide sender, receiver and amount on the chain. They do not hide your internet address from the wallet server you connect to, and transparent addresses are public. The privacy code on this network is new and has not been independently audited. The app collects no data and contains no analytics; the privacy policy explains what the wallet server sees.
+Based on Zingo Mobile (MIT licence) and zingolib, SWARM Wallet is open source. Read the privacy policy, terms, and open-source notices inside the app.
 
-Open source
-Based on Zingo Mobile (MIT licence) and zingolib. Everything we changed is public at github.com/Swarm-Official. SWARM is not affiliated with the Electric Coin Company, the Zcash Foundation or Zingo Labs.
+Keep every recovery phrase private and backed up offline. Anyone with a recovery phrase can control its wallet. The SWARM team cannot recover a lost phrase for you.
 
-Support: swarm.green/support · swarmofficial@atomicmail.io
+Support: https://swarm.green/support

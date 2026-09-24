@@ -26,6 +26,8 @@ import {
   deactivateKeepAwake,
 } from '@sayem314/react-native-keep-awake';
 
+import { Wallets } from '@screens/Wallets/Wallets';
+import { selectWallet } from '@app/walletBackend/utils/savedWallets';
 import WalletBackend, { fetchWallet } from '@app/walletBackend';
 import {
   changeServer,
@@ -110,7 +112,7 @@ import History from '@screens/History';
 import Send from '@screens/Send';
 import Receive from '@screens/Receive';
 import Settings from '@screens/Settings';
-import CustomTabBar, { FadeOnlyTabBar } from '@app/navigation/CustomTabBar';
+import CustomTabBar from '@app/navigation/CustomTabBar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   BottomSheetModal,
@@ -755,8 +757,6 @@ type LoadedAppClassState = AppStateLoaded & AppContextLoaded;
 const renderTabBar = (
   props: import('@react-navigation/bottom-tabs').BottomTabBarProps,
 ) => <CustomTabBar {...props} />;
-
-const renderFadeOnlyTabBar = () => <FadeOnlyTabBar />;
 
 export class LoadedAppClass extends Component<
   LoadedAppClassProps,
@@ -1671,6 +1671,10 @@ export class LoadedAppClass extends Component<
       }
       return;
     } else if (item === MenuItemEnum.ChangeWallet) {
+      if (Platform.OS === 'ios') {
+        this.drawerNav?.navigate(RouteEnum.Wallets);
+        return;
+      }
       if (this.state.readOnly) {
         this.drawerNav?.navigate(RouteEnum.Ufvk, {
           action: UfvkActionEnum.change,
@@ -2062,15 +2066,26 @@ export class LoadedAppClass extends Component<
     });
   };
 
+  onSelectWallet = async (id: string) => {
+    await this.rpc.clearTimers();
+    const selected = await selectWallet(id);
+    if (selected.kind === 'error')
+      this.addLastSnackbar(String(this.state.translate(selected.errorKey)));
+    this.keepAwake(false);
+    await this.navigateToLoadingApp({ startingApp: false, newWallet: true });
+  };
+
   onClickOKChangeWallet = async (state: LoadingAppNavigationState) => {
     // Back up any MAINNET wallet being abandoned. The decision keys on the
     // WALLET's own chain (walletChainName), not the server's — Offline has no
     // server chain, yet a mainnet wallet must still be backed up when it is
     // left. Testnet/regtest are never backed up.
     const changed =
-      this.state.walletChainName === ChainNameEnum.mainChainName
-        ? await this.rpc.changeWallet() // backup
-        : await this.rpc.changeWalletNoBackup(); // no backup
+      Platform.OS === 'ios'
+        ? await selectWallet('')
+        : this.state.walletChainName === ChainNameEnum.mainChainName
+          ? await this.rpc.changeWallet() // backup
+          : await this.rpc.changeWalletNoBackup(); // no backup
 
     if (changed.kind === 'error') {
       createAlert(
@@ -2159,9 +2174,11 @@ export class LoadedAppClass extends Component<
       // chain (walletChainName), not the server's, so a mainnet wallet left
       // while Offline still gets backed up. Testnet/regtest are not backed up.
       const changed =
-        this.state.walletChainName === ChainNameEnum.mainChainName
-          ? await this.rpc.changeWallet() // backup
-          : await this.rpc.changeWalletNoBackup(); // no backup
+        Platform.OS === 'ios'
+          ? await selectWallet('')
+          : this.state.walletChainName === ChainNameEnum.mainChainName
+            ? await this.rpc.changeWallet() // backup
+            : await this.rpc.changeWalletNoBackup(); // no backup
 
       if (changed.kind === 'error') {
         createAlert(
@@ -2273,10 +2290,16 @@ export class LoadedAppClass extends Component<
       scrollToTop,
       scrollToBottom,
       addresses,
-      somePending,
-      selectServer,
     } = this.state;
     const { colors } = this.props.theme;
+    const showHistoryFirst =
+      mode === ModeEnum.advanced ||
+      (valueTransfersTotal !== null && valueTransfersTotal > 0) ||
+      (!readOnly &&
+        !!totalBalance &&
+        totalBalance.confirmedOrchardBalance +
+          totalBalance.confirmedSaplingBalance >
+          0);
 
     // Whether this chain offers the Nym mixnet at all. On SwarmTestnet it
     // does not, because no mixnet send has ever been demonstrated against
@@ -2377,14 +2400,7 @@ export class LoadedAppClass extends Component<
                         });
                         return (
                           <>
-                            {mode === ModeEnum.advanced ||
-                            (valueTransfersTotal !== null &&
-                              valueTransfersTotal > 0) ||
-                            (!readOnly &&
-                              !!totalBalance &&
-                              totalBalance.confirmedOrchardBalance +
-                                totalBalance.confirmedSaplingBalance >
-                                0) ? (
+                            {showHistoryFirst || addresses !== null ? (
                               <Tab.Navigator
                                 detachInactiveScreens={true}
                                 initialRouteName={RouteEnum.History}
@@ -2416,60 +2432,42 @@ export class LoadedAppClass extends Component<
                                     />
                                   )}
                                 </Tab.Screen>
-                                {!readOnly &&
-                                  selectServer !== SelectServerEnum.offline &&
-                                  (mode === ModeEnum.advanced ||
-                                    (!!totalBalance &&
-                                      totalBalance.confirmedIronwoodBalance +
-                                        totalBalance.confirmedOrchardBalance +
-                                        totalBalance.confirmedSaplingBalance >
-                                        0) ||
-                                    (!!totalBalance &&
-                                      ((totalBalance.totalIronwoodBalance > 0 &&
-                                        totalBalance.confirmedIronwoodBalance ===
-                                          0) ||
-                                        (totalBalance.totalOrchardBalance > 0 &&
-                                          totalBalance.confirmedOrchardBalance ===
-                                            0) ||
-                                        (totalBalance.totalSaplingBalance > 0 &&
-                                          totalBalance.confirmedSaplingBalance ===
-                                            0)) &&
-                                      somePending)) && (
-                                    <Tab.Screen name={RouteEnum.Send}>
-                                      {propsTab => (
-                                        <Send
-                                          {...propsTab}
-                                          toggleMenuDrawer={
-                                            () =>
-                                              toggleOptionsPanel() /* header */
-                                          }
-                                          setShieldingAmount={
-                                            this.setShieldingAmount /* header */
-                                          }
-                                          setScrollToTop={
-                                            this
-                                              .setScrollToTop /* header & send */
-                                          }
-                                          setScrollToBottom={
-                                            this
-                                              .setScrollToBottom /* header & send */
-                                          }
-                                          sendTransaction={
-                                            this.sendTransaction /* send */
-                                          }
-                                          setServerOption={
-                                            this.setServerOption /* send */
-                                          }
-                                          clearToAddr={
-                                            this.clearToAddr /* send */
-                                          }
-                                          setSecurityOption={
-                                            this.setSecurityOption /* send */
-                                          }
-                                        />
-                                      )}
-                                    </Tab.Screen>
-                                  )}
+                                {!readOnly && (
+                                  <Tab.Screen name={RouteEnum.Send}>
+                                    {propsTab => (
+                                      <Send
+                                        {...propsTab}
+                                        toggleMenuDrawer={
+                                          () =>
+                                            toggleOptionsPanel() /* header */
+                                        }
+                                        setShieldingAmount={
+                                          this.setShieldingAmount /* header */
+                                        }
+                                        setScrollToTop={
+                                          this
+                                            .setScrollToTop /* header & send */
+                                        }
+                                        setScrollToBottom={
+                                          this
+                                            .setScrollToBottom /* header & send */
+                                        }
+                                        sendTransaction={
+                                          this.sendTransaction /* send */
+                                        }
+                                        setServerOption={
+                                          this.setServerOption /* send */
+                                        }
+                                        clearToAddr={
+                                          this.clearToAddr /* send */
+                                        }
+                                        setSecurityOption={
+                                          this.setSecurityOption /* send */
+                                        }
+                                      />
+                                    )}
+                                  </Tab.Screen>
+                                )}
                                 <Tab.Screen name={RouteEnum.Receive}>
                                   {propsTab => (
                                     <Receive
@@ -2485,43 +2483,19 @@ export class LoadedAppClass extends Component<
                                 </Tab.Screen>
                               </Tab.Navigator>
                             ) : (
-                              <>
-                                {addresses === null ? (
-                                  <Loading
-                                    backgroundColor={colors.bgCanvas}
-                                    spinColor={colors.fgAccent}
-                                  />
-                                ) : (
-                                  <Tab.Navigator
-                                    initialRouteName={RouteEnum.Receive}
-                                    tabBar={renderFadeOnlyTabBar}
-                                    screenOptions={{
-                                      headerShown: false,
-                                    }}
-                                  >
-                                    <Tab.Screen name={RouteEnum.Receive}>
-                                      {propsTab => (
-                                        <Receive
-                                          {...propsTab}
-                                          toggleMenuDrawer={
-                                            () =>
-                                              toggleOptionsPanel() /* header */
-                                          }
-                                          alone={true /* receive */}
-                                          setSecurityOption={
-                                            this.setSecurityOption
-                                          }
-                                          setAddressBook={this.setAddressBook}
-                                        />
-                                      )}
-                                    </Tab.Screen>
-                                  </Tab.Navigator>
-                                )}
-                              </>
+                              <Loading
+                                backgroundColor={colors.bgCanvas}
+                                spinColor={colors.fgAccent}
+                              />
                             )}
                           </>
                         );
                       }}
+                    </RootNavigator.Screen>
+                    <RootNavigator.Screen name={RouteEnum.Wallets}>
+                      {props => (
+                        <Wallets {...props} onSelect={this.onSelectWallet} />
+                      )}
                     </RootNavigator.Screen>
                     <RootNavigator.Screen name={RouteEnum.Settings}>
                       {props => (

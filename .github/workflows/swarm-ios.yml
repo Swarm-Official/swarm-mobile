@@ -1,13 +1,8 @@
 name: SWARM iOS
 
-# SWARM Wallet — iOS simulator pipeline.
-#
-# Phones do not mine: Apple App Review guideline 3.1.5 forbids on-device
-# mining, so this is a wallet only. The physical-device / TestFlight path
-# needs an Apple Developer Program ORGANISATION account (guideline
-# 3.1.5(b)) that this project does not have; see docs/SWARM-IOS.md. Until
-# then the iOS deliverable is a SIMULATOR build and nothing here signs
-# anything: every xcodebuild invocation runs with CODE_SIGNING_ALLOWED=NO.
+# SWARM Wallet iOS simulator and TestFlight pipeline.
+# Apple App Review guideline 3.1.5(i) requires an organisation account for
+# cryptocurrency wallets. The signed job requires Apple signing secrets.
 #
 # Versions below are pinned against the inventory recorded by the
 # `preflight` job (run 35626872504): macos-latest is macOS 26.6.2 on
@@ -218,7 +213,9 @@ jobs:
       - name: Verify SWARM address compatibility
         if: steps.xcf.outputs.cache-hit != 'true'
         working-directory: rust
-        run: cargo test --locked -p zingo swarm_prefix_tests --lib
+        run: |
+          cargo test --locked -p zingo swarm_prefix_tests --lib
+          cargo test --locked -p zingo pause_idle_wallet --lib -- --test-threads=1
 
       - name: Build the iOS xcframeworks (upstream script, unmodified)
         if: steps.xcf.outputs.cache-hit != 'true'
@@ -288,6 +285,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
+
+      - name: Check the store submission files
+        run: node scripts/store/check_store_art.mjs --store ios
 
       - name: Yarn install
         run: yarn install --frozen-lockfile
@@ -407,7 +407,33 @@ jobs:
       # .app, so the artifact is standalone and the launch below is real
       # evidence rather than a red "No bundle URL present" screen from a
       # Debug build looking for a Metro server that is not running.
-      - name: Build for the simulator (unsigned)
+      # Simulator keychain calls require an application identifier and an
+      # access group. Xcode embeds these as simulated entitlements in the
+      # executable; a CODE_SIGNING_ALLOWED=NO app reaches the loading screen
+      # but SecItemCopyMatching fails with errSecMissingEntitlement (-34018).
+      # The ad-hoc simulator identity is local to this job. Device archives
+      # use the separate Apple distribution signing path below.
+      - name: Prepare simulator keychain entitlements
+        run: |
+          python3 - "$RUNNER_TEMP/swarm-simulator.entitlements" <<'PY'
+          import plistlib
+          import sys
+
+          app_id = 'SWARMSIM01.green.swarm.swarmwallet'
+          with open(sys.argv[1], 'wb') as out:
+              plistlib.dump({
+                  'application-identifier': app_id,
+                  'com.apple.developer.team-identifier': 'SWARMSIM01',
+                  'keychain-access-groups': [app_id],
+              }, out)
+          PY
+
+      - name: Check saved-wallet recovery
+        run: |
+          swiftc ios/WalletStore.swift ios/tests/WalletStoreChecks.swift -o "$RUNNER_TEMP/wallet-store-checks"
+          "$RUNNER_TEMP/wallet-store-checks"
+
+      - name: Build for the simulator (ad-hoc signed)
         working-directory: ios
         run: |
           set -euxo pipefail
@@ -423,11 +449,11 @@ jobs:
             MARKETING_VERSION="${{ steps.version.outputs.marketing }}" \
             CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
             ONLY_ACTIVE_ARCH=YES \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_ALLOWED=YES \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGN_ENTITLEMENTS="" \
-            DEVELOPMENT_TEAM="" \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGN_ENTITLEMENTS="$RUNNER_TEMP/swarm-simulator.entitlements" \
+            DEVELOPMENT_TEAM=SWARMSIM01 \
             -quiet
 
       # C9 / E1: which hosts does a fresh install actually contact?
@@ -543,34 +569,29 @@ jobs:
           sleep 4
           xcrun simctl io "$UDID" screenshot artifacts/03-home-screen.png
 
-          # Best effort, never fatal: enrol biometry and send a match so the
-          # privacy shutter opens and the wallet's own first screen is
-          # photographed too. simctl has no supported API for this — it is
-          # the notifyutil channel the Simulator's own Features > Face ID
-          # menu uses — so it is allowed to do nothing on a runner where it
-          # does not work, and the run still has the three screens above.
-          echo "--- attempting to pass the privacy shutter ---"
-          xcrun simctl spawn "$UDID" notifyutil -s com.apple.BiometricKit.enrollmentChanged 1 || true
-          xcrun simctl spawn "$UDID" notifyutil -p com.apple.BiometricKit.enrollmentChanged || true
-          xcrun simctl launch --terminate-running-process "$UDID" "$BID" || true
-          sleep 20
-          xcrun simctl spawn "$UDID" notifyutil -p com.apple.BiometricKit_Sim.fingerTouch.match || true
-          sleep 12
-          xcrun simctl io "$UDID" screenshot artifacts/04-after-unlock-attempt.png || true
+          # The first launch above records the real device-auth shutter. A
+          # headless runner cannot answer its system sheet reliably, so turn
+          # off only that preference in this disposable simulator and relaunch
+          # to exercise the keychain, risk notice and wallet creation path.
+          CONTAINER=$(xcrun simctl get_app_container "$UDID" "$BID" data)
+          SETTINGS="$CONTAINER/Documents/settings.json"
+          python3 - "$SETTINGS" <<'PY'
+          import json
+          import sys
 
-          # A fresh install in basic mode creates its wallet by itself and
-          # starts syncing; before it does, the one-time risk notice is up and
-          # waiting for a tap. Both are worth photographing: the notice is the
-          # screen App Review sees first, and the screens after it are the
-          # fresh-install evidence C9 asks for.
-          # Six minutes, not three. Run 35757559500 sat on "Creating a new
-          # wallet" for the whole of three and that was not long enough to
-          # tell a stall from a slow first sync.
-          echo "--- settling the fresh install ---"
-          for t in $(seq 1 12); do
-            sleep 30
-            xcrun simctl io "$UDID" screenshot "artifacts/05-fresh-install-$((t * 30))s.png" || true
-          done
+          path = sys.argv[1]
+          with open(path) as source:
+              settings = json.load(source)
+          security = settings['security']
+          security['startApp'] = False
+          security['foregroundApp'] = False
+          security['changeWalletScreen'] = False
+          with open(path, 'w') as target:
+              json.dump(settings, target)
+          PY
+          xcrun simctl launch "$UDID" "$BID"
+          sleep 30
+          xcrun simctl io "$UDID" screenshot artifacts/04-risk-notice.png
 
           xcrun simctl spawn "$UDID" log show --last 8m --style compact \
             --predicate "processImagePath CONTAINS[c] 'Zingo'" \
@@ -581,11 +602,8 @@ jobs:
             echo "bundle_id=$BID"
           } >> "$GITHUB_OUTPUT"
 
-      # Best effort, and said so in the log either way. Maestro is the only
-      # way to tap a button on a headless simulator, and the risk notice needs
-      # one tap before a wallet is created. It is NOT allowed to fail the job:
-      # the assertions in the next step are the ones that must hold.
-      - name: Tap through the risk notice with Maestro (best effort)
+      # The final gate checks this result after collecting the evidence.
+      - name: Walk wallet creation, Send and Receive with Maestro
         id: maestro
         continue-on-error: true
         timeout-minutes: 25
@@ -594,69 +612,37 @@ jobs:
           UDID="${{ steps.sim.outputs.udid }}"
           BID="${{ steps.launch.outputs.bundle_id }}"
           export MAESTRO_DRIVER_STARTUP_TIMEOUT=180000
-          if ! curl -fsSL "https://get.maestro.mobile.dev" | bash; then
+          export MAESTRO_CLI_NO_ANALYTICS=1
+          if ! curl -fsSL "https://get.maestro.mobile.dev" | MAESTRO_VERSION=2.10.0 bash; then
             echo "::warning::could not install Maestro; skipping the UI walk"
             echo "ok=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           export PATH="$PATH:$HOME/.maestro/bin"
           maestro --version || true
-          mkdir -p "$RUNNER_TEMP/flows"
-          cat > "$RUNNER_TEMP/flows/ios_fresh_install.yaml" <<FLOW
-          appId: $BID
-          ---
-          # Deliberately NO launchApp: the app is already running and already
-          # past the LocalAuthentication shutter, which Maestro cannot dismiss
-          # because it is a system sheet. Relaunching would put it back up and
-          # strand the flow behind it.
-          - extendedWaitUntil:
-              visible:
-                text: "Before you start"
-              timeout: 300000
-          - takeScreenshot: risknotice
-          - tapOn:
-              text: "I understand"
-          - extendedWaitUntil:
-              visible:
-                id: "receive.title"
-              timeout: 600000
-          - takeScreenshot: home-synced
-          FLOW
-          if maestro --device "$UDID" test "$RUNNER_TEMP/flows/ios_fresh_install.yaml"; then
+          mkdir -p artifacts evidence
+          if maestro --device "$UDID" test --test-output-dir "$RUNNER_TEMP/maestro-flow" \
+            --format JUNIT --output evidence/maestro.xml \
+            -e APP_ID="$BID" .maestro/ios_fresh_install.yaml; then
             echo "Maestro walked the fresh install to the home screen"
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::the Maestro walk did not finish; the screenshots below are whatever it reached"
             echo "ok=false" >> "$GITHUB_OUTPUT"
           fi
-          mkdir -p artifacts evidence
-          cp ./*.png artifacts/ 2>/dev/null || true
+          find "$RUNNER_TEMP/maestro-flow" -path '*/takeScreenshot/*.png' \
+            -exec cp {} artifacts/ \;
           xcrun simctl io "$UDID" screenshot artifacts/06-after-maestro.png || true
-          # Maestro's own debug directory holds the view hierarchy at the
-          # point it gave up, which is the only way to find out what was
-          # actually on screen and which testIDs existed.
           maestro --device "$UDID" hierarchy > evidence/view-hierarchy.txt 2>&1 || true
-          LATEST=$(ls -dt "$HOME"/.maestro/tests/*/ 2>/dev/null | sed -n '1p')
-          if [ -n "${LATEST:-}" ]; then
-            mkdir -p evidence/maestro
-            cp -R "$LATEST"/. evidence/maestro/ 2>/dev/null || true
-            ls -la evidence/maestro | head -30
-          fi
 
-      # The store screenshots come from THIS build on THIS simulator. Nothing
-      # is retouched and nothing is a mock-up: whatever the run can reach is
-      # what the listing may show.
+      # These screenshots come from this build on this simulator. They record
+      # first-launch state for review.
       #
-      # What this runner can reach is little, and the artefacts of run
-      # 35762436839 say so plainly: the app parks behind the device passcode
-      # sheet, Maestro's XCUITest driver never connects (127.0.0.1:22087
-      # refused for 14 minutes), the container holds settings.json but no
-      # wallet .dat file after six minutes of "Creating a new wallet", and the
-      # workflow's own probe cannot open TCP 443 to lwd.swarm.green. So the
-      # captures are the screens the app genuinely shows here, named exactly
-      # as scripts/store/screens.json names them; the composer turns them into
-      # Apple's 6.9-inch class in one command the day a capture of the wallet
-      # itself exists:
+      # Earlier unsigned runs reached the iOS passcode sheet, then stayed on
+      # "Creating a new wallet" because keychain queries lacked simulator
+      # entitlements. The TCP check in run 35909981590 reached
+      # lwd.swarm.green:443. These captures document the runner state. The composer
+      # can produce Apple's 6.9-inch class after real wallet screens are captured:
       #   python scripts/store/build_store_art.py --preset ios69 \
       #     --raw <captures> --out fastlane/screenshots/en-US
       - name: Collect the store screens
@@ -668,19 +654,10 @@ jobs:
           mkdir -p store-out
           cp artifacts/00-launchscreen-1s.png store-out/01-launch.png 2>/dev/null || true
           cp artifacts/01-auth-sheet-15s.png store-out/02-unlock.png 2>/dev/null || true
-          cp artifacts/04-after-unlock-attempt.png store-out/03-creating-wallet.png 2>/dev/null || true
+          cp artifacts/04-risk-notice.png store-out/03-risk-notice.png 2>/dev/null || true
           xcrun simctl io "$UDID" screenshot store-out/04-final-state.png 2>/dev/null || true
           ls -la store-out || true
           echo "ok      the screens this build produced on this runner are in store-out/"
-
-      # The store files are checked in the same run that produces the screens,
-      # so a wrong size, an alpha channel or a stale Zingo sentence fails here
-      # rather than at the upload, after the build.
-      - name: Check the store submission files
-        if: always()
-        run: |
-          set -uo pipefail
-          node scripts/store/check_store_art.mjs --store ios
 
       - name: Upload the store screens
         if: always()
@@ -740,10 +717,10 @@ jobs:
           PY
           echo "ok      the default server is lwd.swarm.green on swarm-testnet, with no user action"
 
-          WALLET=$(ls -la "$CONTAINER/Documents"/*.dat 2>/dev/null || true)
-          if [ -n "$WALLET" ]; then
+          WALLET="$CONTAINER/Documents/wallet.dat.txt"
+          if [ -s "$WALLET" ]; then
             echo "ok      a wallet file exists, so the fresh install created and saved one:"
-            printf '%s\n' "$WALLET"
+            ls -l "$WALLET"
             echo "wallet_created=true" >> "$GITHUB_OUTPUT"
           else
             echo "note    no wallet file yet — the risk notice is still waiting for its tap"
@@ -1061,6 +1038,18 @@ jobs:
           echo
           echo "THE SHIPPED BUNDLE PASSES."
 
+      - name: Require wallet creation and the screen walk
+        if: always()
+        env:
+          WALLET_CREATED: ${{ steps.freshinstall.outputs.wallet_created }}
+          SCREEN_WALK_OK: ${{ steps.maestro.outputs.ok }}
+        run: |
+          set -euo pipefail
+          if [ "$WALLET_CREATED" != "true" ] || [ "$SCREEN_WALK_OK" != "true" ]; then
+            echo "::error::Wallet creation and the Receive/Send screen walk must pass."
+            exit 1
+          fi
+
       # always(): a failed assertion must still leave the artifact it was
       # reached from, so the next person can look instead of guessing.
       - name: Package the simulator app
@@ -1096,7 +1085,7 @@ jobs:
             echo "| wallet created with no user action | \`${{ steps.freshinstall.outputs.wallet_created }}\` |"
             echo "| reached the indexer on the wire | \`${{ steps.wire.outputs.proved }}\` |"
             echo "| Maestro walked to the home screen | \`${{ steps.maestro.outputs.ok }}\` |"
-            echo "| code signing | \`CODE_SIGNING_ALLOWED=NO\` |"
+            echo "| code signing | \`ad-hoc simulator signature with keychain entitlements\` |"
             if [ -f dist/SHA256SUMS ]; then
               echo
               echo '```'
@@ -1207,15 +1196,9 @@ jobs:
   # ---------------------------------------------------------------------
   # Signed device archive + TestFlight upload.
   #
-  # It cannot run today and is not meant to: it needs an Apple Developer
-  # Program ORGANISATION account (App Review guideline 3.1.5(b) accepts
-  # crypto wallets only from organisation accounts), an App ID
-  # green.swarm.swarmwallet, an App Store Connect API key, and the repository
-  # secrets named below. Two independent locks keep it shut: a manual
-  # workflow_dispatch input that defaults to false, and a first step that
-  # hard-fails when the secrets are absent, before any signing step is
-  # reached. No signing material belongs in this repository or in these
-  # logs. Full instructions: docs/SWARM-IOS.md.
+  # The signed job targets the existing App ID green.swarm.swarmwallet.
+  # It runs only on a signed workflow dispatch with the required secrets.
+  # Signing material belongs in GitHub Secrets.
   #
   # TWO SIGNING PATHS, chosen by which secrets exist:
   #
@@ -1235,7 +1218,7 @@ jobs:
   signed-release:
     name: Signed archive + TestFlight (needs an Apple organisation account)
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.signed_release }}
-    needs: app-simulator
+    needs: [app-simulator, string-sweep]
     runs-on: macos-latest
     timeout-minutes: 120
     environment: apple-distribution
@@ -1321,6 +1304,19 @@ jobs:
       - name: Yarn install
         run: yarn install --frozen-lockfile
 
+      - name: Install librsvg (SVG renderer)
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+          HOMEBREW_NO_INSTALL_CLEANUP: '1'
+        run: brew install librsvg
+
+      - name: Render the app icon and launch mark from SVG
+        run: |
+          set -euo pipefail
+          bash ios/scripts/generate-ios-art.sh
+          test -s ios/Zingo/Images.xcassets/AppIcon-Prod.appiconset/Icon-1024.png
+          test -s ios/Zingo/Images.xcassets/LaunchMark.imageset/LaunchMark@3x.png
+
       - name: Pod install
         run: cd ios && pod install
 
@@ -1394,12 +1390,6 @@ jobs:
       # No certificate anywhere: Xcode asks App Store Connect for the
       # signing assets with the API key and creates what it is missing.
       #
-      # CODE_SIGN_IDENTITY is forced because the project inherits
-      # CODE_SIGN_IDENTITY[sdk=iphoneos*] = "iPhone Developer" from
-      # upstream's template. Left alone, automatic signing would go
-      # looking for a DEVELOPMENT certificate for a build destined for
-      # the App Store. The API key must therefore be an Admin key: an
-      # App Manager key can upload but cannot mint certificates.
       - name: Archive for a physical device (automatic signing, API key)
         if: steps.signing.outputs.style == 'automatic'
         working-directory: ios
@@ -1423,16 +1413,19 @@ jobs:
             MARKETING_VERSION="${{ steps.version.outputs.marketing }}" \
             CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution"
+            CODE_SIGN_STYLE=Automatic
 
       - name: Read the archive back
         run: |
           set -euo pipefail
-          PLIST="$RUNNER_TEMP/SwarmWallet.xcarchive/Products/Applications/Zingo.app/Info.plist"
+          APP="$RUNNER_TEMP/SwarmWallet.xcarchive/Products/Applications/Zingo.app"
+          PLIST="$APP/Info.plist"
           SHORT=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")
           BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PLIST")
           BID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$PLIST")
+          NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$PLIST")
+          LAUNCH=$(/usr/libexec/PlistBuddy -c 'Print :UILaunchStoryboardName' "$PLIST")
+          ICON=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconName' "$PLIST")
           echo "archived $BID $SHORT ($BUILD)"
           if [ "$BUILD" != "${{ steps.version.outputs.build }}" ]; then
             echo "::error::the archive carries build $BUILD, expected ${{ steps.version.outputs.build }}"
@@ -1442,6 +1435,15 @@ jobs:
             echo "::error::the archive carries bundle id $BID"
             exit 1
           fi
+          if [ "$NAME" != "SWARM Wallet" ] || [ "$LAUNCH" != "LaunchScreen" ] || [ "$ICON" != "AppIcon-Prod" ]; then
+            echo "::error::the archive has the wrong display name, launch screen or icon"
+            exit 1
+          fi
+          test -d "$APP/LaunchScreen.storyboardc"
+          test -s "$APP/Assets.car"
+          xcrun --sdk iphoneos assetutil --info "$APP/Assets.car" > "$RUNNER_TEMP/swarm-assets.json"
+          grep -Fq 'AppIcon-Prod' "$RUNNER_TEMP/swarm-assets.json"
+          grep -Fq 'LaunchMark' "$RUNNER_TEMP/swarm-assets.json"
 
       - name: Export a signed .ipa
         id: export

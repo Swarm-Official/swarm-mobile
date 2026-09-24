@@ -121,6 +121,7 @@ import NewSeed from '@screens/NewSeed';
 import RiskNotice from '@ui/widgets/RiskNotice';
 import { acknowledgeRiskNotice, hasAcknowledgedRiskNotice } from '@app/legal';
 import { AppStackParamList } from '@app/types';
+import { openSavedWallet } from '@app/walletBackend/utils/savedWallets';
 
 const en = require('@app/translations/en.json');
 const es = require('@app/translations/es.json');
@@ -669,65 +670,18 @@ export class LoadingAppClass extends Component<
       this.setState({ walletExists: true });
       await this.loadExistingWalletOnBoot();
     } else {
-      if (this.state.mode === ModeEnum.basic) {
-        // setting the prop basicFirstViewSeed to false.
-        // this means when the user have funds, the seed screen will show up.
-        await SettingsFileImpl.writeSettings(
-          SettingsNameEnum.basicFirstViewSeed,
-          false,
-        );
-        if (this.state.hasRecoveryWalletInfoSaved) {
-          // but first we need to check if exists some key stored in the device from a previous installation (IOS)
-          await this.recoverRecoveryWalletInfo(false);
-          // go to the initial menu, giving the opportunity to the user
-          // to use the seed & birthday recovered from the device.
-          this.setState({
-            screen: RouteEnum.StartMenu,
-            walletExists: false,
-            actionButtonsDisabled: false,
-          });
-        } else {
-          // if no wallet file & basic mode -> create a new wallet & go directly to history screen.
-          // no seed screen.
-          if (
-            !netInfoState.isConnected ||
-            this.state.selectServer === SelectServerEnum.offline
-          ) {
-            this.setState({
-              screen: RouteEnum.StartMenu,
-              walletExists: false,
-              actionButtonsDisabled: false,
-            });
-          } else {
-            await this.createNewWallet(false);
-            this.setState({ actionButtonsDisabled: false });
-            this.navigateToLoadedApp(
-              false,
-              true,
-              true,
-              true,
-              true,
-              this.state.firstLaunchingMessage,
-              // create requires a live server → its chain is the wallet's chain.
-              this.state.server.chainName,
-            );
-          }
-        }
-      } else {
-        // if no wallet file & advanced mode -> go to the initial menu.
-        await SettingsFileImpl.writeSettings(
-          SettingsNameEnum.basicFirstViewSeed,
-          true,
-        );
-        this.setState(state => ({
-          screen:
-            state.screen === RouteEnum.ImportUfvk
-              ? RouteEnum.ImportUfvk
-              : RouteEnum.StartMenu,
-          walletExists: false,
-          actionButtonsDisabled: false,
-        }));
-      }
+      await SettingsFileImpl.writeSettings(
+        SettingsNameEnum.basicFirstViewSeed,
+        this.state.mode !== ModeEnum.basic,
+      );
+      this.setState(state => ({
+        screen:
+          state.screen === RouteEnum.ImportUfvk
+            ? RouteEnum.ImportUfvk
+            : RouteEnum.StartMenu,
+        walletExists: false,
+        actionButtonsDisabled: false,
+      }));
     }
 
     if (this.unmounted) {
@@ -2271,6 +2225,17 @@ export class LoadingAppClass extends Component<
     this.componentDidMount();
   };
 
+  selectSavedWallet = async (id: string) => {
+    this.setState({ actionButtonsDisabled: true });
+    const selected = await openSavedWallet(id);
+    if (selected.kind === 'error') {
+      this.addLastSnackbar(String(this.state.translate(selected.errorKey)));
+      this.setState({ actionButtonsDisabled: false });
+      return;
+    }
+    this.openCurrentWallet();
+  };
+
   restoreLastBackup = async () => {
     this.setState({ screen: RouteEnum.Launching, actionButtonsDisabled: true });
     const result = await restoreExistingWalletBackup();
@@ -2386,6 +2351,7 @@ export class LoadingAppClass extends Component<
                   createNewWallet={this.createNewWallet}
                   getwalletToRestore={this.getwalletToRestore}
                   restoreLastBackup={this.restoreLastBackup}
+                  selectSavedWallet={this.selectSavedWallet}
                 />
               )}
               {/* Last in the tree and absolutely positioned, so it covers

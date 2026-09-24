@@ -151,7 +151,7 @@ class RPCModule: NSObject {
   // Set by delete and restore, cleared by the next successful wallet
   // init: a stray save of the in-memory wallet must not resurrect a file
   // the user replaced.
-  static var walletFileClosed = false
+  static var walletFileClosed = true
   static let walletFileHold = NSLock()
 
   func reopenWalletFile() {
@@ -284,6 +284,7 @@ class RPCModule: NSObject {
     completePendingSwap()
     applyWalletFileProtection()
     do {
+      try WalletStore(documents: URL(fileURLWithPath: getDocumentsDirectory())).recover()
       let result = try fileExists(Constants.WalletFileName.rawValue)
       DispatchQueue.main.async {
         resolve(result)
@@ -294,6 +295,32 @@ class RPCModule: NSObject {
         resolve("false")
       }
     }
+  }
+
+  @objc(savedWallets:reject:)
+  func savedWallets(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+    FfiOutcome.of {
+      RPCModule.walletFileHold.lock()
+      defer { RPCModule.walletFileHold.unlock() }
+      let store = WalletStore(documents: URL(fileURLWithPath: try self.getDocumentsDirectory()))
+      let bytes = try JSONEncoder().encode(store.list())
+      return String(decoding: bytes, as: UTF8.self)
+    }.settle(resolve: resolve, reject: reject)
+  }
+
+  @objc(selectWallet:resolve:reject:)
+  func selectWallet(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+    FfiOutcome.of {
+      if try self.fileExists(Constants.WalletFileName.rawValue) == "true" {
+        try self.saveWalletInternal()
+      }
+      RPCModule.walletFileHold.lock()
+      defer { RPCModule.walletFileHold.unlock() }
+      let store = WalletStore(documents: URL(fileURLWithPath: try self.getDocumentsDirectory()))
+      RPCModule.walletFileClosed = true
+      try store.select(id)
+      return "true"
+    }.settle(resolve: resolve, reject: reject)
   }
 
   @objc(walletBackupExists:reject:)
@@ -493,6 +520,13 @@ class RPCModule: NSObject {
     try self.saveWalletBackupFile(try readWalletBytes())
   }
 
+  func prepareNewWallet() throws {
+    RPCModule.walletFileHold.lock()
+    defer { RPCModule.walletFileHold.unlock() }
+    RPCModule.walletFileClosed = true
+    try WalletStore(documents: URL(fileURLWithPath: getDocumentsDirectory())).prepareNew()
+  }
+
   func fnCreateNewWallet(
     serveruri: String,
     birthday: String,
@@ -500,6 +534,7 @@ class RPCModule: NSObject {
     performancelevel: String,
     minconfirmations: String
   ) throws -> String {
+    try prepareNewWallet()
     // initNew throws on failure, so reaching the save implies the wallet
     // exists. Offline (empty serveruri) uses `birthday` in place of the
     // chain tip; online it is ignored (pass "0").
@@ -533,7 +568,7 @@ class RPCModule: NSObject {
     performancelevel: String, 
     minconfirmations: String
   ) throws -> String {
-    // initFromSeed throws on failure, so reaching the save implies the wallet exists.
+    try prepareNewWallet()
     let seed = try initFromSeed(seed: restoreSeed, birthday: UInt32(birthday) ?? 0, serveruri: serveruri, chainhint: chainhint, performancelevel: performancelevel, minconfirmations: UInt32(minconfirmations) ?? 0)
     let seedStr = String(seed)
     reopenWalletFile()
@@ -565,7 +600,7 @@ class RPCModule: NSObject {
     performancelevel: String, 
     minconfirmations: String
   ) throws -> String {
-    // initFromUfvk throws on failure, so reaching the save implies the wallet exists.
+    try prepareNewWallet()
     let ufvk = try initFromUfvk(ufvk: restoreUfvk, birthday: UInt32(birthday) ?? 0, serveruri: serveruri, chainhint: chainhint, performancelevel: performancelevel, minconfirmations: UInt32(minconfirmations) ?? 0)
     let ufvkStr = String(ufvk)
     reopenWalletFile()
@@ -595,6 +630,7 @@ class RPCModule: NSObject {
     performancelevel: String, 
     minconfirmations: String
   ) throws -> String {
+    try WalletStore(documents: URL(fileURLWithPath: getDocumentsDirectory())).recover()
     let seed = try initFromBytes(walletBytes: try self.readWalletBytes(), serveruri: serveruri, chainhint: chainhint, performancelevel: performancelevel, minconfirmations: UInt32(minconfirmations) ?? 0)
     reopenWalletFile()
     let seedStr = String(seed)
@@ -620,40 +656,9 @@ class RPCModule: NSObject {
     do {
       let backupBytes = try self.readWalletBackupBytes()
       if (try? validateWalletBytes(walletBytes: backupBytes)) != nil {
-        // Closed across the swap; the reload after the restore clears it.
-        RPCModule.walletFileHold.lock()
-        RPCModule.walletFileClosed = true
-        RPCModule.walletFileHold.unlock()
-        if try fileExists(Constants.WalletFileName.rawValue) == "true" {
-          // Audit Issue P (b) — atomic swap via three renames. APFS
-          // rename is atomic AND preserves the file's protection class
-          // and isExcludedFromBackup attribute, so this is strictly
-          // safer than the previous read-into-memory + two writes
-          // pattern, which lost the original main wallet on a crash
-          // between writes. `completePendingSwap` (called early on
-          // walletExists/walletBackupExists) finishes the swap if a
-          // crash interrupts these three steps.
-          // Belt-and-braces: if a previous swap left a temp behind and
-          // `completePendingSwap` was never called (e.g. JS jumped
-          // straight into restore without checking walletExists first),
-          // recover it before starting a new swap — deleting the temp
-          // would lose the orphaned original-main content.
-          self.completePendingSwap()
-          let fm = FileManager.default
-          let mainPath   = try getFileName(Constants.WalletFileName.rawValue)
-          let backupPath = try getFileName(Constants.WalletBackupFileName.rawValue)
-          let tempPath   = try getFileName(Constants.WalletTempSwapFileName.rawValue)
-          try fm.moveItem(atPath: mainPath,   toPath: tempPath)   // (1) main → temp
-          try fm.moveItem(atPath: backupPath, toPath: mainPath)   // (2) backup → main
-          try fm.moveItem(atPath: tempPath,   toPath: backupPath) // (3) temp → backup
-        } else {
-          // No wallet exists: restore backup as wallet, but KEEP the backup
-          // file. Deleting it here left the user with no backup right after a
-          // restore, so if they then created/restored a different wallet the
-          // just-restored one was gone. Keeping a duplicate copy as backup is
-          // far safer than none.
-          try self.saveWalletFile(backupBytes)
-        }
+        try self.saveWalletInternal()
+        try self.prepareNewWallet()
+        try self.saveWalletFile(backupBytes)
         DispatchQueue.main.async {
           resolve("true")
         }

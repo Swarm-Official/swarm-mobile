@@ -239,6 +239,7 @@ const NewSeed: React.FunctionComponent<NewSeedProps> = ({
           }}
         >
           <Button
+            testID="newseed.continue"
             type={
               mode === ModeEnum.basic
                 ? ButtonTypeEnum.Secondary
@@ -246,7 +247,7 @@ const NewSeed: React.FunctionComponent<NewSeedProps> = ({
             }
             title={
               mode === ModeEnum.basic
-                ? (translate('cancel') as string)
+                ? String(translate('welcome.continue'))
                 : !!texts && !!texts.new
                   ? texts.new[0]
                   : ''

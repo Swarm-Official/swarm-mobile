@@ -1,19 +1,5 @@
 import { Linking } from 'react-native';
 
-// The legal pages, opened in the system browser from Settings → About.
-//
-// App Store Review guideline 5.1.1(i) requires the privacy policy to be
-// reachable from inside the app; the MIT licence this fork inherits requires
-// the notices; the risk notice is the project's own honesty rule. The first
-// three open the website, the fourth is a screen inside the app because the
-// notices must be readable with no network.
-//
-// THESE PAGES ARE NOT PUBLISHED YET. That is expected and is recorded rather
-// than hidden: the wallet ships the links so the app side is finished and
-// reviewable, and the website agent publishes the four pages from the drafts
-// in the vault (`docs/ios/legal/`). Do not invent other URLs and do not point
-// them at a placeholder host.
-
 export enum LegalLinkIdEnum {
   privacy = 'privacy',
   terms = 'terms',

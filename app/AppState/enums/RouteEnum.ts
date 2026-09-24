@@ -17,6 +17,7 @@ export enum RouteEnum {
   Messages = 'Messages',
   Settings = 'Settings',
   About = 'About',
+  Wallets = 'Wallets',
   MixnetDoctor = 'MixnetDoctor',
   Rescan = 'Rescan',
   Insight = 'Insight',

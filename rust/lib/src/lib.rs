@@ -1276,6 +1276,23 @@ mod sync_error_channel_tests {
         assert_uninitialized(pause_sync(), "pause_sync");
     }
 
+    /// Tests that repeated pause requests succeed when a wallet's sync is idle.
+    #[test]
+    fn pause_idle_wallet() {
+        let _serial = lock_discipline_tests::serialized();
+        init_new(
+            String::new(),
+            0,
+            "swarm-testnet".to_string(),
+            "Medium".to_string(),
+            1,
+        )
+        .expect("the offline wallet initializes");
+        assert!(pause_sync().is_ok());
+        assert!(pause_sync().is_ok());
+        reset_lightclient();
+    }
+
     #[test]
     fn status_sync_fails_typed_without_a_client() {
         assert_uninitialized(status_sync(), "status_sync");
@@ -1837,7 +1854,7 @@ fn run_sync() -> Result<String, ZingolibError> {
 
 pub fn pause_sync() -> Result<String, ZingolibError> {
     with_initialized_lightclient(|lightclient| match lightclient.pause_sync() {
-        Ok(_) => Ok("Pausing sync task...".to_string()),
+        Ok(_) | Err(SyncModeError::SyncNotRunning) => Ok("Pausing sync task...".to_string()),
         Err(e) => Err(ZingolibError::sync(e)),
     })
 }

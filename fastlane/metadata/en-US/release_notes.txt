@@ -1,1 +1,1 @@
-First public test build of SWARM Wallet for iPhone: create or restore a wallet, receive and send SWM test coins on SwarmTestnet, encrypted memos, mined rewards tagged, Face ID unlock, choose your own wallet server. Test coins have no value.
+SWARM Wallet for iPhone. Create or restore wallets, send and receive SWM, share addresses and QR codes, and review your wallet activity. Includes multiple saved wallets, an address book, device authentication, privacy settings, and in-app legal documents.

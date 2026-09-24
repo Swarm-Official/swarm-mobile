@@ -33,9 +33,7 @@ import RegText from '@ui/primitives/RegText';
 import SheetRim from '@ui/primitives/SheetRim';
 import { chainDisplayName } from './chainDisplayName';
 import { getChainIcon } from './chainIcons';
-
-// Zcash has no entry in the bundled `chainIcons` map; use the app's own logo.
-const ZCASH_LOGO = require('../../assets/img/zcash-yellow.png');
+import { getSwarmMark } from '@app/utils/ZingoAppData';
 
 /**
  * Fixed snap point kept at module scope so the array identity is stable across
@@ -55,7 +53,8 @@ export const ChainLogo: React.FunctionComponent<{
   size: number;
 }> = ({ chain, size }) => {
   const upper = (chain || '').toUpperCase();
-  const src = upper === 'ZEC' ? ZCASH_LOGO : getChainIcon(upper);
+  const src =
+    upper === 'ZEC' || upper === 'SWM' ? getSwarmMark() : getChainIcon(upper);
   if (src) {
     return (
       <Image

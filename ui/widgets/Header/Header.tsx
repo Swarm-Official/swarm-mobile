@@ -8,7 +8,7 @@ import {
 } from '@react-navigation/native';
 import { useTheme } from '@app/theme';
 import React, { useContext, useEffect } from 'react';
-import { Image, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, TouchableOpacity, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -197,6 +197,18 @@ const Header: React.FunctionComponent<HeaderProps> = ({
             },
           ]}
         >
+          {!noDrawMenu && (
+            <Image
+              source={getSwarmMark()}
+              accessibilityLabel="SWARM Wallet"
+              style={{
+                width: 64,
+                height: 30,
+                resizeMode: 'contain',
+                marginTop: 12,
+              }}
+            />
+          )}
           <SyncStatusBar
             noSyncingStatus={noSyncingStatus}
             selectServer={selectServer}
@@ -240,6 +252,47 @@ const Header: React.FunctionComponent<HeaderProps> = ({
             onUsdRowLayout={onUsdRowLayout}
           />
 
+          {!noBalance && (
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: 12,
+                paddingHorizontal: 16,
+                paddingTop: 8,
+              }}
+            >
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  testID="header.wallets"
+                  accessibilityRole="button"
+                  onPress={() => navigation.navigate(RouteEnum.Wallets)}
+                  style={{
+                    minHeight: 44,
+                    padding: 12,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.borderMuted,
+                  }}
+                >
+                  <BoldText>{String(translate('wallets.title'))}</BoldText>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                testID="header.addresses"
+                accessibilityRole="button"
+                onPress={() => navigation.navigate(RouteEnum.AddressList)}
+                style={{
+                  minHeight: 44,
+                  padding: 12,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.borderMuted,
+                }}
+              >
+                <BoldText>{String(translate('wallets.addresses'))}</BoldText>
+              </TouchableOpacity>
+            </View>
+          )}
           {!noBalance && (
             <PriceRow
               translate={translate}

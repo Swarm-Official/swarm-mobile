@@ -44,6 +44,7 @@ const AppSheet = React.forwardRef<BottomSheet, AppSheetProps>(
     return (
       <BottomSheet
         ref={ref}
+        accessible={false}
         snapPoints={snapPoints}
         index={index}
         enableDynamicSizing={false}

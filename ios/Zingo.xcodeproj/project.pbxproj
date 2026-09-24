@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AAB024000000000000000002 /* WalletStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB024000000000000000001 /* WalletStore.swift */; };
+		AAB024000000000000000003 /* WalletStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB024000000000000000001 /* WalletStore.swift */; };
 		12BF9D27B26430347C700A81 /* libPods-Zingo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 293E2F479737E71EC621F947 /* libPods-Zingo.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		AAF0170000000000000000F2 /* fonts in Resources */ = {isa = PBXBuildFile; fileRef = AAF0170000000000000000F1 /* fonts */; };
@@ -55,6 +57,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		AAB024000000000000000001 /* WalletStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletStore.swift; sourceTree = "<group>"; };
 		00E356EE1AD99517003FC87E /* ZingoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ZingoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		00E356F11AD99517003FC87E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0C085A69425A9ACC8EF808C2 /* Pods-Zingo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Zingo.release.xcconfig"; path = "Target Support Files/Pods-Zingo/Pods-Zingo.release.xcconfig"; sourceTree = "<group>"; };
@@ -145,6 +148,7 @@
 			children = (
 				1F70326429905E6A001D70A2 /* Zingo.entitlements */,
 				1F5569262BBCB4D900F2CD6C /* RPCModule.swift */,
+				AAB024000000000000000001 /* WalletStore.swift */,
 				1F5569282BBCB98100F2CD6C /* RPCModuleBridge.m */,
 				D07A0007DA1CE0DE00000001 /* DeviceAuth.swift */,
 				D07A0007DA1CE0DE00000002 /* DeviceAuthBridge.m */,
@@ -507,6 +511,7 @@
 				D07A0007DA1CE0DE00000006 /* DeviceAuthBridge.m in Sources */,
 				1F5E677C2BD30D0A007B17AA /* zingo.swift in Sources */,
 				1FA935B02BE4506300117DF5 /* RPCModule.swift in Sources */,
+				AAB024000000000000000003 /* WalletStore.swift in Sources */,
 				1FC1E2172BE443270064963B /* ZingoTest.swift in Sources */,
 				5E39D39B9B57469EEF50715D /* zingo_nym_proxy_ffi.swift in Sources */,
 				39916E0E0696D2BA46897D37 /* NymTransportModule.swift in Sources */,
@@ -523,6 +528,7 @@
 				FBBD6650421A473A90DAF827 /* SceneDelegate.swift in Sources */,
 				1F5E677B2BD30D0A007B17AA /* zingo.swift in Sources */,
 				1F5569272BBCB4D900F2CD6C /* RPCModule.swift in Sources */,
+				AAB024000000000000000002 /* WalletStore.swift in Sources */,
 				1F5569292BBCB98100F2CD6C /* RPCModuleBridge.m in Sources */,
 				D07A0007DA1CE0DE00000003 /* DeviceAuth.swift in Sources */,
 				D07A0007DA1CE0DE00000004 /* DeviceAuthBridge.m in Sources */,

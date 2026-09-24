@@ -1,19 +1,9 @@
-SWARM Wallet is a non-custodial wallet for SWARM, an independent proof-of-work blockchain that currently runs as a public TEST network ("SwarmTestnet"). The coins (SWM) are test coins with no monetary value; they are not sold, cannot be bought, and the network may be reset. The app performs no financial service: it creates keys on the device, signs transactions on the device and submits them to a public network. We hold no funds and no user data; there are no accounts.
-
-Developer: SWARM, enrolled as an organisation (guideline 3.1.5(i)).
+SWARM Wallet is a self-custody wallet for SwarmTestnet, a test network. SWM test coins have no monetary value, and the network may reset. The app stores wallet keys on the device and connects to https://lwd.swarm.green:443 by default. It requires no account or sign-in.
 
 How to test
-1. Open the app. It creates a wallet on first launch; the 24-word recovery phrase is shown once and stays on the device.
-2. Wait for the sync to finish (about one minute against the public wallet server). The balance shows SWM test coins; the wallet this build ships with is empty until you receive coins from the address on the Receive screen.
-3. Receive: tap Receive to see the wallet's address and its QR code.
-4. Send: tap Send, paste an address, enter an amount of SWM, send. No fee, no account, no sign-in.
-5. History: every transaction is listed; mined rewards are marked as mined rewards.
+1. Open the app, accept the risk notice, and create a wallet. Approve the device passcode or Face ID request. Keep the app open until wallet creation finishes.
+2. Open Receive to see the shielded address and QR code. Copy the address or scan the code with another test wallet.
+3. Fund the address with disposable SwarmTestnet SWM. Wait until the balance becomes spendable. Open Send, enter a SwarmTestnet destination and an amount, review the fee, and confirm the transaction.
+4. Open History to check the transaction and balance. The options panel provides the recovery phrase action, protected by device authentication.
 
-Notes for the reviewer
-• No login, no account, no email: there are no demo credentials to give, because there is nothing to sign in to.
-• Face ID / passcode: the app asks to unlock its local copy of the wallet on launch. This is the device's own authentication (LocalAuthentication); nothing is sent anywhere.
-• Background modes "fetch" and "processing" exist for one declared purpose: to continue synchronising the wallet while the app is not in the foreground. Nothing else runs in the background.
-• Permissions: camera (scan a QR code), photo library add-only (save a QR code), Face ID / passcode (unlock). No location, no contacts, no tracking, no analytics, no advertising.
-• Mining: the app contains no miner and phones do not mine on this network (guideline 3.1.5). Blocks are mined by SWARM Node, a separate desktop program.
-• The wallet server the app contacts by default is https://lwd.swarm.green:443, published openly on swarm.green; the user can change it or run their own.
-• Test-network status is stated in the app, in the listing and in the privacy policy. There is no token sale, no in-app purchase, no reward for inviting anyone, and nothing to buy.
+The app starts with an empty wallet. A funded Send test needs coins from another SwarmTestnet wallet. The app contains no miner and offers no purchase of SWM. Camera access supports QR scanning. Face ID or the device passcode protects local wallet access.

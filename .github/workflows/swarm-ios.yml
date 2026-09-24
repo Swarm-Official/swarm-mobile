@@ -284,6 +284,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
 
+      - name: Check the store submission files
+        run: node scripts/store/check_store_art.mjs --store ios
+
       - name: Yarn install
         run: yarn install --frozen-lockfile
 
@@ -683,15 +686,6 @@ jobs:
           xcrun simctl io "$UDID" screenshot store-out/04-final-state.png 2>/dev/null || true
           ls -la store-out || true
           echo "ok      the screens this build produced on this runner are in store-out/"
-
-      # The store files are checked in the same run that produces the screens,
-      # so a wrong size, an alpha channel or a stale Zingo sentence fails here
-      # rather than at the upload, after the build.
-      - name: Check the store submission files
-        if: always()
-        run: |
-          set -uo pipefail
-          node scripts/store/check_store_art.mjs --store ios
 
       - name: Upload the store screens
         if: always()

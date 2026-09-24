@@ -15,6 +15,7 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  Image,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 import {
@@ -69,6 +70,8 @@ import { RPCValueTransfersStatusEnum } from '@app/walletBackend/enums/RPCValueTr
 import BottomSheet, { BottomSheetModal } from '@gorhom/bottom-sheet';
 import Filters from './components/Filters';
 import { FiltersIcon } from '@ui/primitives/Icons/FiltersIcon';
+import { getSwarmMark } from '@app/utils/ZingoAppData';
+import Button, { ButtonTypeEnum } from '@ui/primitives/Button';
 
 const ViewTypes = {
   WITH_MONTH: 0,
@@ -897,8 +900,48 @@ const History: React.FunctionComponent<HistoryProps> = ({
                       marginTop: 30,
                     }}
                   >
-                    <FadeText style={{ color: colors.fgAccent }}>
+                    <Image
+                      source={getSwarmMark()}
+                      style={{
+                        width: 100,
+                        height: 47,
+                        resizeMode: 'contain',
+                        marginBottom: 24,
+                      }}
+                    />
+                    <BoldText
+                      testID="home.welcome"
+                      style={{ fontSize: 22, marginBottom: 12 }}
+                    >
+                      {String(translate('home.title'))}
+                    </BoldText>
+                    <FadeText
+                      style={{
+                        textAlign: 'center',
+                        lineHeight: 23,
+                        marginHorizontal: 24,
+                        marginBottom: 16,
+                      }}
+                    >
+                      {String(translate('home.description'))}
+                    </FadeText>
+                    <FadeText style={{ textAlign: 'center', marginBottom: 24 }}>
                       {translate('history.empty') as string}
+                    </FadeText>
+                    <Button
+                      testID="home.receive"
+                      type={ButtonTypeEnum.Primary}
+                      title={String(translate('home.receive'))}
+                      onPress={() => navigation.navigate(RouteEnum.Receive)}
+                    />
+                    <FadeText
+                      style={{
+                        textAlign: 'center',
+                        lineHeight: 22,
+                        margin: 24,
+                      }}
+                    >
+                      {String(translate('welcome.network'))}
                     </FadeText>
                   </View>
                 )}

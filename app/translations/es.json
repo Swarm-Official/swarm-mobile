@@ -1101,5 +1101,27 @@
     "error-http-not-allowed": "Error: HTTP en texto plano solo está permitido para localhost. Usa HTTPS para servidores remotos."
   },
   "donation-button": "Not used in this build.",
-  "donation-legend": "Not used in this build."
+  "donation-legend": "Not used in this build.",
+  "welcome": {
+    "title": "Welcome to SWARM",
+    "description": "Send and receive SWM, manage your addresses, and read payment memos. You control your wallets and recovery phrases.",
+    "network": "This beta connects to SwarmTestnet. Test coins have no monetary value. Save each recovery phrase before using its wallet.",
+    "continue": "Continue to wallet"
+  },
+  "home": {
+    "title": "Your SWARM wallet",
+    "description": "Use Receive to share an address or QR code. Use Send to transfer SWM after funds arrive. Your payments and memos appear in History.",
+    "receive": "Receive SWM"
+  },
+  "wallets": {
+    "title": "Wallets",
+    "wallet": "Wallet",
+    "active": "Current wallet",
+    "open": "Open",
+    "create": "Create or restore another wallet",
+    "addresses": "My addresses",
+    "description": "Keep separate wallets on this iPhone and switch between them. Each wallet has its own recovery phrase. Save every phrase offline.",
+    "read-error": "The saved wallets could not be read. Reopen the app and try again.",
+    "switch-error": "The wallet change could not finish. Reopen the app to recover the saved wallet."
+  }
 }

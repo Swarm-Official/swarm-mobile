@@ -29,7 +29,6 @@ import { ListIcon } from '@ui/primitives/Icons/ListIcon';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faCircleCheck } from '@fortawesome/free-regular-svg-icons';
 import Address from './Address/Address';
-import { getSwarmMark } from '@app/utils/ZingoAppData';
 
 type SingleAddressProps = {
   address?: UnifiedAddressClass | TransparentAddressClass;
@@ -270,9 +269,9 @@ const SingleAddress: React.FunctionComponent<SingleAddressProps> = ({
                     <QRCode
                       value={ufvk}
                       size={200}
-                      ecl="L"
+                      ecl="H"
                       backgroundColor={colors.fgDefault}
-                      logo={getSwarmMark()}
+                      logo={require('../../assets/img/swarm-qr-logo.png')}
                       logoSize={30}
                       logoBackgroundColor={colors.fgDefault}
                       logoBorderRadius={7} /* android not soported */
@@ -315,9 +314,9 @@ const SingleAddress: React.FunctionComponent<SingleAddressProps> = ({
                 <QRCode
                   value={address ? address.address : ''}
                   size={200}
-                  ecl="L"
+                  ecl="H"
                   backgroundColor={colors.fgDefault}
-                  logo={getSwarmMark()}
+                  logo={require('../../assets/img/swarm-qr-logo.png')}
                   logoSize={30}
                   logoBackgroundColor={colors.fgDefault}
                   logoBorderRadius={7} /* android not soported */

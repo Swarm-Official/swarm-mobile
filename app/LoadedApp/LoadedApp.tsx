@@ -26,6 +26,8 @@ import {
   deactivateKeepAwake,
 } from '@sayem314/react-native-keep-awake';
 
+import { Wallets } from '@screens/Wallets/Wallets';
+import { selectWallet } from '@app/walletBackend/utils/savedWallets';
 import WalletBackend, { fetchWallet } from '@app/walletBackend';
 import {
   changeServer,
@@ -1669,6 +1671,10 @@ export class LoadedAppClass extends Component<
       }
       return;
     } else if (item === MenuItemEnum.ChangeWallet) {
+      if (Platform.OS === 'ios') {
+        this.drawerNav?.navigate(RouteEnum.Wallets);
+        return;
+      }
       if (this.state.readOnly) {
         this.drawerNav?.navigate(RouteEnum.Ufvk, {
           action: UfvkActionEnum.change,
@@ -2060,15 +2066,26 @@ export class LoadedAppClass extends Component<
     });
   };
 
+  onSelectWallet = async (id: string) => {
+    await this.rpc.clearTimers();
+    const selected = await selectWallet(id);
+    if (selected.kind === 'error')
+      this.addLastSnackbar(String(this.state.translate(selected.errorKey)));
+    this.keepAwake(false);
+    await this.navigateToLoadingApp({ startingApp: false, newWallet: true });
+  };
+
   onClickOKChangeWallet = async (state: LoadingAppNavigationState) => {
     // Back up any MAINNET wallet being abandoned. The decision keys on the
     // WALLET's own chain (walletChainName), not the server's — Offline has no
     // server chain, yet a mainnet wallet must still be backed up when it is
     // left. Testnet/regtest are never backed up.
     const changed =
-      this.state.walletChainName === ChainNameEnum.mainChainName
-        ? await this.rpc.changeWallet() // backup
-        : await this.rpc.changeWalletNoBackup(); // no backup
+      Platform.OS === 'ios'
+        ? await selectWallet('')
+        : this.state.walletChainName === ChainNameEnum.mainChainName
+          ? await this.rpc.changeWallet() // backup
+          : await this.rpc.changeWalletNoBackup(); // no backup
 
     if (changed.kind === 'error') {
       createAlert(
@@ -2157,9 +2174,11 @@ export class LoadedAppClass extends Component<
       // chain (walletChainName), not the server's, so a mainnet wallet left
       // while Offline still gets backed up. Testnet/regtest are not backed up.
       const changed =
-        this.state.walletChainName === ChainNameEnum.mainChainName
-          ? await this.rpc.changeWallet() // backup
-          : await this.rpc.changeWalletNoBackup(); // no backup
+        Platform.OS === 'ios'
+          ? await selectWallet('')
+          : this.state.walletChainName === ChainNameEnum.mainChainName
+            ? await this.rpc.changeWallet() // backup
+            : await this.rpc.changeWalletNoBackup(); // no backup
 
       if (changed.kind === 'error') {
         createAlert(
@@ -2384,11 +2403,7 @@ export class LoadedAppClass extends Component<
                             {showHistoryFirst || addresses !== null ? (
                               <Tab.Navigator
                                 detachInactiveScreens={true}
-                                initialRouteName={
-                                  showHistoryFirst
-                                    ? RouteEnum.History
-                                    : RouteEnum.Receive
-                                }
+                                initialRouteName={RouteEnum.History}
                                 backBehavior="initialRoute"
                                 tabBar={renderTabBar}
                                 screenOptions={{
@@ -2476,6 +2491,11 @@ export class LoadedAppClass extends Component<
                           </>
                         );
                       }}
+                    </RootNavigator.Screen>
+                    <RootNavigator.Screen name={RouteEnum.Wallets}>
+                      {props => (
+                        <Wallets {...props} onSelect={this.onSelectWallet} />
+                      )}
                     </RootNavigator.Screen>
                     <RootNavigator.Screen name={RouteEnum.Settings}>
                       {props => (

@@ -1,6 +1,13 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useContext, useMemo, useRef, useState } from 'react';
-import { Text, View, ActivityIndicator, Image, Pressable } from 'react-native';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Text,
+  View,
+  ActivityIndicator,
+  Image,
+  Pressable,
+  Platform,
+} from 'react-native';
 import { showConfirm } from '@app/services/showConfirm';
 import { useTheme } from '@app/theme';
 
@@ -28,6 +35,13 @@ import {
 } from '@app/utils/ZingoAppData';
 import BoldText from '@ui/primitives/BoldText';
 import { useFullSheetSnapPoints } from '@app/hooks/useFullSheetSnapPoints';
+import {
+  savedWallets,
+  SavedWallet,
+} from '@app/walletBackend/utils/savedWallets';
+import FadeText from '@ui/primitives/FadeText';
+import { LEGAL_LINKS, LegalLinkIdEnum } from '@app/legal';
+import { LegalSheet } from '@ui/widgets/LegalSheet';
 
 type StartMenuProps = {
   actionButtonsDisabled: boolean;
@@ -41,6 +55,7 @@ type StartMenuProps = {
   createNewWallet: () => void;
   getwalletToRestore: () => void;
   restoreLastBackup: () => void;
+  selectSavedWallet: (id: string) => void;
 };
 
 const StartMenu: React.FunctionComponent<StartMenuProps> = ({
@@ -55,10 +70,27 @@ const StartMenu: React.FunctionComponent<StartMenuProps> = ({
   createNewWallet,
   getwalletToRestore,
   restoreLastBackup,
+  selectSavedWallet,
 }) => {
   const context = useContext(ContextAppLoading);
   const { netInfo, mode, translate, server, selectServer } = context;
   const { colors } = useTheme();
+  const [stored, setStored] = useState<SavedWallet[]>([]);
+  const [readError, setReadError] = useState('');
+  const [page, setPage] = useState<LegalLinkIdEnum>();
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    let mounted = true;
+    savedWallets().then(response => {
+      if (!mounted) return;
+      if (response.kind === 'wallets')
+        setStored(response.wallets.filter(wallet => !wallet.active));
+      else setReadError(response.errorKey);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const [containerH, setContainerH] = useState<number>(0);
   const [headerH, setHeaderH] = useState<number>(0);
@@ -232,6 +264,22 @@ const StartMenu: React.FunctionComponent<StartMenuProps> = ({
             paddingBottom: 30,
           }}
         >
+          <BoldText
+            testID="welcome.title"
+            style={{ fontSize: 24, textAlign: 'center', marginBottom: 12 }}
+          >
+            {String(translate('welcome.title'))}
+          </BoldText>
+          <FadeText
+            style={{ textAlign: 'center', lineHeight: 23, marginBottom: 16 }}
+          >
+            {String(translate('welcome.description'))}
+          </FadeText>
+          <FadeText
+            style={{ textAlign: 'center', lineHeight: 22, marginBottom: 20 }}
+          >
+            {String(translate('welcome.network'))}
+          </FadeText>
           {selectServer !== SelectServerEnum.offline && (
             <>
               <BoldText style={{ fontSize: 15, marginBottom: 3 }}>
@@ -368,7 +416,7 @@ const StartMenu: React.FunctionComponent<StartMenuProps> = ({
               title={translate('loadingapp.createnewwallet') as string}
               disabled={actionButtonsDisabled}
               onPress={() => {
-                if (walletExists) {
+                if (walletExists && Platform.OS !== 'ios') {
                   showConfirm({
                     title: translate(
                       'loadingapp.alert-newwallet-title',
@@ -418,6 +466,18 @@ const StartMenu: React.FunctionComponent<StartMenuProps> = ({
             </View>
           )}
 
+          {!!readError && <FadeText>{String(translate(readError))}</FadeText>}
+          {stored.map(wallet => (
+            <Button
+              key={wallet.id}
+              testID={`welcome.wallet.${wallet.number}`}
+              type={ButtonTypeEnum.Secondary}
+              title={`${translate('wallets.open')} ${translate('wallets.wallet')} ${wallet.number}`}
+              disabled={actionButtonsDisabled}
+              onPress={() => selectSavedWallet(wallet.id)}
+              style={{ marginTop: 12 }}
+            />
+          ))}
           {!netInfo.isConnected && !walletExists && (
             <View
               style={{
@@ -476,6 +536,25 @@ const StartMenu: React.FunctionComponent<StartMenuProps> = ({
             </View>
           )}
 
+          <View style={{ alignSelf: 'stretch', gap: 4, marginTop: 24 }}>
+            {LEGAL_LINKS.map(link => (
+              <Pressable
+                key={link.id}
+                testID={`welcome.legal-${link.id}`}
+                accessibilityRole="button"
+                onPress={() => setPage(link.id)}
+                style={{
+                  minHeight: 44,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ color: colors.fgAccent }}>
+                  {String(translate(link.labelKey))}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
           {actionButtonsDisabled && (
             <ActivityIndicator
               size="large"
@@ -490,6 +569,13 @@ const StartMenu: React.FunctionComponent<StartMenuProps> = ({
         title={translate('loadedapp.options') as string}
         actions={optionsActions}
       />
+      {page && (
+        <LegalSheet
+          page={page}
+          translate={translate}
+          onClose={() => setPage(undefined)}
+        />
+      )}
     </View>
   );
 };

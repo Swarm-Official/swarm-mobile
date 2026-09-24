@@ -70,6 +70,7 @@ export type AppDrawerParamList = {
   [RouteEnum.Messages]: undefined;
   [RouteEnum.Settings]: undefined;
   [RouteEnum.About]: undefined;
+  [RouteEnum.Wallets]: undefined;
   [RouteEnum.MixnetDoctor]: undefined;
   [RouteEnum.Rescan]: undefined;
   [RouteEnum.Insight]: undefined;

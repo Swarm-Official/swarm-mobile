@@ -40,7 +40,7 @@ import { useTheme } from '@app/theme';
 import { getNumberFormatSettings } from 'react-native-localize';
 import SelectBottomSheet from '@ui/widgets/SelectBottomSheet';
 
-import { SvgXml } from 'react-native-svg';
+import SwarmMark from '../../assets/img/swarm-mark.svg';
 import FadeText from '@ui/primitives/FadeText';
 import BoldText from '@ui/primitives/BoldText';
 import Swap from '../../assets/img/swap.svg';
@@ -197,10 +197,6 @@ const Send: React.FunctionComponent<SendProps> = ({
     }
   }, [enabling, nymPhase]);
   const screenName = ScreenEnum.Send;
-  const zecIconXml = `<?xml version="1.0" encoding="UTF-8"?>
-  <svg viewBox="0 0 88.03 147.85">
-    <polygon points="34.44 107.62 34.44 106.98 87.19 34.17 87.19 20.12 56.09 20.12 56.09 0 35.98 0 35.98 20.12 5.04 20.12 5.04 40.24 53.93 40.24 53.93 40.88 0 114.64 0 127.73 35.98 127.73 35.98 147.85 56.09 147.85 56.09 127.73 88.03 127.73 88.03 107.62 34.44 107.62"/>
-  </svg>`;
 
   const [memoEnabled, setMemoEnabled] = useState<boolean>(false);
   const [validAddress, setValidAddress] = useState<number>(0); // 1 - OK, 0 - Empty, -1 - KO
@@ -1544,11 +1540,9 @@ const Send: React.FunctionComponent<SendProps> = ({
                       }}
                     >
                       {inputZec ? (
-                        <SvgXml
-                          width={12}
+                        <SwarmMark
+                          width={26}
                           height={20}
-                          xml={zecIconXml}
-                          fill={colors.fgDefault}
                           style={{ marginLeft: 10 }}
                         />
                       ) : (

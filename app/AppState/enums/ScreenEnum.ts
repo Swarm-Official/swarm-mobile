@@ -21,6 +21,7 @@ export enum ScreenEnum {
   Settings = 'Settings',
   // Drawer
   About = 'About',
+  Wallets = 'Wallets',
   MixnetDoctor = 'MixnetDoctor',
   Pools = 'Pools',
   SyncReport = 'SyncReport',

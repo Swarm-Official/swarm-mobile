@@ -1,1 +1,1 @@
-swarm,swm,wallet,shielded,private,privacy,testnet,proof of work,crypto,mining,honey,hive
+swarm,swm,wallet,shielded,privacy,testnet,proof of work,crypto

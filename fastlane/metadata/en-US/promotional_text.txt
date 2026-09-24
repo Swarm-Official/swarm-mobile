@@ -1,1 +1,1 @@
-SWARM is on testnet. SWM test coins have no value. Create a wallet, receive coins mined on ordinary computers, and send them privately. Open source.
+SwarmTestnet is experimental. Test SWM has no monetary value. Create a wallet, receive test funds, and send a small amount to try it.

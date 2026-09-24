@@ -30,7 +30,8 @@ repository has no access to either. The signing key still needs a decision
 from the account owner before upload.
 The `SWARM Internal` TestFlight group has bjoern as its first tester. Automatic
 distribution is off; assign a processed build to the group after verification.
-The beta description is saved in TestFlight. Apple requires review contact
+The beta description, feedback email, and wallet marketing URL are saved in
+TestFlight. Apple requires review contact
 details before it will save review notes. Draft notes:
 
 > No account is required. On first launch, accept the risk notice and create a
@@ -38,6 +39,15 @@ details before it will save review notes. Draft notes:
 > Receive shows a shielded address and QR code. To test Send, fund that address
 > with disposable SwarmTestnet SWM from another wallet, wait for the funds to
 > become spendable, then use Send.
+
+For the first internal build, enter this What to Test text when assigning it to
+the group:
+
+> Create or restore a wallet. Check the Receive QR and copied address. Fund it
+> with disposable SwarmTestnet SWM, then send a small amount to another test
+> wallet. Check the balance and transaction history after confirmation. Report
+> crashes, failed sync, and stuck wallet creation through TestFlight feedback.
+> Test coins have no monetary value and the test network may reset.
 
 The earlier unsigned simulator run
 [`35909981590`](https://github.com/Swarm-Official/swarm-mobile/actions/runs/35909981590)
@@ -115,13 +125,17 @@ TestFlight availability follows Apple's processing and account checks.
 The privacy, terms, risks, and notices URLs under `https://swarm.green/wallet/`
 returned HTTP 404 on 2026-09-24. Publish and review those pages before the
 store listing. App Store Connect currently has no Privacy Policy URL or App
-Privacy answers. The store page has no screenshots, description, age rating,
-or App Review contact information. The primary category is Finance, the support
-URL is `https://swarm.green/support`, and the release mode is manual. The Store
-review form no longer requires a sign-in. Complete the remaining fields from
-the reviewed release materials. Review `lwd.swarm.green` request retention
-and third-party SDK behavior before answering Apple's data-collection questions.
-TestFlight's feedback email and review contact fields are also empty.
+Privacy answers. The Store page has a draft description, promotional text,
+keywords, and wallet marketing URL from `fastlane/metadata/en-US`. It still
+needs screenshots, age rating, and App Review contact information. The primary
+category is Finance, the support URL is `https://swarm.green/support`, and the
+release mode is manual. The Store review form no longer requires a sign-in.
+Complete the remaining fields from
+the reviewed release materials. Review `lwd.swarm.green` request retention and
+the ZNS name lookup in `app/uris/resolveZnsName.ts` before answering Apple's
+data-collection questions. The live `https://swarm.green/privacy` page covers
+the website and does not describe wallet-server traffic.
+TestFlight review contact fields are also empty.
 Capture current wallet screens at an accepted iPhone screenshot size after a
 successful physical device session. Review the draft text in
 `fastlane/metadata` and supply a support contact and App Review instructions.

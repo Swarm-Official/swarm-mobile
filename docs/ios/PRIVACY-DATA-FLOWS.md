@@ -14,6 +14,8 @@ not an App Store Connect privacy answer.
 
 The bundled `ios/PrivacyInfo.xcprivacy` declares an empty collected-data array.
 Confirm the indexer retention rules before submitting that declaration as the
-App Privacy answer. The live `https://swarm.green/privacy` page describes
-the website; the wallet-specific policy URLs in `app/legal/legalLinks.ts` return
-HTTP 404 as of 2026-09-24.
+App Privacy answer. The wallet privacy policy, terms, risk notice and licence
+pages under `https://swarm.green/wallet/` return HTTP 200 as of 2026-09-24.
+The app includes the same documents for offline reading. The App Store draft
+uses `https://swarm.green/wallet/privacy` as its privacy URL. The default server's
+operator and log-retention period still require the owner's answer.

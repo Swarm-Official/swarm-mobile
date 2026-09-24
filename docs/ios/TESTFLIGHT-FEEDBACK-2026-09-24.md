@@ -20,8 +20,16 @@ current wallet. The native checks cover three wallets, updated wallet bytes,
 interrupted selection, retrying creation and missing archives.
 
 Local verification passed for TypeScript, targeted ESLint, the Swift wallet
-storage checks and the iOS simulator build. The release workflow exercises
+storage checks and the iOS simulator build. The simulator created two wallets,
+switched back to Wallet 1 and retained both wallets after restart. The Receive
+QR code decoded with the SWARM logo. The header opened the unified-address
+list. All four legal documents opened inside About. The modal's title and
+Close button respect the iPhone safe area. The release workflow exercises
 Welcome, creation, Home, Send, Receive and switching between two wallets.
+
+The four wallet legal URLs return HTTP 200. The App Store draft points to the
+wallet privacy policy. The website changes merged in Swarm-Official/swarm.green
+pull request 1.
 
 The privacy policy records the data flows implemented by this beta. The default
 server's operator and log-retention period still require the owner's answer

@@ -27,16 +27,35 @@ signing. Commit `233037798` removed that override. The
 built and launched, then failed the Store copy check on the open-source
 attribution. Commit `ffad77054` corrected the text. The
 [current signed run](https://github.com/Swarm-Official/swarm-mobile/actions/runs/36037294585)
-passed the Store file check before compilation. It waits for the simulator
-build and string sweep, checks the
-archive identity and rendered assets, exports an IPA, then uploads to
-TestFlight. The `apple-distribution` GitHub environment accepts only
+passed the Store file check, simulator build, wallet creation, Send/Receive
+screen walk, and string sweep at commit `15f847387`. The simulator reports
+`0.1.0 (1023)`. The signed archive, bundle checks, IPA export, and upload all
+passed. Apple reported `UPLOAD SUCCEEDED with no errors` at 18:58:55 UTC.
+All five workflow jobs succeeded. Subsequent workflows require both wallet
+creation and the screen walk to pass.
+
+| Upload record | Recorded result |
+| --- | --- |
+| Source commit | `15f84738701ad4e7528ce652696fd7e1cfa51431` |
+| Version/build | `0.1.0 (1023)` |
+| IPA SHA-256 | `2e804523435611e33f010d654c51fc77f672439b975a87e3c27491e79d04e7c7` |
+| Delivery UUID | `c3e5e19f-5b44-4923-919e-f6ebe735fa6c` |
+| Uploaded bytes | `96705258` |
+
+Apple Vision decoded the Receive QR from this run's final screenshot into a
+110-character `swarm1` address matching the visible prefix and suffix.
+The `apple-distribution` GitHub environment accepts only
 `codex/ios-device-release`. Bjoern approved temporary use of the S4FE AG
-Admin API key for this upload. Four signing values are present as environment
-secrets during the run and must be deleted after the upload attempt. Apple had
-no TestFlight builds before this run.
+Admin API key for this upload. All four temporary environment secrets were
+deleted after upload. GitHub's API returned a remaining secret count of zero.
+The runner also completed its key-file cleanup. Apple finished processing
+with status `VALID`. Its internal and external beta states are both
+`MISSING_EXPORT_COMPLIANCE`.
 The `SWARM Internal` TestFlight group has bjoern as its first tester. Automatic
-distribution is off; assign a processed build to the group after verification.
+distribution is off. Apple rejected assignment of build 1023 with HTTP 422,
+`Build is not in an internally testable state.` Complete the owner's
+encryption declaration, then assign the build to this group. The sole internal
+tester remains `NOT_INVITED` until that step succeeds.
 The beta description, feedback email, and wallet marketing URL are saved in
 TestFlight. Apple requires a review phone and email before it will save review
 notes. Draft notes:
@@ -47,14 +66,23 @@ notes. Draft notes:
 > with disposable SwarmTestnet SWM from another wallet, wait for the funds to
 > become spendable, then use Send.
 
-For the first internal build, enter this What to Test text when assigning it to
-the group:
+The following What to Test text is saved on build 1023:
 
-> Create or restore a wallet. Check the Receive QR and copied address. Fund it
-> with disposable SwarmTestnet SWM, then send a small amount to another test
-> wallet. Check the balance and transaction history after confirmation. Report
-> crashes, failed sync, and stuck wallet creation through TestFlight feedback.
-> Test coins have no monetary value and the test network may reset.
+> Use disposable SwarmTestnet wallets. Test coins have no monetary value and
+> the network may reset.
+>
+> Create a wallet and check that it reaches Receive. Check the QR code, copied
+> address, and QR scanning. Receive test SWM from another wallet, wait for a
+> spendable balance, then send a small amount with an optional memo. Confirm
+> the balance and History after confirmation. Tap the privacy control if the
+> balance is hidden.
+>
+> Test Address Book, Messages, Settings, recovery phrase access, and restoring
+> a disposable wallet. Check device authentication, app restart, and
+> background/resume.
+>
+> Report the build number and any crash, failed sync, or stuck wallet creation
+> through TestFlight feedback. Never include recovery words or private keys.
 
 The earlier unsigned simulator run
 [`35909981590`](https://github.com/Swarm-Official/swarm-mobile/actions/runs/35909981590)
@@ -80,7 +108,7 @@ wallet.
 | Desktop function | iOS location | Verified here |
 | --- | --- | --- |
 | Send | Send tab, with address, amount, memo, and confirmation | The tab appears with zero balance. A funded transfer needs an iPhone. |
-| Receive | Receive tab, with shielded and transparent addresses | A local simulator displayed the shielded QR. |
+| Receive | Receive tab, with shielded and transparent addresses | Build 1023 displayed a shielded QR that Apple Vision decoded as a `swarm1` address. |
 | Balance and history | History tab | The tab appears with zero balance. |
 | Messages | Header message button | The route exists; message exchange remains untested. |
 | Address Book | Options panel | The route exists; editing remains untested. |
@@ -99,19 +127,19 @@ for iOS uploads after 2026-04-28.
 1. Open [SWARM Wallet in App Store Connect](https://appstoreconnect.apple.com/apps/6815274408/testflight/ios).
    The S4FE AG Account Holder/Admin account can manage the app. The Apple
    Developer Program agreement was accepted on 2026-09-23.
-2. The signed workflow uses automatic signing with the approved Admin API key
-   on a hosted Xcode 26.5 runner. Four temporary environment secrets are
-   present: `APPLE_TEAM_ID`, `APPLE_APP_STORE_CONNECT_KEY_ID`,
+2. The signed workflow used automatic signing with the approved Admin API key
+   on a hosted Xcode 26.5 runner. These four temporary environment secrets
+   were deleted after upload: `APPLE_TEAM_ID`, `APPLE_APP_STORE_CONNECT_KEY_ID`,
    `APPLE_APP_STORE_CONNECT_ISSUER_ID`, and `APPLE_APP_STORE_CONNECT_KEY_P8`.
-   The key bytes remain in GitHub Secrets and the runner's temporary storage.
-   Delete all four secrets after this upload attempt and verify the deletion.
+   GitHub's API confirmed zero environment secrets. The original local Apple
+   key file remains with its owner.
 3. Have the account owner answer Apple's encryption export questions. The
    unverified `ITSAppUsesNonExemptEncryption=false` declaration was removed
    from `Info.plist`, allowing App Store Connect to request the answer.
    `docs/ios/ENCRYPTION-REVIEW.md` records the dependency inventory.
-4. Confirm that the completed run reports an IPA hash and an App Store Connect
-   delivery result. Wait for Apple to process the build, then assign it to
-   `SWARM Internal` and save the What to Test text above.
+4. The upload hash and delivery result are recorded above. Processing is
+   complete. After the encryption declaration clears, assign build 1023 to
+   `SWARM Internal` and verify the tester invitation. The test notes are saved.
 
 The workflow runs only after a signed dispatch, and its first step checks the
 required secret names. A successful upload establishes delivery to Apple.

@@ -1207,8 +1207,7 @@ const Send: React.FunctionComponent<SendProps> = ({
       onLayout={e => setContainerH(e.nativeEvent.layout.height)}
     >
       <View
-        accessible={true}
-        accessibilityLabel={translate('send.title-acc') as string}
+        accessible={false}
         style={{
           display: 'flex',
           justifyContent: 'flex-start',

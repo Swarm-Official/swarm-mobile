@@ -99,7 +99,7 @@ export function Wallets({ navigation, onSelect }: WalletsProps) {
             >
               <BoldText>{`${translate('wallets.wallet')} ${wallet.number}`}</BoldText>
               {wallet.active ? (
-                <View testID={`wallets.active.${wallet.number}`}>
+                <View accessible testID={`wallets.active.${wallet.number}`}>
                   <FadeText>{String(translate('wallets.active'))}</FadeText>
                 </View>
               ) : (

@@ -459,8 +459,7 @@ const Receive: React.FunctionComponent<ReceiveProps> = ({
       testID="receive.title"
     >
       <View
-        accessible={true}
-        accessibilityLabel={translate('receive.title-acc') as string}
+        accessible={false}
         style={{
           display: 'flex',
           justifyContent: 'flex-start',

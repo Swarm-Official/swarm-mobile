@@ -747,8 +747,7 @@ const History: React.FunctionComponent<HistoryProps> = ({
       onLayout={e => setContainerH(e.nativeEvent.layout.height)}
     >
       <View
-        accessible={true}
-        accessibilityLabel={translate('history.title-acc') as string}
+        accessible={false}
         style={{
           flex: 1,
           display: 'flex',

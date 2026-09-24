@@ -7,7 +7,11 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaProvider,
+  SafeAreaView,
+  initialWindowMetrics,
+} from 'react-native-safe-area-context';
 import { useTheme } from '@app/theme';
 import {
   LegalLinkIdEnum,
@@ -37,42 +41,44 @@ export function LegalSheet({ page, translate, onClose }: LegalSheetProps) {
           };
   return (
     <Modal animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView
-        style={[styles.screen, { backgroundColor: colors.bgCanvas }]}
-      >
-        <View style={styles.header}>
-          <Text
-            accessibilityRole="header"
-            style={[styles.title, { color: colors.fgDefault }]}
-          >
-            {document.title}
-          </Text>
-          <Pressable
-            testID="legal.close"
-            onPress={onClose}
-            accessibilityRole="button"
-            style={styles.close}
-          >
-            <Text style={{ color: colors.fgAccent }}>
-              {String(translate('close'))}
-            </Text>
-          </Pressable>
-        </View>
-        <ScrollView
-          testID={`legal.${page}`}
-          contentContainerStyle={styles.content}
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <SafeAreaView
+          style={[styles.screen, { backgroundColor: colors.bgCanvas }]}
         >
-          {document.paragraphs.map((paragraph, index) => (
+          <View style={styles.header}>
             <Text
-              key={index}
-              selectable
-              style={[styles.paragraph, { color: colors.fgDefault }]}
+              accessibilityRole="header"
+              style={[styles.title, { color: colors.fgDefault }]}
             >
-              {String(paragraph).replaceAll('**', '')}
+              {document.title}
             </Text>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
+            <Pressable
+              testID="legal.close"
+              onPress={onClose}
+              accessibilityRole="button"
+              style={styles.close}
+            >
+              <Text style={{ color: colors.fgAccent }}>
+                {String(translate('close'))}
+              </Text>
+            </Pressable>
+          </View>
+          <ScrollView
+            testID={`legal.${page}`}
+            contentContainerStyle={styles.content}
+          >
+            {document.paragraphs.map((paragraph, index) => (
+              <Text
+                key={index}
+                selectable
+                style={[styles.paragraph, { color: colors.fgDefault }]}
+              >
+                {String(paragraph).replaceAll('**', '')}
+              </Text>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

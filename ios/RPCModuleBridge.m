@@ -9,6 +9,12 @@
 
 @interface RCT_EXTERN_MODULE(RPCModule, NSObject)
 
+RCT_EXTERN_METHOD(savedWallets:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(selectWallet:(NSString *)id
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
+
 RCT_EXTERN_METHOD(walletExists: 
     (RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)

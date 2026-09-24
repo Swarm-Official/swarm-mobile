@@ -14,7 +14,11 @@ or an edited store version. Keep SwarmTestnet and existing wallet storage.
 
 ## Build status
 
-The simulator CI build runs on Xcode 26.5 with ad hoc simulator entitlements.
+The [hosted simulator run](https://github.com/Swarm-Official/swarm-mobile/actions/runs/36020885180)
+passed on Xcode 26.5 with ad hoc simulator entitlements. Maestro accepted the
+risk notice, reached Receive, tapped Send and returned to Receive. The runner
+found `wallet.dat.txt`, confirmed the default SwarmTestnet server, and passed
+the Store asset and visible-string checks. The signed archive job was skipped.
 The signed job waits for the
 simulator build and string sweep, checks the archive identity and rendered
 assets, exports an IPA, then uploads to TestFlight. Run the workflow with
@@ -22,7 +26,8 @@ assets, exports an IPA, then uploads to TestFlight. Run the workflow with
 restricted to `codex/ios-device-release` and currently has no secrets.
 App Store Connect currently has no TestFlight builds. The S4FE AG account has
 an Admin Team API key and a managed distribution certificate, but this
-repository has no access to either.
+repository has no access to either. The signing key still needs a decision
+from the account owner before upload.
 The `SWARM Internal` TestFlight group has bjoern as its first tester. Automatic
 distribution is off; assign a processed build to the group after verification.
 The beta description is saved in TestFlight. Apple requires review contact
@@ -40,9 +45,9 @@ built and launched. It showed the iOS passcode sheet. After the attempted
 simulator unlock, it remained on “Creating a new wallet” for six minutes. The
 app lacked keychain entitlements and received `errSecMissingEntitlement`
 (`-34018`). The runner reached `lwd.swarm.green:443`. An ad hoc signed local
-simulator build with the same proposed entitlements created `wallet.dat.txt`
-and displayed the shielded receive address. The updated CI workflow must
-confirm this result on the hosted runner. A physical iPhone must complete the
+simulator build with the same entitlements created `wallet.dat.txt`
+and displayed the shielded receive address. The hosted run confirmed the same
+path. A physical iPhone must complete the
 risk notice, wallet creation, sync, receive, and a disposable test transfer
 before external testing or App Store submission.
 

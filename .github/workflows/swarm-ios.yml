@@ -1066,6 +1066,18 @@ jobs:
           echo
           echo "THE SHIPPED BUNDLE PASSES."
 
+      - name: Require wallet creation and the screen walk
+        if: always()
+        env:
+          WALLET_CREATED: ${{ steps.freshinstall.outputs.wallet_created }}
+          SCREEN_WALK_OK: ${{ steps.maestro.outputs.ok }}
+        run: |
+          set -euo pipefail
+          if [ "$WALLET_CREATED" != "true" ] || [ "$SCREEN_WALK_OK" != "true" ]; then
+            echo "::error::Wallet creation and the Receive/Send screen walk must pass."
+            exit 1
+          fi
+
       # always(): a failed assertion must still leave the artifact it was
       # reached from, so the next person can look instead of guessing.
       - name: Package the simulator app

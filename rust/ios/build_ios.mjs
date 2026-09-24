@@ -66,13 +66,13 @@ if (!capture('bindgen', ['--version'])) {
 // 1. Generate uniffi Swift bindings (also produces the C header + modulemap)
 process.chdir(LIB_DIR);
 run('cargo', [
-  'run', '--release', '--bin', 'uniffi-bindgen',
+  'run', '--locked', '--release', '--bin', 'uniffi-bindgen',
   'generate', './src/zingo.udl', '--language', 'swift', '--out-dir', './Generated',
 ], { env });
 
 // 2. Build cargo for the 3 targets
 for (const target of [DEVICE_TARGET, ...SIM_TARGETS]) {
-  run('cargo', ['build', '--release', '--target', target], { env });
+  run('cargo', ['build', '--locked', '--release', '--target', target], { env });
 }
 
 // 3. Lipo the 2 simulator targets into one fat .a
@@ -100,13 +100,13 @@ const NYM_SIM_FAT_LIB = join(NYM_SIM_FAT_DIR, SHIM_LIB);
 const NYM_XCFRAMEWORK_OUT = join(REPO_IOS_DIR, 'ZingoNymProxyFFI.xcframework');
 
 for (const target of [DEVICE_TARGET, ...SIM_TARGETS]) {
-  run('cargo', ['build', '--release', '--target', target, '-p', 'zingo-nym-proxy-ffi'], { env, cwd: NYM_DIR });
+  run('cargo', ['build', '--locked', '--release', '--target', target, '-p', 'zingo-nym-proxy-ffi'], { env, cwd: NYM_DIR });
 }
 
 rmSync(NYM_GENERATED, { recursive: true, force: true });
 mkdirSync(NYM_GENERATED, { recursive: true });
 run('cargo', [
-  'run', '--release', '-p', 'zingo-uniffi-bindgen', '--bin', 'zingo-uniffi-bindgen', '--',
+  'run', '--locked', '--release', '-p', 'zingo-uniffi-bindgen', '--bin', 'zingo-uniffi-bindgen', '--',
   'generate', '--library', NYM_DEVICE_LIB, '--language', 'swift', '--out-dir', NYM_GENERATED,
 ], { env, cwd: RUST_DIR });
 

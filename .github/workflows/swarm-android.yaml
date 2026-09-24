@@ -41,11 +41,11 @@ concurrency:
 
 env:
   # The SWARM app version for this testnet round.
-  SWARM_VERSION: 0.1.0-testnet.2
+  SWARM_VERSION: 0.1.0-testnet.3
   # versionCode must increase for every Play upload; bump it here. Play keeps
   # every code it has ever seen and refuses a repeat, including one from a
   # release that was later deleted.
-  SWARM_ANDROID_VERSION_CODE: 2
+  SWARM_ANDROID_VERSION_CODE: 3
   SWARM_ANDROID_VERSION_NAME: "0.1.0"
   # Pinned so a new bundletool release cannot change what "too large" means
   # between two runs. The digest is checked before the jar runs.
@@ -216,10 +216,11 @@ jobs:
             echo "ERROR: the SDK pin still points at zingolabs/zingolib" >&2
             exit 1
           fi
-          # The organisation was renamed from brs-holding to Swarm-Official and
-          # the old URLs redirect, so a Cargo pin written either way is the
-          # same repository.
-          grep -qE '(brs-holding|Swarm-Official)/privacy-zingolib' rust/Cargo.toml
+          grep -q 'Swarm-Official/privacy-zingolib' rust/Cargo.toml
+
+      - name: Verify SWARM address compatibility
+        working-directory: rust
+        run: cargo test --locked -p zingo swarm_prefix_tests --lib
 
       - name: Build the wallet library
         working-directory: ./rust/lib
@@ -228,14 +229,14 @@ jobs:
           CARGO_FEATURE_STD: ${{ matrix.std }}
           CFLAGS_aarch64_linux_android: -mno-outline-atomics
           CXXFLAGS_aarch64_linux_android: -mno-outline-atomics
-        run: cargo ndk --target "$TARGET" build --release
+        run: cargo ndk --target "$TARGET" build --locked --release
 
       - name: Build the Nym proxy shim
         working-directory: ./rust/nym-proxy-ffi
         env:
           CC: ${{ matrix.cc }}26-clang
           CARGO_FEATURE_STD: ${{ matrix.std }}
-        run: cargo ndk --target "$TARGET" build --release --package zingo-nym-proxy-ffi
+        run: cargo ndk --target "$TARGET" build --locked --release --package zingo-nym-proxy-ffi
 
       # Library mode reads UniFFI metadata from the symbol table, so this must
       # run before the strip below.
@@ -246,7 +247,7 @@ jobs:
           set -eu
           OUT="$GITHUB_WORKSPACE/android/app/build/generated/source/uniffi/release/java"
           mkdir -p "$OUT"
-          cargo build --release --package zingo-uniffi-bindgen
+          cargo build --locked --release --package zingo-uniffi-bindgen
           ./target/release/zingo-wallet-uniffi-bindgen generate \
             lib/src/zingo.udl --language kotlin --no-format --out-dir "$OUT"
           cd nym-proxy-ffi

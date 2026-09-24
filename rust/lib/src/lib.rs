@@ -2093,7 +2093,7 @@ mod wallet_validation_tests {
     #[test]
     fn a_saved_wallet_validates_and_every_truncation_fails() {
         let _serial = lock_discipline_tests::serialized();
-        let bytes = saved_wallet("main");
+        let bytes = saved_wallet(SWARM_CHAIN_HINT);
         validate_wallet_bytes(bytes.clone()).expect("the saved wallet must validate");
 
         for cut in [0, 8, bytes.len() / 2, bytes.len() - 1] {
@@ -2107,7 +2107,9 @@ mod wallet_validation_tests {
             );
         }
 
-        validate_wallet_bytes(saved_wallet("test")).expect("the testnet wallet must validate");
+        for chain in ["main", "test"] {
+            assert!(validate_wallet_bytes(saved_wallet(chain)).is_err());
+        }
     }
 
     #[test]
@@ -2205,11 +2207,7 @@ pub fn parse_address(address: String) -> Result<String, ZingolibError> {
                 "the address is empty".to_string(),
             ))
         } else {
-            // SWARM: only SwarmTestnet addresses are valid destinations on this
-            // network. SwarmTestnet uses the standard Zcash TESTNET encodings
-            // (`utest…`, `ztestsapling…`, `tm…`), so this accepts exactly those
-            // and rejects a mainnet address instead of silently reporting it as
-            // a different chain the user cannot actually pay.
+            // SWARM accepts canonical and legacy unified-address encodings.
             fn make_decoded_chain_pair(
                 address: &str,
             ) -> Option<(zcash_client_backend::address::Address, ChainType)> {
@@ -3765,3 +3763,6 @@ pub fn set_transmit_policy(policy: String) -> Result<String, ZingolibError> {
         }
     })
 }
+
+#[cfg(test)]
+mod swarm_prefix_tests;

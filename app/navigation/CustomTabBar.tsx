@@ -30,19 +30,8 @@ const TAB_V_PADDING = 10;
 // StyleSheet below
 const PILL_BG = advancedTokens.bgChrome;
 const PILL_BORDER = '#071A35';
-const PILL_HEIGHT = ICON_SIZE + 2 * TAB_V_PADDING + 2 * BUBBLE_V_MARGIN + 2;
 const WRAPPER_PADDING_BOTTOM = 25;
 const FADE_COLORS = ['transparent', 'rgba(0,0,0,0.3)'];
-
-/** Bottom scrim with the tab bar's footprint. */
-export const FadeOnlyTabBar = (): React.ReactElement => (
-  <View
-    style={[styles.wrapper, { height: PILL_HEIGHT + WRAPPER_PADDING_BOTTOM }]}
-    pointerEvents="none"
-  >
-    <LinearGradient colors={FADE_COLORS} style={StyleSheet.absoluteFill} />
-  </View>
-);
 
 function renderNavIcon(
   routeName: string,
@@ -87,7 +76,8 @@ const CustomTabBar = ({
   state,
   navigation,
 }: BottomTabBarProps): React.ReactElement => {
-  const { mode, totalBalance, somePending } = useContext(ContextAppLoaded);
+  const { mode, totalBalance, somePending, translate } =
+    useContext(ContextAppLoaded);
   const reportHeight = useContext(BottomTabBarHeightCallbackContext);
   // The active-tab bubble used to be hardcoded to the advanced-theme green
   // (#149D05), so basic mode showed an off-palette green. Pull from the
@@ -129,7 +119,7 @@ const CustomTabBar = ({
   });
 
   // Track the currently-selected route by its KEY, not by index. When the
-  // tab list shrinks (e.g. mode toggle removes the Send tab while the
+  // tab list shrinks (e.g. a wallet switch removes the Send tab while the
   // active index stays 0), React Navigation reassigns index 0 to the next
   // remaining route — but `state.index` stays equal to 0, so depending on
   // it alone never re-fires the effect, leaving the new active tab with a
@@ -204,8 +194,18 @@ const CustomTabBar = ({
                 onPressOut={() => handlePressOut(route.key)}
                 onPress={() => handlePress(route, isFocused)}
                 onLongPress={() => handleLongPress(route)}
+                testID={`tab.${route.name.toLowerCase()}`}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: isFocused }}
+                accessibilityLabel={
+                  translate(
+                    route.name === RouteEnum.Receive
+                      ? 'receive.title-acc'
+                      : route.name === RouteEnum.Send
+                        ? 'send.title'
+                        : 'history.title',
+                  ) as string
+                }
               >
                 <Animated.View
                   style={[

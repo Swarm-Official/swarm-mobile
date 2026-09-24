@@ -110,7 +110,7 @@ import History from '@screens/History';
 import Send from '@screens/Send';
 import Receive from '@screens/Receive';
 import Settings from '@screens/Settings';
-import CustomTabBar, { FadeOnlyTabBar } from '@app/navigation/CustomTabBar';
+import CustomTabBar from '@app/navigation/CustomTabBar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   BottomSheetModal,
@@ -755,8 +755,6 @@ type LoadedAppClassState = AppStateLoaded & AppContextLoaded;
 const renderTabBar = (
   props: import('@react-navigation/bottom-tabs').BottomTabBarProps,
 ) => <CustomTabBar {...props} />;
-
-const renderFadeOnlyTabBar = () => <FadeOnlyTabBar />;
 
 export class LoadedAppClass extends Component<
   LoadedAppClassProps,
@@ -2273,10 +2271,16 @@ export class LoadedAppClass extends Component<
       scrollToTop,
       scrollToBottom,
       addresses,
-      somePending,
-      selectServer,
     } = this.state;
     const { colors } = this.props.theme;
+    const showHistoryFirst =
+      mode === ModeEnum.advanced ||
+      (valueTransfersTotal !== null && valueTransfersTotal > 0) ||
+      (!readOnly &&
+        !!totalBalance &&
+        totalBalance.confirmedOrchardBalance +
+          totalBalance.confirmedSaplingBalance >
+          0);
 
     // Whether this chain offers the Nym mixnet at all. On SwarmTestnet it
     // does not, because no mixnet send has ever been demonstrated against
@@ -2377,17 +2381,14 @@ export class LoadedAppClass extends Component<
                         });
                         return (
                           <>
-                            {mode === ModeEnum.advanced ||
-                            (valueTransfersTotal !== null &&
-                              valueTransfersTotal > 0) ||
-                            (!readOnly &&
-                              !!totalBalance &&
-                              totalBalance.confirmedOrchardBalance +
-                                totalBalance.confirmedSaplingBalance >
-                                0) ? (
+                            {showHistoryFirst || addresses !== null ? (
                               <Tab.Navigator
                                 detachInactiveScreens={true}
-                                initialRouteName={RouteEnum.History}
+                                initialRouteName={
+                                  showHistoryFirst
+                                    ? RouteEnum.History
+                                    : RouteEnum.Receive
+                                }
                                 backBehavior="initialRoute"
                                 tabBar={renderTabBar}
                                 screenOptions={{
@@ -2416,60 +2417,42 @@ export class LoadedAppClass extends Component<
                                     />
                                   )}
                                 </Tab.Screen>
-                                {!readOnly &&
-                                  selectServer !== SelectServerEnum.offline &&
-                                  (mode === ModeEnum.advanced ||
-                                    (!!totalBalance &&
-                                      totalBalance.confirmedIronwoodBalance +
-                                        totalBalance.confirmedOrchardBalance +
-                                        totalBalance.confirmedSaplingBalance >
-                                        0) ||
-                                    (!!totalBalance &&
-                                      ((totalBalance.totalIronwoodBalance > 0 &&
-                                        totalBalance.confirmedIronwoodBalance ===
-                                          0) ||
-                                        (totalBalance.totalOrchardBalance > 0 &&
-                                          totalBalance.confirmedOrchardBalance ===
-                                            0) ||
-                                        (totalBalance.totalSaplingBalance > 0 &&
-                                          totalBalance.confirmedSaplingBalance ===
-                                            0)) &&
-                                      somePending)) && (
-                                    <Tab.Screen name={RouteEnum.Send}>
-                                      {propsTab => (
-                                        <Send
-                                          {...propsTab}
-                                          toggleMenuDrawer={
-                                            () =>
-                                              toggleOptionsPanel() /* header */
-                                          }
-                                          setShieldingAmount={
-                                            this.setShieldingAmount /* header */
-                                          }
-                                          setScrollToTop={
-                                            this
-                                              .setScrollToTop /* header & send */
-                                          }
-                                          setScrollToBottom={
-                                            this
-                                              .setScrollToBottom /* header & send */
-                                          }
-                                          sendTransaction={
-                                            this.sendTransaction /* send */
-                                          }
-                                          setServerOption={
-                                            this.setServerOption /* send */
-                                          }
-                                          clearToAddr={
-                                            this.clearToAddr /* send */
-                                          }
-                                          setSecurityOption={
-                                            this.setSecurityOption /* send */
-                                          }
-                                        />
-                                      )}
-                                    </Tab.Screen>
-                                  )}
+                                {!readOnly && (
+                                  <Tab.Screen name={RouteEnum.Send}>
+                                    {propsTab => (
+                                      <Send
+                                        {...propsTab}
+                                        toggleMenuDrawer={
+                                          () =>
+                                            toggleOptionsPanel() /* header */
+                                        }
+                                        setShieldingAmount={
+                                          this.setShieldingAmount /* header */
+                                        }
+                                        setScrollToTop={
+                                          this
+                                            .setScrollToTop /* header & send */
+                                        }
+                                        setScrollToBottom={
+                                          this
+                                            .setScrollToBottom /* header & send */
+                                        }
+                                        sendTransaction={
+                                          this.sendTransaction /* send */
+                                        }
+                                        setServerOption={
+                                          this.setServerOption /* send */
+                                        }
+                                        clearToAddr={
+                                          this.clearToAddr /* send */
+                                        }
+                                        setSecurityOption={
+                                          this.setSecurityOption /* send */
+                                        }
+                                      />
+                                    )}
+                                  </Tab.Screen>
+                                )}
                                 <Tab.Screen name={RouteEnum.Receive}>
                                   {propsTab => (
                                     <Receive
@@ -2485,39 +2468,10 @@ export class LoadedAppClass extends Component<
                                 </Tab.Screen>
                               </Tab.Navigator>
                             ) : (
-                              <>
-                                {addresses === null ? (
-                                  <Loading
-                                    backgroundColor={colors.bgCanvas}
-                                    spinColor={colors.fgAccent}
-                                  />
-                                ) : (
-                                  <Tab.Navigator
-                                    initialRouteName={RouteEnum.Receive}
-                                    tabBar={renderFadeOnlyTabBar}
-                                    screenOptions={{
-                                      headerShown: false,
-                                    }}
-                                  >
-                                    <Tab.Screen name={RouteEnum.Receive}>
-                                      {propsTab => (
-                                        <Receive
-                                          {...propsTab}
-                                          toggleMenuDrawer={
-                                            () =>
-                                              toggleOptionsPanel() /* header */
-                                          }
-                                          alone={true /* receive */}
-                                          setSecurityOption={
-                                            this.setSecurityOption
-                                          }
-                                          setAddressBook={this.setAddressBook}
-                                        />
-                                      )}
-                                    </Tab.Screen>
-                                  </Tab.Navigator>
-                                )}
-                              </>
+                              <Loading
+                                backgroundColor={colors.bgCanvas}
+                                spinColor={colors.fgAccent}
+                              />
                             )}
                           </>
                         );

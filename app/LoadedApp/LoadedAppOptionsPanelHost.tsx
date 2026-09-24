@@ -113,16 +113,13 @@ const LoadedAppOptionsPanelHost: React.FC<LoadedAppOptionsPanelHostProps> = ({
     [onMenuItemSelected],
   );
 
-  // Visibility rules mirror the legacy Menu.tsx so the grid behaves the
-  // same: most "wallet-changing" items only make sense online + advanced,
-  // and basic-mode with an empty wallet hides the seed/insight cells.
+  // Keep the recovery phrase available as soon as the wallet exists.
   const actions = useMemo<OptionsPanelAction[]>(() => {
     const isBasic = mode === ModeEnum.basic;
     const isOffline = selectServer === SelectServerEnum.offline;
     const isEmptyBasic =
       isBasic && valueTransfersTotal !== null && valueTransfersTotal === 0;
 
-    const showSeedUfvk = !isEmptyBasic;
     // Legacy Menu.tsx parity: advanced + online + context-flag.
     const showRescan = !isBasic && !isOffline && rescanMenu;
     const showSyncReport = !isBasic && !isOffline;
@@ -155,28 +152,24 @@ const LoadedAppOptionsPanelHost: React.FC<LoadedAppOptionsPanelHostProps> = ({
       onPress: () => dispatch(MenuItemEnum.AddressBook),
     });
 
-    if (showSeedUfvk) {
-      // Same label-rules as Menu.tsx: 'seed' vs 'ufvk' depending on
-      // readOnly, and 'basic' suffix when the user is in basic mode.
-      const label = readOnly
-        ? isBasic
-          ? (translate('loadedapp.walletufvk-basic') as string)
-          : (translate('loadedapp.walletufvk') as string)
-        : isBasic
-          ? (translate('loadedapp.walletseed-basic') as string)
-          : (translate('loadedapp.walletseed') as string);
-      list.push({
-        id: MenuItemEnum.WalletSeedUfvk,
-        testID: MENU_TEST_IDS[MenuItemEnum.WalletSeedUfvk],
-        label,
-        icon: isBasic ? (
-          <WalletSeedBasicIcon width={28} height={28} />
-        ) : (
-          <WalletSeedIcon width={28} height={28} />
-        ),
-        onPress: () => dispatch(MenuItemEnum.WalletSeedUfvk),
-      });
-    }
+    const seedLabel = readOnly
+      ? isBasic
+        ? (translate('loadedapp.walletufvk-basic') as string)
+        : (translate('loadedapp.walletufvk') as string)
+      : isBasic
+        ? (translate('loadedapp.walletseed-basic') as string)
+        : (translate('loadedapp.walletseed') as string);
+    list.push({
+      id: MenuItemEnum.WalletSeedUfvk,
+      testID: MENU_TEST_IDS[MenuItemEnum.WalletSeedUfvk],
+      label: seedLabel,
+      icon: isBasic ? (
+        <WalletSeedBasicIcon width={28} height={28} />
+      ) : (
+        <WalletSeedIcon width={28} height={28} />
+      ),
+      onPress: () => dispatch(MenuItemEnum.WalletSeedUfvk),
+    });
 
     if (showRescan) {
       list.push({

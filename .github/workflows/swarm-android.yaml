@@ -180,7 +180,11 @@ jobs:
             echo "ERROR: the SDK pin still points at zingolabs/zingolib" >&2
             exit 1
           fi
-          grep -q 'brs-holding/privacy-zingolib' rust/Cargo.toml
+          grep -q 'Swarm-Official/privacy-zingolib' rust/Cargo.toml
+
+      - name: Verify SWARM address compatibility
+        working-directory: rust
+        run: cargo test --locked -p zingo swarm_prefix_tests --lib
 
       - name: Build the wallet library
         working-directory: ./rust/lib
@@ -189,14 +193,14 @@ jobs:
           CARGO_FEATURE_STD: ${{ matrix.std }}
           CFLAGS_aarch64_linux_android: -mno-outline-atomics
           CXXFLAGS_aarch64_linux_android: -mno-outline-atomics
-        run: cargo ndk --target "$TARGET" build --release
+        run: cargo ndk --target "$TARGET" build --locked --release
 
       - name: Build the Nym proxy shim
         working-directory: ./rust/nym-proxy-ffi
         env:
           CC: ${{ matrix.cc }}26-clang
           CARGO_FEATURE_STD: ${{ matrix.std }}
-        run: cargo ndk --target "$TARGET" build --release --package zingo-nym-proxy-ffi
+        run: cargo ndk --target "$TARGET" build --locked --release --package zingo-nym-proxy-ffi
 
       # Library mode reads UniFFI metadata from the symbol table, so this must
       # run before the strip below.
@@ -207,7 +211,7 @@ jobs:
           set -eu
           OUT="$GITHUB_WORKSPACE/android/app/build/generated/source/uniffi/release/java"
           mkdir -p "$OUT"
-          cargo build --release --package zingo-uniffi-bindgen
+          cargo build --locked --release --package zingo-uniffi-bindgen
           ./target/release/zingo-wallet-uniffi-bindgen generate \
             lib/src/zingo.udl --language kotlin --no-format --out-dir "$OUT"
           cd nym-proxy-ffi
@@ -318,7 +322,7 @@ jobs:
           echo "rev=$REV" >> "$GITHUB_OUTPUT"
           # The genesis hash is one constant in the SDK. Read it from the exact
           # revision this APK is built against, so the manifest cannot drift.
-          curl -fsSL "https://raw.githubusercontent.com/brs-holding/privacy-zingolib/$REV/zingolib/src/config.rs" -o /tmp/config.rs
+          curl -fsSL "https://raw.githubusercontent.com/Swarm-Official/privacy-zingolib/$REV/zingolib/src/config.rs" -o /tmp/config.rs
           GEN="$(grep -A4 'pub const SWARM_TESTNET_GENESIS:' /tmp/config.rs | grep -oE '"[0-9a-fA-F]{64}"' | head -1 | tr -d '"')"
           PLACEHOLDER_NAME="$(grep -A4 'pub const SWARM_TESTNET_GENESIS:' /tmp/config.rs | grep -c 'SWARM_TESTNET_GENESIS_PLACEHOLDER' || true)"
           if [ -z "${GEN:-}" ]; then
@@ -460,7 +464,7 @@ jobs:
                 app_repo: "https://github.com/brs-holding/swarm-mobile",
                 app_sha: process.env.GITHUB_SHA,
                 app_ref: process.env.GITHUB_REF,
-                sdk_repo: "https://github.com/brs-holding/privacy-zingolib",
+                sdk_repo: "https://github.com/Swarm-Official/privacy-zingolib",
                 sdk_sha: process.env.SDK_REV,
                 upstream: "https://github.com/zingolabs/zingo-mobile (MIT)",
               },

@@ -10,30 +10,17 @@ members = [
 
 # The mixnet proxy shim resolves in its own lockfile: nym-sdk's transitive
 # graph needs `crypto-common ^0.2`, irreconcilable with this workspace's pins.
-exclude = ["nym-proxy-ffi"]
+exclude = ["nym-proxy-ffi", "vendor/zcash_address", "vendor/zcash_protocol"]
 resolver = "2"
 
 [workspace.dependencies]
-# SWARM: the SDK is the project's zingolib fork, branch `swarm-testnet-wallet`,
-# which carries the SwarmTestnet identity (ChainType::CustomTestnet, chain label
-# `swarm-testnet`, indexer identity check, wallet-file chain tag 5) and nothing
-# else. That branch contains zingo-mobile's previous pin ec4547c8 as an ancestor
-# and changes no Cargo.toml and no Cargo.lock, so the resolved dependency graph
-# is byte-identical to the one this workspace's Cargo.lock already describes.
-#
-# The genesis hash lives in ONE constant there, SWARM_TESTNET_GENESIS. As of
-# this pin it holds SwarmTestnet's REAL genesis,
-# 045993f5c91ea160c7ebda573dd97b0016816bca68d395bfff202779b88e2a28, which is
-# the hash in network/swarm-testnet/manifest.json. The placeholder constant and
-# swarm_testnet_genesis_is_placeholder() remain in the SDK as the release gate,
-# and this build reports their answer rather than assuming it - see
-# swarm_network_identity() in rust/lib/src/lib.rs.
-zingolib = { git = "https://github.com/brs-holding/privacy-zingolib", rev = "8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f", features = [
+# SWARM SDK with legacy unified-address decoding and canonical SWARM encoding.
+zingolib = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "23321888779d6ebcbccad6e34bd90a570a29e669", features = [
     "nym",
     "perspective",
 ] }
-pepper-sync = { git = "https://github.com/brs-holding/privacy-zingolib", rev = "8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f" }
-zingolib_testutils = { git = "https://github.com/brs-holding/privacy-zingolib", rev = "8507eac5caf1e0e7abe739dcbfb4bf2501f7ff0f" }
+pepper-sync = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "23321888779d6ebcbccad6e34bd90a570a29e669" }
+zingolib_testutils = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "23321888779d6ebcbccad6e34bd90a570a29e669" }
 regchest_utils = { git = "https://github.com/zingolabs/zingo-regchest", branch = "dev" }
 zingomobile_utils = { path = "zingomobile_utils" }
 
@@ -79,6 +66,8 @@ opt-level = 3
 debug = 1
 
 [patch.crates-io]
+zcash_address = { path = "vendor/zcash_address" }
+zcash_protocol = { path = "vendor/zcash_protocol" }
 # Ironwood (NU6.3) proto fields (CompactTx.ironwoodActions, TreeState.ironwoodTree,
 # ShieldedProtocol.ironwood, ChainMetadata.ironwoodCommitmentTreeSize). Must match
 # the patch in zingolib (feat/ironwood) so the dependency graph resolves to a single

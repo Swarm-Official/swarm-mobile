@@ -128,7 +128,7 @@ jobs:
         id: key
         run: |
           set -euo pipefail
-          KEY="swarm-ios-xcframework-v1-${{ runner.os }}-xc${XCODE_VERSION}-${{ hashFiles('rust/Cargo.toml', 'rust/Cargo.lock', 'rust/lib/**', 'rust/uniffi-bindgen/**', 'rust/zingomobile_utils/**', 'rust/ios/build_ios.mjs', 'rust/nym-proxy-ffi/Cargo.toml', 'rust/nym-proxy-ffi/Cargo.lock', 'rust/nym-proxy-ffi/src/**', 'rust/nym-proxy-ffi/uniffi.toml') }}"
+          KEY="swarm-ios-xcframework-v1-${{ runner.os }}-xc${XCODE_VERSION}-${{ hashFiles('rust/Cargo.toml', 'rust/Cargo.lock', 'rust/lib/**', 'rust/vendor/**', 'rust/uniffi-bindgen/**', 'rust/zingomobile_utils/**', 'rust/ios/build_ios.mjs', 'rust/nym-proxy-ffi/Cargo.toml', 'rust/nym-proxy-ffi/Cargo.lock', 'rust/nym-proxy-ffi/src/**', 'rust/nym-proxy-ffi/uniffi.toml') }}"
           echo "key=$KEY" >> "$GITHUB_OUTPUT"
           echo "xcframework cache key: $KEY"
 
@@ -214,6 +214,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+
+      - name: Verify SWARM address compatibility
+        if: steps.xcf.outputs.cache-hit != 'true'
+        working-directory: rust
+        run: cargo test --locked -p zingo swarm_prefix_tests --lib
 
       - name: Build the iOS xcframeworks (upstream script, unmodified)
         if: steps.xcf.outputs.cache-hit != 'true'

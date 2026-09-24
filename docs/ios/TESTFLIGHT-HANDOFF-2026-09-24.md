@@ -10,19 +10,31 @@ Store Connect after signing in. Keep SwarmTestnet and existing wallet storage.
 
 ## Build status
 
-The unsigned CI build runs on Xcode 26.5. The signed job waits for the
+The simulator CI build runs on Xcode 26.5 with ad hoc simulator entitlements.
+The signed job waits for the
 simulator build and string sweep, checks the archive identity and rendered
 assets, exports an IPA, then uploads to TestFlight. Run the workflow with
 `signed_release=false` first. The `apple-distribution` GitHub environment is
 restricted to `codex/ios-device-release` and currently has no secrets.
 
-The earlier simulator run
+The earlier unsigned simulator run
 [`35909981590`](https://github.com/Swarm-Official/swarm-mobile/actions/runs/35909981590)
 built and launched. It showed the iOS passcode sheet. After the attempted
-simulator unlock, it remained on “Creating a new wallet” for six minutes and
-saved no wallet file. The runner reached `lwd.swarm.green:443`. A physical
-iPhone must complete the risk notice, wallet creation, sync, receive, and a
-disposable test transfer before external testing or App Store submission.
+simulator unlock, it remained on “Creating a new wallet” for six minutes. The
+app lacked keychain entitlements and received `errSecMissingEntitlement`
+(`-34018`). The runner reached `lwd.swarm.green:443`. An ad hoc signed local
+simulator build with the same proposed entitlements created `wallet.dat.txt`
+and displayed the shielded receive address. The updated CI workflow must
+confirm this result on the hosted runner. A physical iPhone must complete the
+risk notice, wallet creation, sync, receive, and a disposable test transfer
+before external testing or App Store submission.
+
+The iOS code has Send and Receive screens and a transaction sender. An empty
+basic-mode wallet previously concealed Send. The branch now exposes History,
+Send, and Receive as soon as the wallet address loads. The send confirmation
+still requires a spendable balance, a valid destination, and a fee. The
+recovery phrase action is available from the options panel for an empty
+wallet.
 
 The Mac has macOS 14.6 and Xcode 16.2. The hosted Xcode 26.5 workflow is the
 device archive path. [Apple requires Xcode 26 or later](https://developer.apple.com/news/upcoming-requirements/?id=04282026a)

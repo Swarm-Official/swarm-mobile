@@ -19,20 +19,27 @@ passed on Xcode 26.5 with ad hoc simulator entitlements. Maestro accepted the
 risk notice, reached Receive, tapped Send and returned to Receive. The runner
 found `wallet.dat.txt`, confirmed the default SwarmTestnet server, and passed
 the Store asset and visible-string checks. The signed archive job was skipped.
-The signed job waits for the
-simulator build and string sweep, checks the archive identity and rendered
-assets, exports an IPA, then uploads to TestFlight. Run the workflow with
-`signed_release=false` first. The `apple-distribution` GitHub environment is
-restricted to `codex/ios-device-release` and currently has no secrets.
-App Store Connect currently has no TestFlight builds. The S4FE AG account has
-an Admin Team API key and a managed distribution certificate, but this
-repository has no access to either. The signing key still needs a decision
-from the account owner before upload.
+The [first signed run](https://github.com/Swarm-Official/swarm-mobile/actions/runs/36025841188)
+passed the simulator and string checks, then stopped before device compilation.
+Xcode rejected an explicit distribution identity with automatic archive
+signing. Commit `233037798` removed that override. The
+[first retry](https://github.com/Swarm-Official/swarm-mobile/actions/runs/36030326489)
+built and launched, then failed the Store copy check on the open-source
+attribution. Commit `ffad77054` corrected the text. The
+[current signed run](https://github.com/Swarm-Official/swarm-mobile/actions/runs/36037294585)
+passed the Store file check before compilation. It waits for the simulator
+build and string sweep, checks the
+archive identity and rendered assets, exports an IPA, then uploads to
+TestFlight. The `apple-distribution` GitHub environment accepts only
+`codex/ios-device-release`. Bjoern approved temporary use of the S4FE AG
+Admin API key for this upload. Four signing values are present as environment
+secrets during the run and must be deleted after the upload attempt. Apple had
+no TestFlight builds before this run.
 The `SWARM Internal` TestFlight group has bjoern as its first tester. Automatic
 distribution is off; assign a processed build to the group after verification.
 The beta description, feedback email, and wallet marketing URL are saved in
-TestFlight. Apple requires review contact
-details before it will save review notes. Draft notes:
+TestFlight. Apple requires a review phone and email before it will save review
+notes. Draft notes:
 
 > No account is required. On first launch, accept the risk notice and create a
 > wallet. The app connects to `https://lwd.swarm.green:443` on SwarmTestnet.
@@ -92,29 +99,19 @@ for iOS uploads after 2026-04-28.
 1. Open [SWARM Wallet in App Store Connect](https://appstoreconnect.apple.com/apps/6815274408/testflight/ios).
    The S4FE AG Account Holder/Admin account can manage the app. The Apple
    Developer Program agreement was accepted on 2026-09-23.
-2. Select a signing path. Automatic signing uses an App Store Connect **Team
-   API key with Admin access**. The key can manage all apps on the team and
-   create distribution signing assets. Manual signing uses an existing Apple
-   Distribution certificate, its private key, an App Store provisioning
-   profile, and an API key that can upload builds. This Mac currently shows
-   Apple Development identities and no Apple Distribution identity.
-3. Put the selected material in the GitHub `apple-distribution` environment.
-   For automatic signing, use `APPLE_TEAM_ID`,
-   `APPLE_APP_STORE_CONNECT_KEY_ID`, `APPLE_APP_STORE_CONNECT_ISSUER_ID`, and
-   `APPLE_APP_STORE_CONNECT_KEY_P8`. The last value is the base64 encoding of
-   the `.p8` file. For manual signing, also set
-   `APPLE_DISTRIBUTION_CERT_P12`, `APPLE_DISTRIBUTION_CERT_PASSWORD`, and
-   `APPLE_PROVISIONING_PROFILE`. The P12 and profile values are base64 encoded.
-   Set `APPLE_TEAM_ID=SAZ99S3T4C`. Enter all values in GitHub Secrets. Keep
-   private keys, passwords, and two-factor codes out of chat and source
-   control.
-4. Have the account owner answer Apple's encryption export questions. The
+2. The signed workflow uses automatic signing with the approved Admin API key
+   on a hosted Xcode 26.5 runner. Four temporary environment secrets are
+   present: `APPLE_TEAM_ID`, `APPLE_APP_STORE_CONNECT_KEY_ID`,
+   `APPLE_APP_STORE_CONNECT_ISSUER_ID`, and `APPLE_APP_STORE_CONNECT_KEY_P8`.
+   The key bytes remain in GitHub Secrets and the runner's temporary storage.
+   Delete all four secrets after this upload attempt and verify the deletion.
+3. Have the account owner answer Apple's encryption export questions. The
    unverified `ITSAppUsesNonExemptEncryption=false` declaration was removed
    from `Info.plist`, allowing App Store Connect to request the answer.
-5. Dispatch `SWARM iOS` on `codex/ios-device-release` with
-   `signed_release=true`. Confirm that the completed run reports an IPA hash
-   and an App Store Connect delivery result. Wait for Apple to process the
-   build, then assign internal testers in TestFlight.
+   `docs/ios/ENCRYPTION-REVIEW.md` records the dependency inventory.
+4. Confirm that the completed run reports an IPA hash and an App Store Connect
+   delivery result. Wait for Apple to process the build, then assign it to
+   `SWARM Internal` and save the What to Test text above.
 
 The workflow runs only after a signed dispatch, and its first step checks the
 required secret names. A successful upload establishes delivery to Apple.
@@ -126,19 +123,25 @@ The privacy, terms, risks, and notices URLs under `https://swarm.green/wallet/`
 returned HTTP 404 on 2026-09-24. Publish and review those pages before the
 store listing. App Store Connect currently has no Privacy Policy URL or App
 Privacy answers. The Store page has a draft description, promotional text,
-keywords, and wallet marketing URL from `fastlane/metadata/en-US`. It still
-needs screenshots, age rating, and App Review contact information. The primary
+keywords, subtitle, and wallet marketing URL from `fastlane/metadata/en-US`.
+The four final angled Store screenshots finished processing in the
+English (U.S.) draft. It still
+needs the age rating and the App Review phone and email. The primary
 category is Finance, the support URL is `https://swarm.green/support`, and the
 release mode is manual. The Store review form no longer requires a sign-in.
-Complete the remaining fields from
-the reviewed release materials. Review `lwd.swarm.green` request retention and
-the ZNS name lookup in `app/uris/resolveZnsName.ts` before answering Apple's
-data-collection questions. The live `https://swarm.green/privacy` page covers
-the website and does not describe wallet-server traffic.
-TestFlight review contact fields are also empty.
-Capture current wallet screens at an accepted iPhone screenshot size after a
-successful physical device session. Review the draft text in
-`fastlane/metadata` and supply a support contact and App Review instructions.
+Complete the remaining fields from the reviewed release materials. Review
+`lwd.swarm.green` request retention before answering Apple's data-collection
+questions. The ZNS resolver returns before a network call on SwarmTestnet.
+The live `https://swarm.green/privacy` page covers the website and does not
+describe wallet-server traffic.
+The TestFlight review phone and email fields are also empty.
+The four 1320 × 2868 layouts in `fastlane/screenshots/en-US` show Receive,
+Send, History, and Settings. They use real captures from the local disposable
+simulator wallet. `design/app-store/README.md` records their provenance.
+Apple's screenshot set is `6234c941-ef28-4b29-a3d4-1d8863a0a7b4`.
+[Apple accepts that screenshot size](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications).
+Review the draft text in `fastlane/metadata` and supply an App Review phone
+number and instructions.
 The testnet requires a working indexer and disposable test coins for review.
 
 The first signed upload is an internal TestFlight candidate. App Store

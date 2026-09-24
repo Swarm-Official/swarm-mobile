@@ -2310,7 +2310,7 @@ dependencies = [
 [[package]]
 name = "pepper-sync"
 version = "0.5.0"
-source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=23321888779d6ebcbccad6e34bd90a570a29e669#23321888779d6ebcbccad6e34bd90a570a29e669"
+source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=ef08aa252ec55f411dc937045548cd4f3f3dc664#ef08aa252ec55f411dc937045548cd4f3f3dc664"
 dependencies = [
  "bip32",
  "byteorder",
@@ -5024,7 +5024,7 @@ source = "git+https://github.com/zingolabs/infrastructure.git?rev=89cf104a241614
 [[package]]
 name = "zingo-memo"
 version = "0.1.1"
-source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=23321888779d6ebcbccad6e34bd90a570a29e669#23321888779d6ebcbccad6e34bd90a570a29e669"
+source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=ef08aa252ec55f411dc937045548cd4f3f3dc664#ef08aa252ec55f411dc937045548cd4f3f3dc664"
 dependencies = [
  "zcash_address",
  "zcash_encoding",
@@ -5035,7 +5035,7 @@ dependencies = [
 [[package]]
 name = "zingo-net-diag"
 version = "0.1.0"
-source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=23321888779d6ebcbccad6e34bd90a570a29e669#23321888779d6ebcbccad6e34bd90a570a29e669"
+source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=ef08aa252ec55f411dc937045548cd4f3f3dc664#ef08aa252ec55f411dc937045548cd4f3f3dc664"
 dependencies = [
  "serde",
 ]
@@ -5043,7 +5043,7 @@ dependencies = [
 [[package]]
 name = "zingo-netutils"
 version = "5.0.1"
-source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=23321888779d6ebcbccad6e34bd90a570a29e669#23321888779d6ebcbccad6e34bd90a570a29e669"
+source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=ef08aa252ec55f411dc937045548cd4f3f3dc664#ef08aa252ec55f411dc937045548cd4f3f3dc664"
 dependencies = [
  "http",
  "hyper-util",
@@ -5065,7 +5065,7 @@ dependencies = [
 [[package]]
 name = "zingo-price"
 version = "0.1.0"
-source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=23321888779d6ebcbccad6e34bd90a570a29e669#23321888779d6ebcbccad6e34bd90a570a29e669"
+source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=ef08aa252ec55f411dc937045548cd4f3f3dc664#ef08aa252ec55f411dc937045548cd4f3f3dc664"
 dependencies = [
  "byteorder",
  "serde",
@@ -5079,7 +5079,7 @@ dependencies = [
 [[package]]
 name = "zingo-status"
 version = "0.2.1"
-source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=23321888779d6ebcbccad6e34bd90a570a29e669#23321888779d6ebcbccad6e34bd90a570a29e669"
+source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=ef08aa252ec55f411dc937045548cd4f3f3dc664#ef08aa252ec55f411dc937045548cd4f3f3dc664"
 dependencies = [
  "byteorder",
  "zcash_protocol",
@@ -5110,7 +5110,7 @@ source = "git+https://github.com/zingolabs/infrastructure.git?rev=89cf104a241614
 [[package]]
 name = "zingolib"
 version = "6.0.0"
-source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=23321888779d6ebcbccad6e34bd90a570a29e669#23321888779d6ebcbccad6e34bd90a570a29e669"
+source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=ef08aa252ec55f411dc937045548cd4f3f3dc664#ef08aa252ec55f411dc937045548cd4f3f3dc664"
 dependencies = [
  "append-only-vec",
  "bech32",
@@ -5170,7 +5170,7 @@ dependencies = [
 [[package]]
 name = "zingolib_testutils"
 version = "0.1.0"
-source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=23321888779d6ebcbccad6e34bd90a570a29e669#23321888779d6ebcbccad6e34bd90a570a29e669"
+source = "git+https://github.com/Swarm-Official/privacy-zingolib?rev=ef08aa252ec55f411dc937045548cd4f3f3dc664#ef08aa252ec55f411dc937045548cd4f3f3dc664"
 dependencies = [
  "http",
  "nonempty",

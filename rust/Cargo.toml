@@ -15,12 +15,12 @@ resolver = "2"
 
 [workspace.dependencies]
 # SWARM SDK with legacy unified-address decoding and canonical SWARM encoding.
-zingolib = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "23321888779d6ebcbccad6e34bd90a570a29e669", features = [
+zingolib = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "ef08aa252ec55f411dc937045548cd4f3f3dc664", features = [
     "nym",
     "perspective",
 ] }
-pepper-sync = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "23321888779d6ebcbccad6e34bd90a570a29e669" }
-zingolib_testutils = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "23321888779d6ebcbccad6e34bd90a570a29e669" }
+pepper-sync = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "ef08aa252ec55f411dc937045548cd4f3f3dc664" }
+zingolib_testutils = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "ef08aa252ec55f411dc937045548cd4f3f3dc664" }
 regchest_utils = { git = "https://github.com/zingolabs/zingo-regchest", branch = "dev" }
 zingomobile_utils = { path = "zingomobile_utils" }
 

@@ -1,5 +1,15 @@
 # SWARM Wallet for Android
 
+> **Since 0.2.0 this app opens on SWARM Mainnet, the live network.** The page
+> below was written for the testnet-only build and still describes it, except
+> where it says otherwise. What changed, and what enforces it, is in
+> [docs/MAINNET.md](MAINNET.md): chain `swarm-mainnet`, indexer
+> `https://lwd-main.swarm.green:8443`, genesis
+> `01c34428b9e67cdd8345e0b365aaa37dd8d2d65d3869e0e5d77d567f2c39afdd`, and
+> addresses beginning `swm1…`, `s1…` or `s3…`. The network described below is
+> still selectable, named **SWARM Testnet (engineering)**, and its coins still
+> have no value.
+
 A wallet for **SwarmTestnet**, a private Zcash-derived proof-of-work **test**
 network. It is a fork of [zingo-mobile](https://github.com/zingolabs/zingo-mobile)
 (MIT) built on the project's fork of the Zingo SDK,

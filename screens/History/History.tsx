@@ -72,6 +72,7 @@ import Filters from './components/Filters';
 import { FiltersIcon } from '@ui/primitives/Icons/FiltersIcon';
 import { getSwarmMark } from '@app/utils/ZingoAppData';
 import Button, { ButtonTypeEnum } from '@ui/primitives/Button';
+import { networkNoticeKey } from '@app/utils/networkProfiles';
 
 const ViewTypes = {
   WITH_MONTH: 0,
@@ -940,7 +941,7 @@ const History: React.FunctionComponent<HistoryProps> = ({
                         margin: 24,
                       }}
                     >
-                      {String(translate('welcome.network'))}
+                      {String(translate(networkNoticeKey(server.chainName)))}
                     </FadeText>
                   </View>
                 )}

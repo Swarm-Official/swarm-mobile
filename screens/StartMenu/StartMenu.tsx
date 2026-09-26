@@ -42,6 +42,7 @@ import {
 import FadeText from '@ui/primitives/FadeText';
 import { LEGAL_LINKS, LegalLinkIdEnum } from '@app/legal';
 import { LegalSheet } from '@ui/widgets/LegalSheet';
+import { networkNoticeKey } from '@app/utils/networkProfiles';
 
 type StartMenuProps = {
   actionButtonsDisabled: boolean;
@@ -278,7 +279,7 @@ const StartMenu: React.FunctionComponent<StartMenuProps> = ({
           <FadeText
             style={{ textAlign: 'center', lineHeight: 22, marginBottom: 20 }}
           >
-            {String(translate('welcome.network'))}
+            {String(translate(networkNoticeKey(server.chainName)))}
           </FadeText>
           {selectServer !== SelectServerEnum.offline && (
             <>

@@ -20,11 +20,12 @@ import {
 import { LEGAL_LINKS, LegalLinkIdEnum } from '@app/legal';
 import Header from '@ui/widgets/Header';
 import { LegalSheet } from '@ui/widgets/LegalSheet';
+import { networkNoticeKey } from '@app/utils/networkProfiles';
 
 type AboutProps = NativeStackScreenProps<AppDrawerParamList, RouteEnum.About>;
 
 export default function About({ navigation }: AboutProps) {
-  const { translate } = useContext(ContextAppLoaded);
+  const { translate, server } = useContext(ContextAppLoaded);
   const { colors } = useTheme();
   const [page, setPage] = useState<LegalLinkIdEnum>();
   return (
@@ -50,7 +51,7 @@ export default function About({ navigation }: AboutProps) {
           {String(translate('welcome.description'))}
         </Text>
         <Text style={[styles.description, { color: colors.fgMuted }]}>
-          {String(translate('welcome.network'))}
+          {String(translate(networkNoticeKey(server.chainName)))}
         </Text>
         <View testID="about.legal" style={styles.links}>
           {LEGAL_LINKS.map(link => (

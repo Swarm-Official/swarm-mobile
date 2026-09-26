@@ -183,7 +183,7 @@
     "changeservernew-error": "Error trying to change the server to the new one: ",
     "readingwallet-error": "Error trying to read the wallet with the new server:",
     "differentchain-error": "You are changing to a server with a different chain, you will no longer have access to this wallet without the seed phrase.",
-    "serverchain-mismatch": "This server is not on SwarmTestnet. It reports a different chain, so the wallet will not use it.",
+    "serverchain-mismatch": "This server is not on the network this wallet is on. It reports a different chain, so the wallet will not use it.",
     "changingwallet-label": "Error changing Wallet",
     "restoringwallet-label": "Error restoring Wallet",
     "computingtx": "Computing Transaction...",
@@ -580,8 +580,8 @@
     "title": "Send",
     "toaddress": "To Address",
     "invalidaddress": "Invalid Address!",
-    "znsnamenotfound": "SwarmTestnet has no name service, so only addresses work here.",
-    "addressplaceholder": "SwarmTestnet address",
+    "znsnamenotfound": "SWARM has no name service, so only addresses work here.",
+    "addressplaceholder": "SWARM address",
     "invalidamount": "Invalid Amount!",
     "invalidnumber": "Invalid Number!",
     "spendable": "Spendable: ",
@@ -780,7 +780,7 @@
     "terms": "Terms of use",
     "link-unavailable": "That page could not be opened.",
     "copyright": [
-      "SWARM Wallet - a wallet for SwarmTestnet, a test network. SWM test coins have no value.",
+      "SWARM Wallet - a wallet for the SWARM network.",
       "Based on Zingo Mobile by ZingoLabs (MIT licence). Built with React Native.",
       "The MIT License (MIT) Copyright (c) 2026 ZingoLabs",
       "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:",
@@ -795,7 +795,7 @@
   },
   "scanner": {
     "text": "Scan a Unified Full Viewing Key",
-    "scanaddress": "Scan a SwarmTestnet address"
+    "scanaddress": "Scan a SWARM address"
   },
   "ufvk": {
     "buttontexts": {
@@ -1091,7 +1091,7 @@
   },
   "uris": {
     "baduri": "Error: Bad URI.",
-    "notvalid": "That is not a valid SwarmTestnet address.",
+    "notvalid": "That is not a valid SWARM address.",
     "notvalidparameter": "was not understood as a valid parameter",
     "notvalidvalue": "Didn't understand parameter value",
     "noindex": "Unknown index",
@@ -1109,7 +1109,8 @@
   "welcome": {
     "title": "Welcome to SWARM",
     "description": "Send and receive SWM, manage your addresses, and read payment memos. You control your wallets and recovery phrases.",
-    "network": "This beta connects to SwarmTestnet. Test coins have no monetary value. Save each recovery phrase before using its wallet.",
+    "network-swarm-mainnet": "This wallet is on SWARM Mainnet, the live network. SWM here is real. Save each recovery phrase before using its wallet.",
+    "network-swarm-testnet": "This wallet is on the SWARM engineering testnet. Test coins have no monetary value. Save each recovery phrase before using its wallet.",
     "continue": "Continue to wallet"
   },
   "home": {

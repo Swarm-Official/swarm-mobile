@@ -350,3 +350,18 @@ export const serverHost = (uri: string | undefined | null): string => {
   const host = withoutScheme.split('/')[0];
   return host ?? '';
 };
+
+/**
+ * The translation key for the one-line network notice under the app name.
+ *
+ * Which network a wallet is on decides whether its coins are worth anything,
+ * so the sentence differs and the key is chosen from the chain rather than
+ * from a build flag. An unrecognised chain gets the testnet caution: telling
+ * someone their coins might be worthless when they are not is an annoyance,
+ * the other way round is a loss.
+ */
+export const networkNoticeKey = (chain: string | undefined | null): string => {
+  const profile = swarmProfileFor(chain);
+  const id = profile?.id ?? SwarmProfileIdEnum.testnet;
+  return `welcome.network-${id}`;
+};

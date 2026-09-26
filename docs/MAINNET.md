@@ -131,6 +131,31 @@ run URLs and the artifact hashes.
   listing guards, and a debug-signed APK.
 - `SWARM iOS`: the Rust xcframework and the simulator build.
 
+## What this build still gets wrong, and who must fix it
+
+**The legal text is the testnet's.** `app/legal/riskNotice.ts` and
+`app/legal/documents.json` say SWARM is a test network, that SWM test coins
+have no value, and that no main network exists. That text is reproduced word
+for word from the project vault (`docs/ios/legal/RISK-NOTICE.md`) and from
+swarm.green/wallet/risks, and the file says in its own header that changing a
+word here means changing it there in the same commit. Rewriting a legal notice
+is not a decision for a build commit, so it was left alone. It is wrong in
+front of a mainnet user, it is shown before a wallet is created, and it is the
+last thing standing between this build and a person.
+
+**The store listings describe the testnet.** The Play `full_description` and
+the App Store description were not touched.
+
+**No mainnet block explorer.** `explore.swarm.green` indexes the engineering
+chain, so the explorer affordance is hidden on mainnet rather than pointing at
+a dead page. Add the URL to `Utils.getBlockExplorerTxIDURL` when a mainnet
+explorer exists.
+
+**The Nym mixnet stays off on mainnet.** No mixnet send has been demonstrated
+end to end against any SWARM indexer, and on mainnet a send that silently
+leaves the mixnet is a real payment. `mixnetAvailability.ts` lists neither
+SWARM chain.
+
 ## Not done here, and why
 
 **TestFlight.** The signed-archive job in `.github/workflows/swarm-ios.yml`

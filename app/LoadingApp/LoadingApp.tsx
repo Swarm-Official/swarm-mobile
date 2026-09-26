@@ -142,8 +142,8 @@ type LoadingAppProps = {
   toggleTheme: (mode: ModeEnum) => void;
 };
 
-// The SwarmTestnet project indexer — `serverUris` now holds exactly one entry,
-// so this is https://lwd.swarm.green:443 on chain `swarm-testnet`.
+// The network a fresh install opens on: the FIRST entry of `serverUris`,
+// which is https://lwd-main.swarm.green:8443 on chain `swarm-mainnet`.
 const SERVER_DEFAULT_0: ServerType = {
   uri: serverUris(() => {})[0].uri,
   chainName: serverUris(() => {})[0].chainName,
@@ -571,7 +571,7 @@ export class LoadingAppClass extends Component<
       walletExists: false,
       hasBackupWallet: false,
       customServerUri: '',
-      customServerChainName: ChainNameEnum.swarmChainName,
+      customServerChainName: ChainNameEnum.swarmMainnetChainName,
       customServerOffline: false,
       customServerAuto: false,
       customServerCustom: false,
@@ -853,9 +853,9 @@ export class LoadingAppClass extends Component<
   };
 
   // Default server for a chain = the `default` entry for that chain in the
-  // static `serverUris` list. SwarmTestnet is the only chain with an entry, so
-  // anything else falls through to SERVER_DEFAULT_0 — the SwarmTestnet project
-  // indexer — rather than inventing a server for a chain the app cannot reach.
+  // static `serverUris` list. Both SWARM chains have one. Anything else falls
+  // through to SERVER_DEFAULT_0, the SWARM Mainnet indexer, rather than
+  // inventing a server for a chain the app cannot reach.
   defaultServerForChain = (chainName: ChainNameEnum): ServerType => {
     const found = serverUris(this.state.translate).find(
       (s: ServerUrisType) => s.chainName === chainName && s.default,

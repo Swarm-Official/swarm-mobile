@@ -2,11 +2,13 @@ import { ChainNameEnum } from '@app/AppState';
 
 // Is the Nym mixnet transport offered on this chain?
 //
-// **Not on SwarmTestnet, and the reason is honesty, not capability.** The
-// "Enhanced Privacy" toggle, the Nym gate sheet and the mixnet status pill are
-// all wired and all shipped. What has never been demonstrated is a send that
-// travels through the mixnet to `lwd.swarm.green` and lands on SwarmTestnet:
-// no build has done it, on any device, and nobody has watched it work.
+// **On neither SWARM network, and the reason is honesty, not capability.**
+// The "Enhanced Privacy" toggle, the Nym gate sheet and the mixnet status pill
+// are all wired and all shipped. What has never been demonstrated is a send
+// that travels through the mixnet to a SWARM indexer and lands on the chain:
+// no build has done it, on any device, and nobody has watched it work. That is
+// as true of SWARM Mainnet as it was of the testnet, and more so, because on
+// mainnet a send that silently leaves the mixnet is a real payment.
 //
 // App Review guideline 2.1 treats a visible feature that fails as an
 // incomplete app, and the project's own rule is not to show a person a switch
@@ -19,6 +21,7 @@ import { ChainNameEnum } from '@app/AppState';
 // mixnet, confirmed on chain), record the evidence, then change this — and
 // restore §4.2 of the privacy policy, which describes the mixnet and is
 // removed while this returns false.
+// Neither SWARM chain is listed, which is the whole content of this file.
 const MIXNET_CHAINS: readonly ChainNameEnum[] = [
   ChainNameEnum.mainChainName,
   ChainNameEnum.testChainName,

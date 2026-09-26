@@ -499,10 +499,10 @@ export default function LoadedApp(props: LoadedAppProps) {
       let sort: boolean = false;
       // SWARM: upstream inserted a "Zenny Tips" contact into the user's
       // address book on every start, pointing at its own donation address.
-      // That address is mainnet-only, so on SwarmTestnet it resolves to the
-      // empty string and the insertion wrote a named contact with no address
-      // at all - a donation entry the user never asked for, for a network it
-      // cannot be paid on.
+      // That address is Zcash-mainnet-only, so on either SWARM chain it resolves
+      // to the empty string and the insertion wrote a named contact with no
+      // address at all - a donation entry the user never asked for, for a
+      // network it cannot be paid on.
       //
       // The lookup itself stays. `zenniesDonationAddress` is still read by
       // the address book, history, send and transfer-detail screens as a
@@ -2301,9 +2301,9 @@ export class LoadedAppClass extends Component<
           totalBalance.confirmedSaplingBalance >
           0);
 
-    // Whether this chain offers the Nym mixnet at all. On SwarmTestnet it
-    // does not, because no mixnet send has ever been demonstrated against
-    // lwd.swarm.green and guideline 2.1 counts a visible feature that
+    // Whether this chain offers the Nym mixnet at all. On neither SWARM chain
+    // does it, because no mixnet send has ever been demonstrated against a
+    // SWARM indexer and guideline 2.1 counts a visible feature that
     // fails as an incomplete app. See mixnetAvailability.ts.
     const mixnetOffered = mixnetAvailableOnChain(this.state.server.chainName);
 

@@ -1,30 +1,58 @@
 #!/usr/bin/env bash
 # SWARM Android smoke test.
 #
-# Installs the built APK on a running emulator, launches it, and asserts that
-# it stays up and renders its first screen. It deliberately proves nothing
-# about wallet behaviour: the SwarmTestnet indexer is not reachable from a CI
-# runner, so the only network outcome available here is the unreachable-server
-# path. What this does prove is that the native library loads on a real
-# Android runtime — which is the failure this build is most likely to hit,
-# because the wallet library is cross-compiled Rust behind UniFFI.
+# Installs the built APK on a running emulator from nothing, launches it, and
+# asserts that it stays up, renders its first screen, and reaches
+# https://lwd.swarm.green:443 without the user configuring anything. The
+# desktop wallet shipped a fresh install that said "NOT CONNECTED - No server
+# configured" because only its launcher script wrote the default; this is the
+# check that catches the same shape of defect here.
 #
-# Usage: scripts/swarm_smoke_test.sh <path to apk>
+# The default server is one constant in the app, `app/uris/serverUris.ts`,
+# with a matching copy in `rust/lib/src/lib.rs` (SWARM_DEFAULT_SERVER_URI).
+#
+# Usage: scripts/swarm_smoke_test.sh <path to apk> [label]
 
 set -euo pipefail
 
-APK="${1:?usage: swarm_smoke_test.sh <apk>}"
+APK="${1:?usage: swarm_smoke_test.sh <apk> [label]}"
+LABEL="${2:-apk}"
 APP_ID="green.swarm.wallet"
-OUT="smoke-out"
+DEFAULT_SERVER="https://lwd.swarm.green:443"
+OUT="smoke-out/$LABEL"
 mkdir -p "$OUT"
 
-echo "=== Emulator ==="
+echo "=== Emulator ($LABEL) ==="
 adb devices
 adb shell getprop ro.build.version.sdk
 adb shell getprop ro.product.cpu.abi
 
-echo "=== Installing $APK ==="
-adb install -r -g "$APK"
+# Can the runner itself reach the indexer? The answer decides what the
+# connection assertion below is allowed to claim, so it is measured, never
+# assumed.
+echo "=== Is $DEFAULT_SERVER reachable from this runner ==="
+SERVER_REACHABLE=no
+HTTP_CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 \
+  https://lwd.swarm.green/status.json 2>&1 || echo "000")"
+echo "  https://lwd.swarm.green/status.json -> HTTP $HTTP_CODE"
+TLS="$(echo | timeout 20 openssl s_client -connect lwd.swarm.green:443 \
+  -servername lwd.swarm.green 2>&1 | grep -E '^(CONNECTED|subject=)' | head -2 || true)"
+if [ -n "$TLS" ]; then
+  echo "$TLS" | sed 's/^/  tls: /'
+else
+  echo "  tls: no handshake"
+fi
+if [ "$HTTP_CODE" = "200" ] && [ -n "$TLS" ]; then
+  SERVER_REACHABLE=yes
+fi
+echo "  reachable from the runner: $SERVER_REACHABLE"
+echo "$HTTP_CODE" > "$OUT/server-http-code.txt"
+
+echo "=== Installing $APK from nothing ==="
+# A leftover install would carry a settings file and a wallet, and the whole
+# point here is the first launch.
+adb uninstall "$APP_ID" >/dev/null 2>&1 || true
+adb install -g "$APK"
 
 # A fresh log, so anything captured below belongs to this launch.
 adb logcat -c || true
@@ -97,4 +125,220 @@ else
   echo "note: no screenshot captured (not fatal)"
 fi
 
-echo "=== SWARM smoke test passed ==="
+echo "=== Fresh-install connection check ==="
+
+DUMP="$OUT/ui.xml"
+
+# uiautomator refuses to dump while the window is animating, so ask again
+# rather than reading a stale file.
+ui_dump() {
+  for _ in 1 2 3 4 5; do
+    if adb shell uiautomator dump /sdcard/window_dump.xml >/dev/null 2>&1; then
+      if adb pull /sdcard/window_dump.xml "$DUMP" >/dev/null 2>&1 && [ -s "$DUMP" ]; then
+        return 0
+      fi
+    fi
+    sleep 3
+  done
+  return 1
+}
+
+# Prints the centre of the first node whose resource-id, text or
+# content-description contains the needle. Coordinates come from the node's
+# own bounds, never from a guess about the layout.
+ui_center() {
+  python3 - "$1" "$DUMP" <<'PY'
+import re, sys, xml.etree.ElementTree as ET
+
+needle, path = sys.argv[1], sys.argv[2]
+for node in ET.parse(path).getroot().iter('node'):
+    hay = ' '.join(node.get(a, '') for a in ('resource-id', 'text', 'content-desc'))
+    if needle not in hay:
+        continue
+    m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.get('bounds', ''))
+    if not m:
+        continue
+    x1, y1, x2, y2 = map(int, m.groups())
+    print((x1 + x2) // 2, (y1 + y2) // 2)
+    sys.exit(0)
+sys.exit(1)
+PY
+}
+
+ui_has() { grep -q -- "$1" "$DUMP"; }
+
+ui_tap() {
+  local xy
+  if xy="$(ui_center "$1")"; then
+    echo "  tap $1 at $xy"
+    adb shell input tap $xy
+    sleep 4
+    return 0
+  fi
+  return 1
+}
+
+shot() {
+  adb shell screencap -p "/sdcard/$1.png" >/dev/null 2>&1 || true
+  adb pull "/sdcard/$1.png" "$OUT/$1.png" >/dev/null 2>&1 || true
+  if [ -s "$OUT/$1.png" ]; then
+    echo "  evidence $OUT/$1.png ($(wc -c < "$OUT/$1.png") bytes)"
+  fi
+}
+
+ui_dump || { echo "FAIL: uiautomator produced no dump" >&2; exit 1; }
+cp "$DUMP" "$OUT/ui-first-screen.xml"
+
+# On a fresh install with a reachable server the app creates the wallet by
+# itself and lands on the Receive screen. Offline, or in advanced mode, it
+# stops at the start menu and waits to be told.
+if ui_has 'loadingapp.createnewwallet'; then
+  echo "  the start menu is showing; creating a wallet"
+  ui_tap 'loadingapp.createnewwallet' || {
+    echo "FAIL: could not tap Create New Wallet" >&2; exit 1; }
+  # The recovery-words screen, when the flow shows one.
+  for _ in 1 2 3; do
+    ui_dump || break
+    if ui_has 'seed.button.ok'; then
+      if ui_tap 'seed.button.ok'; then break; fi
+    elif ui_has 'I have saved'; then
+      if ui_tap 'I have saved'; then break; fi
+    fi
+    sleep 3
+  done
+else
+  echo "  the wallet was created on launch; no start menu"
+fi
+
+# Up to 90 s for the first sync to report something. Basic mode, which is what
+# a fresh install runs in, draws its syncing badge with no testID and shows the
+# word for five seconds out of every twenty-nine, so the text counts as a
+# signal and the window spans several of those pulses.
+STATUS=""
+for _ in $(seq 1 18); do
+  ui_dump || true
+  for icon in header.checkicon header.playicon header.wifiicon header.offlineicon; do
+    if ui_has "$icon"; then STATUS="$icon"; break; fi
+  done
+  if [ -z "$STATUS" ] && grep -qE 'text="(Synced|Syncing)"|text="[^"]*[0-9]%"' "$DUMP"; then
+    STATUS="sync text"
+  fi
+  if [ -n "$STATUS" ]; then break; fi
+  sleep 5
+done
+cp "$DUMP" "$OUT/ui-home.xml" 2>/dev/null || true
+shot home-screen
+echo "  sync indicator: ${STATUS:-none found}"
+
+# Settings -> the server the app actually holds. Scrolls, because the row sits
+# below the fold on a phone.
+read_server() {
+  for _ in 1 2 3 4 5 6; do
+    ui_dump || true
+    if ui_has 'lwd.swarm.green'; then return 0; fi
+    adb shell input swipe 540 1400 540 600 300
+    sleep 2
+  done
+  return 1
+}
+
+open_settings() {
+  for _ in 1 2 3; do
+    ui_dump || true
+    if ui_tap 'header.settings'; then return 0; fi
+    adb shell input keyevent KEYCODE_BACK
+    sleep 3
+  done
+  return 1
+}
+
+# The options panel stays open after the mode pill is tapped, by design.
+close_panel() {
+  ui_dump || true
+  if ui_tap 'header.drawmenu'; then return 0; fi
+  adb shell input keyevent KEYCODE_BACK
+  sleep 3
+}
+
+SERVER_SEEN=no
+if open_settings; then
+  if read_server; then SERVER_SEEN=yes; fi
+  cp "$DUMP" "$OUT/ui-network.xml" 2>/dev/null || true
+  shot network-screen
+else
+  echo "  note: the settings control was not on screen"
+fi
+
+# A fresh install runs in basic mode, whose Settings screen carries only the
+# language and the About link: the server row is advanced-mode only. The mode
+# pill in the drawer is the way to the screen that names the server.
+if [ "$SERVER_SEEN" != "yes" ]; then
+  echo "  basic mode hides the server row; switching to advanced mode"
+  adb shell input keyevent KEYCODE_BACK
+  sleep 3
+  ui_dump || true
+  if ui_tap 'header.drawmenu'; then
+    ui_dump || true
+    if ui_tap 'Advanced'; then
+      sleep 8
+      close_panel
+      if open_settings; then
+        if read_server; then SERVER_SEEN=yes; fi
+        cp "$DUMP" "$OUT/ui-network-advanced.xml" 2>/dev/null || true
+        shot network-screen-advanced
+      fi
+    else
+      echo "  note: the mode pill was not on screen"
+    fi
+  else
+    echo "  note: the drawer control was not on screen"
+  fi
+fi
+
+# The start menu prints the server too, and that is the screen an offline
+# fresh install stops on.
+if [ "$SERVER_SEEN" != "yes" ] && grep -q 'lwd.swarm.green' "$OUT/ui-first-screen.xml"; then
+  SERVER_SEEN=yes
+  echo "  ok the first screen already showed $DEFAULT_SERVER"
+fi
+
+# The persisted file is the other witness. A release build is not debuggable,
+# so run-as is expected to fail there; the screen dump carries the assertion.
+SETTINGS_JSON="$(adb shell run-as "$APP_ID" cat files/settings.json 2>/dev/null | tr -d '\r' || true)"
+if [ -n "$SETTINGS_JSON" ]; then
+  echo "$SETTINGS_JSON" > "$OUT/settings.json"
+  echo "  persisted settings read from the device"
+  if echo "$SETTINGS_JSON" | grep -q "$DEFAULT_SERVER"; then
+    SERVER_SEEN=yes
+    echo "  ok settings.json carries $DEFAULT_SERVER"
+  fi
+else
+  echo "  note: run-as could not read settings.json (the build is not debuggable)"
+fi
+
+if [ "$SERVER_SEEN" != "yes" ]; then
+  echo "FAIL: a fresh install does not show $DEFAULT_SERVER anywhere." >&2
+  echo "      The default lives in app/uris/serverUris.ts; nothing carried it" >&2
+  echo "      to the first launch." >&2
+  exit 1
+fi
+echo "ok: a fresh install already holds $DEFAULT_SERVER, with no user action"
+
+if [ "$SERVER_REACHABLE" = "yes" ]; then
+  case "$STATUS" in
+    header.checkicon|header.playicon|header.wifiicon|"sync text")
+      echo "ok: the app reports a connected state ($STATUS)" ;;
+    header.offlineicon)
+      echo "FAIL: the server answers this runner, and the app says Offline." >&2
+      exit 1 ;;
+    *)
+      echo "FAIL: the server answers this runner, and the app reports no sync state." >&2
+      exit 1 ;;
+  esac
+else
+  echo "NOT PROVEN: $DEFAULT_SERVER does not answer this runner (HTTP $HTTP_CODE),"
+  echo "            so the connected state was not asserted. The default server"
+  echo "            being pre-set on a fresh install was, and it passed."
+fi
+
+echo "=== SWARM smoke test passed ($LABEL) ==="

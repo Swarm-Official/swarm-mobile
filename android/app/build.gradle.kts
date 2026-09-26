@@ -96,6 +96,37 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// SWARM: Google Play keys an app to the certificate of its first upload, and
+// every later upload must carry the same one. The key lives outside this
+// repository and reaches the build through the environment.
+val swarmUploadKeystore = System.getenv("SWARM_UPLOAD_KEYSTORE")
+val swarmUploadKeystorePassword = System.getenv("SWARM_UPLOAD_KEYSTORE_PASSWORD")
+val swarmUploadKeyAlias = System.getenv("SWARM_UPLOAD_KEY_ALIAS")
+val swarmUploadKeyPassword = System.getenv("SWARM_UPLOAD_KEY_PASSWORD")
+val swarmUploadKeyConfigured = !swarmUploadKeystore.isNullOrBlank() &&
+    !swarmUploadKeystorePassword.isNullOrBlank() &&
+    !swarmUploadKeyAlias.isNullOrBlank() &&
+    !swarmUploadKeyPassword.isNullOrBlank()
+
+// SWARM: Play rejects an upload whose versionCode it has already seen, so the
+// number has to move independently of the source. CI passes it in; the
+// defaults keep a local `./gradlew assembleProdRelease` working unchanged.
+val swarmVersionCode = (project.findProperty("swarmVersionCode") as? String)?.toInt() ?: 1
+val swarmVersionName = (project.findProperty("swarmVersionName") as? String) ?: "0.1.0"
+
+val requireReleaseSigning = (project.findProperty("requireReleaseSigning") as? String)?.toBoolean() ?: false
+if (requireReleaseSigning && !swarmUploadKeyConfigured &&
+    System.getenv("KEYSTORE_PASSWORD") == null &&
+    keystoreProperties.getProperty("KEYSTORE_PASSWORD") == null
+) {
+    throw GradleException(
+        "release signing required but no upload key configured: set " +
+        "SWARM_UPLOAD_KEYSTORE, SWARM_UPLOAD_KEYSTORE_PASSWORD, " +
+        "SWARM_UPLOAD_KEY_ALIAS and SWARM_UPLOAD_KEY_PASSWORD, or drop " +
+        "-PrequireReleaseSigning=true to get the debug-signed sideload build."
+    )
+}
+
 android {
     ndkVersion = rootProject.extra["ndkVersion"] as String
 
@@ -130,8 +161,8 @@ android {
         applicationId = "green.swarm.wallet" // Real
         minSdk = rootProject.extra["minSdkVersion"] as Int
         targetSdk = rootProject.extra["targetSdkVersion"] as Int
-        versionCode = 1 // Real (prod baseline; beta flavor overrides below)
-        versionName = "0.1.0" // Real
+        versionCode = swarmVersionCode // Real (prod baseline; beta flavor overrides below)
+        versionName = swarmVersionName // Real
         testBuildType = System.getProperty("testBuildType", "debug")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
@@ -164,8 +195,8 @@ android {
         create("beta") {
             dimension = "channel"
             applicationIdSuffix = ".Beta"
-            versionCode = 1 // beta override
-            versionName = "0.1.0" // beta override
+            versionCode = swarmVersionCode // beta override
+            versionName = swarmVersionName // beta override
             resValue("string", "app_name", "SWARM Wallet Beta")
         }
     }
@@ -187,7 +218,13 @@ android {
             keyPassword = "android"
         }
         create("release") {
-            if (System.getenv("KEYSTORE_PASSWORD") != null) {
+            if (swarmUploadKeyConfigured) {
+                println("****** SWARM UPLOAD-KEY SIGNING ******")
+                storeFile = file(swarmUploadKeystore!!)
+                storePassword = swarmUploadKeystorePassword
+                keyAlias = swarmUploadKeyAlias
+                keyPassword = swarmUploadKeyPassword
+            } else if (System.getenv("KEYSTORE_PASSWORD") != null) {
                 println("****** ENV SIGNING APK ******")
                 storeFile = file("Zingo.jks")
                 storePassword = System.getenv("KEYSTORE_PASSWORD")

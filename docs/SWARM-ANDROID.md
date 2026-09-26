@@ -26,6 +26,33 @@ wallet only — mining happens on a PC with the SWARM Node app.
 | Explorer | `https://explore.swarm.green/` |
 | Android package | `green.swarm.wallet` |
 
+### Where the default server comes from
+
+A fresh install must already know its server; the user configures nothing. The
+value lives in two places, one per language:
+
+- `app/uris/serverUris.ts` — the single TypeScript entry,
+  `uri: 'https://lwd.swarm.green:443'`, the whole list the app ships with.
+  `app/uris/fetchServerList.ts` returns `[]` on purpose, so nothing overrides
+  it from the network.
+- `rust/lib/src/lib.rs` — `SWARM_DEFAULT_SERVER_URI`, the native copy, so the
+  SDK never reaches for a public server registry either.
+
+On the first launch `app/LoadingApp/LoadingApp.tsx` finds no `server` key in
+`settings.json` and writes that default before anything else runs;
+`app/services/SettingsFileImpl.ts` fills it in again for a settings file that
+predates the key. The emulator smoke test asserts the result rather than the
+mechanism: it installs from nothing, drives the first launch to a wallet, and
+reads the server back off the Settings screen. The desktop wallet shipped a
+fresh install reading "NOT CONNECTED - No server configured" because only its
+launcher script wrote the default, which is the defect that check exists for.
+
+A fresh install runs in **basic mode**, whose Settings screen carries the
+language and the About link and nothing else. The server row belongs to
+advanced mode, so the test taps the mode pill in the drawer before it can read
+the server back. Someone in basic mode has no way to see which server their
+wallet uses.
+
 The app speaks **only** SwarmTestnet. There is no mainnet, no ZEC, no fiat
 price, no currency picker, no donation toggle, no exchange or swap, and no
 public server registry: the app never asks a third party which server to
@@ -35,10 +62,10 @@ trust.
 
 ## Installing the APK on a phone
 
-The APK is **debug-signed**. That is deliberate — it is built for a private
-test, no signing key exists in this repository or in CI, and nothing produced
-here could be mistaken for a published build. Android will treat it as an app
-from an unknown source, which is correct.
+This APK is **debug-signed**, and sideloading is the only thing it is for. No
+signing key exists in this repository. Android will treat it as an app from an
+unknown source, which is correct. The Play build is a separate artifact with a
+separate certificate — see "Google Play" below.
 
 You need an Android **8.0 (API 26) or newer** phone with an `arm64-v8a` or
 `armeabi-v7a` processor — that is every phone sold in the last decade.
@@ -91,6 +118,68 @@ up your seed phrase first — it is the only way back in.
 
 ---
 
+## Google Play
+
+Google Play refuses a debug-signed upload and wants an Android App Bundle
+(`.aab`) rather than an APK. The `bundle` job in
+`.github/workflows/swarm-android.yaml` produces both the bundle and a
+release-signed APK.
+
+### The upload key
+
+The key is the owner's. It lives outside this repository — it is not in the
+tree, not in the history, and not in any artifact CI uploads. CI reads it from
+four repository secrets, named here and never printed:
+
+| Secret | What it holds |
+| --- | --- |
+| `SWARM_UPLOAD_KEYSTORE_B64` | the `.jks` keystore, base64 |
+| `SWARM_UPLOAD_KEYSTORE_PASSWORD` | the keystore password |
+| `SWARM_UPLOAD_KEY_ALIAS` | the key alias inside the keystore |
+| `SWARM_UPLOAD_KEY_PASSWORD` | the key password |
+
+The job decodes the keystore into `$RUNNER_TEMP`, never into the checkout, and
+deletes it in a step that runs whether the build passed or failed. Gradle picks
+it up through the four `SWARM_UPLOAD_*` environment variables and prints
+`****** SWARM UPLOAD-KEY SIGNING ******`. `-PrequireReleaseSigning=true` fails
+configuration if the signing config would fall back to the debug keystore, so a
+missing secret cannot produce a quietly unpublishable bundle.
+
+With the secrets absent the job prints `no upload key configured - Play bundle
+skipped` and finishes green, which is what happens on a branch that has none.
+
+Before uploading, the job proves the artifacts: the certificate is not
+`CN=Android Debug` and the AAB and the APK carry the same one (the SHA-256
+fingerprint is printed and recorded in `release-manifest.json`), bundletool
+reports what each ABI would actually download and fails over 190 MB, the 64-bit
+libraries are 16 KB page aligned, no keystore, wallet file or seed fixture is
+packaged, and no upstream branding reaches a user.
+
+### The versionCode rule
+
+**Play keeps every versionCode it has ever seen and refuses a repeat**, even
+one from a release that was later deleted. The number comes from
+`SWARM_ANDROID_VERSION_CODE` in the workflow's `env` block; raise it for every
+upload. The source no longer carries it: `android/app/build.gradle.kts` reads
+`-PswarmVersionCode` and `-PswarmVersionName`, defaulting to `1` and `0.1.0`
+for a local build. The ceiling is 9999 — past that the split-APK encoding
+(`abi * 10000 + build`) collides, and Gradle fails rather than ship it.
+
+### The two signatures do not mix
+
+A release-signed build and the debug-signed sideload build carry different
+certificates. Android refuses to install one over the other and reports it as a
+signature mismatch, which is the system working as intended.
+
+**Write your recovery words down first.** Then uninstall the debug build —
+which deletes its wallet — and install the release-signed one. There is no
+upgrade path between the two and no way to move the wallet across.
+
+The debug-signed APK stays sideload-only. It is what the private test runs on,
+and it is never what goes to Play.
+
+---
+
 ## What works, and what is not proven
 
 Be precise about this, because a testnet wallet that overstates itself is worse
@@ -104,6 +193,12 @@ than no wallet.
 - The APK installs on an Android emulator, launches, loads the native wallet
   library, runs its JS bundle and reaches its first screen without crashing.
   This is asserted by `scripts/swarm_smoke_test.sh` on every CI run.
+- A fresh install already holds `https://lwd.swarm.green:443` with nothing
+  configured by hand. The same smoke test uninstalls first, drives the first
+  launch to a wallet with `uiautomator`, and reads the server back off the
+  Settings screen. It measures whether the runner can reach that server, and
+  when it can, it also requires the app to report a connected state rather
+  than "Offline".
 - The app is pinned to the SWARM SDK, not upstream's. CI fails the build if the
   pin points back at `zingolabs/zingolib`.
 - No upstream branding reaches a user. `scripts/check_no_upstream_branding.mjs`
@@ -118,11 +213,10 @@ than no wallet.
 
 ### Not proven
 
-- **Nothing on a real chain.** `lwd.swarm.green:443` answers and speaks gRPC,
-  but no sync, no balance, no send and no receive has been exercised against
-  SwarmTestnet *from this app*. That the endpoint is up is not the same as the
-  app working against it — and it is the app's behaviour that is unproven
-  here, not the server's.
+- **Nothing on a real chain.** The smoke test proves the app comes up pointed
+  at `lwd.swarm.green:443` and, when CI can reach it, reports a connected
+  state. No balance, no send and no receive has been exercised against
+  SwarmTestnet *from this app*.
 - **Nothing on real hardware.** The emulator smoke test runs on x86_64. The
   `arm64-v8a` and `armeabi-v7a` libraries are built and packaged but have not
   been executed on a phone.
@@ -193,7 +287,7 @@ The app fails with one plain sentence rather than a stack trace:
 
 CI is the supported path — it is reproducible and needs nothing installed. The
 workflow is `.github/workflows/swarm-android.yaml`; push to the `swarm-mobile`
-branch or run it from the Actions tab.
+or `play-release` branch, or run it from the Actions tab.
 
 To build locally you need Linux or macOS with Docker, Node 22.18.0, Yarn and
 JDK 17. A Windows host can run the JS checks but not the native build.

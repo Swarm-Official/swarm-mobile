@@ -376,7 +376,18 @@ jobs:
           else
             echo "placeholder=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "SDK rev $REV genesis $GEN placeholder=$PLACEHOLDER_NAME"
+          # SWARM production's genesis is not an SDK constant: ChainType
+          # carries it and the SDK gives it no default, so the app embeds it.
+          # Read it from the source this build comes from, and fail here
+          # rather than write a manifest that guesses.
+          MAIN_GEN="$(grep -A2 'pub const SWARM_MAINNET_GENESIS:' rust/lib/src/lib.rs | grep -oE '"[0-9a-f]{64}"' | head -1 | tr -d '"')"
+          test -n "$MAIN_GEN" || { echo "ERROR: no SWARM_MAINNET_GENESIS in rust/lib/src/lib.rs" >&2; exit 1; }
+          MAIN_SERVER="$(grep -m1 'pub const SWARM_MAINNET_SERVER_URI' rust/lib/src/lib.rs | grep -oE 'https://[^"]+')"
+          test -n "$MAIN_SERVER" || { echo "ERROR: no SWARM_MAINNET_SERVER_URI in rust/lib/src/lib.rs" >&2; exit 1; }
+          echo "mainnet_genesis=$MAIN_GEN" >> "$GITHUB_OUTPUT"
+          echo "mainnet_server=$MAIN_SERVER" >> "$GITHUB_OUTPUT"
+          echo "SDK rev $REV testnet genesis $GEN placeholder=$PLACEHOLDER_NAME"
+          echo "mainnet genesis $MAIN_GEN server $MAIN_SERVER"
 
       - name: Gradle setup
         uses: gradle/actions/setup-gradle@v4
@@ -504,8 +515,18 @@ jobs:
               app_version_name: process.env.SWARM_ANDROID_VERSION_NAME,
               app_version_code: Number(process.env.SWARM_ANDROID_VERSION_CODE),
               network: {
-                name: "SwarmTestnet",
+                name: "SWARM Mainnet",
+                light_wallet_chain_label: "swarm-mainnet",
+                native_chain_hint: "swarm-mainnet:" + process.env.MAINNET_GENESIS,
+                ticker: "SWM",
+                default_server: process.env.MAINNET_SERVER,
+                genesis: process.env.MAINNET_GENESIS,
+                genesis_is_placeholder: false,
+              },
+              also_selectable: {
+                name: "SWARM Testnet (engineering)",
                 light_wallet_chain_label: "swarm-testnet",
+                native_chain_hint: "swarm-testnet",
                 ticker: "SWM",
                 default_server: "https://lwd.swarm.green:443",
                 genesis: process.env.GENESIS,
@@ -536,6 +557,8 @@ jobs:
           SDK_REV: ${{ steps.sdk.outputs.rev }}
           GENESIS: ${{ steps.sdk.outputs.genesis }}
           GENESIS_PLACEHOLDER: ${{ steps.sdk.outputs.placeholder }}
+          MAINNET_GENESIS: ${{ steps.sdk.outputs.mainnet_genesis }}
+          MAINNET_SERVER: ${{ steps.sdk.outputs.mainnet_server }}
 
       - name: Upload the APK bundle
         uses: actions/upload-artifact@v4
@@ -638,7 +661,18 @@ jobs:
           else
             echo "placeholder=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "SDK rev $REV genesis $GEN placeholder=$PLACEHOLDER_NAME"
+          # SWARM production's genesis is not an SDK constant: ChainType
+          # carries it and the SDK gives it no default, so the app embeds it.
+          # Read it from the source this build comes from, and fail here
+          # rather than write a manifest that guesses.
+          MAIN_GEN="$(grep -A2 'pub const SWARM_MAINNET_GENESIS:' rust/lib/src/lib.rs | grep -oE '"[0-9a-f]{64}"' | head -1 | tr -d '"')"
+          test -n "$MAIN_GEN" || { echo "ERROR: no SWARM_MAINNET_GENESIS in rust/lib/src/lib.rs" >&2; exit 1; }
+          MAIN_SERVER="$(grep -m1 'pub const SWARM_MAINNET_SERVER_URI' rust/lib/src/lib.rs | grep -oE 'https://[^"]+')"
+          test -n "$MAIN_SERVER" || { echo "ERROR: no SWARM_MAINNET_SERVER_URI in rust/lib/src/lib.rs" >&2; exit 1; }
+          echo "mainnet_genesis=$MAIN_GEN" >> "$GITHUB_OUTPUT"
+          echo "mainnet_server=$MAIN_SERVER" >> "$GITHUB_OUTPUT"
+          echo "SDK rev $REV testnet genesis $GEN placeholder=$PLACEHOLDER_NAME"
+          echo "mainnet genesis $MAIN_GEN server $MAIN_SERVER"
 
       # The keystore is decoded into the runner's temp directory, never into
       # the checkout, so no Gradle task, no packaging step and no artifact
@@ -787,8 +821,18 @@ jobs:
               app_version_name: process.env.SWARM_ANDROID_VERSION_NAME,
               app_version_code: Number(process.env.SWARM_ANDROID_VERSION_CODE),
               network: {
-                name: "SwarmTestnet",
+                name: "SWARM Mainnet",
+                light_wallet_chain_label: "swarm-mainnet",
+                native_chain_hint: "swarm-mainnet:" + process.env.MAINNET_GENESIS,
+                ticker: "SWM",
+                default_server: process.env.MAINNET_SERVER,
+                genesis: process.env.MAINNET_GENESIS,
+                genesis_is_placeholder: false,
+              },
+              also_selectable: {
+                name: "SWARM Testnet (engineering)",
                 light_wallet_chain_label: "swarm-testnet",
+                native_chain_hint: "swarm-testnet",
                 ticker: "SWM",
                 default_server: "https://lwd.swarm.green:443",
                 genesis: process.env.GENESIS,
@@ -820,6 +864,8 @@ jobs:
           SDK_REV: ${{ steps.sdk.outputs.rev }}
           GENESIS: ${{ steps.sdk.outputs.genesis }}
           GENESIS_PLACEHOLDER: ${{ steps.sdk.outputs.placeholder }}
+          MAINNET_GENESIS: ${{ steps.sdk.outputs.mainnet_genesis }}
+          MAINNET_SERVER: ${{ steps.sdk.outputs.mainnet_server }}
           CERT_SHA256: ${{ steps.verify.outputs.cert-sha256 }}
 
       - name: Upload the Play bundle
@@ -871,7 +917,7 @@ jobs:
       # The APK carries an x86_64 slice, so a stock x86_64 emulator image runs
       # it. Beyond installing, launching and rendering, the test drives the
       # first launch to a wallet and asserts the app already holds
-      # https://lwd.swarm.green:443 with nothing configured by hand - the
+      # https://lwd-main.swarm.green:8443 with nothing configured by hand - the
       # defect the desktop wallet shipped as "NOT CONNECTED - No server
       # configured". Whether that server answers the runner is measured in the
       # script rather than assumed either way.

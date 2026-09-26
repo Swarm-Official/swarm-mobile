@@ -2,14 +2,17 @@
 # SWARM Android smoke test.
 #
 # Installs the built APK on a running emulator from nothing, launches it, and
-# asserts that it stays up, renders its first screen, and reaches
-# https://lwd.swarm.green:443 without the user configuring anything. The
-# desktop wallet shipped a fresh install that said "NOT CONNECTED - No server
-# configured" because only its launcher script wrote the default; this is the
-# check that catches the same shape of defect here.
+# asserts that it stays up, renders its first screen, and reaches the SWARM
+# Mainnet indexer without the user configuring anything. The desktop wallet
+# shipped a fresh install that said "NOT CONNECTED - No server configured"
+# because only its launcher script wrote the default; this is the check that
+# catches the same shape of defect here.
 #
-# The default server is one constant in the app, `app/uris/serverUris.ts`,
-# with a matching copy in `rust/lib/src/lib.rs` (SWARM_DEFAULT_SERVER_URI).
+# The default server is the FIRST entry of `app/uris/serverUris.ts`, with a
+# matching copy in `rust/lib/src/lib.rs` (SWARM_MAINNET_SERVER_URI). A build
+# that opens on the engineering testnet instead fails here, which is the
+# point: which network a fresh install lands on is the one setting nobody
+# should have to check by hand.
 #
 # Usage: scripts/swarm_smoke_test.sh <path to apk> [label]
 
@@ -18,7 +21,9 @@ set -euo pipefail
 APK="${1:?usage: swarm_smoke_test.sh <apk> [label]}"
 LABEL="${2:-apk}"
 APP_ID="green.swarm.wallet"
-DEFAULT_SERVER="https://lwd.swarm.green:443"
+DEFAULT_SERVER="https://lwd-main.swarm.green:8443"
+DEFAULT_HOST="lwd-main.swarm.green"
+DEFAULT_PORT="8443"
 OUT="smoke-out/$LABEL"
 mkdir -p "$OUT"
 
@@ -33,10 +38,10 @@ adb shell getprop ro.product.cpu.abi
 echo "=== Is $DEFAULT_SERVER reachable from this runner ==="
 SERVER_REACHABLE=no
 HTTP_CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 \
-  https://lwd.swarm.green/status.json 2>&1 || echo "000")"
-echo "  https://lwd.swarm.green/status.json -> HTTP $HTTP_CODE"
-TLS="$(echo | timeout 20 openssl s_client -connect lwd.swarm.green:443 \
-  -servername lwd.swarm.green 2>&1 | grep -E '^(CONNECTED|subject=)' | head -2 || true)"
+  "https://$DEFAULT_HOST:$DEFAULT_PORT/status.json" 2>&1 || echo "000")"
+echo "  https://$DEFAULT_HOST:$DEFAULT_PORT/status.json -> HTTP $HTTP_CODE"
+TLS="$(echo | timeout 20 openssl s_client -connect "$DEFAULT_HOST:$DEFAULT_PORT" \
+  -servername "$DEFAULT_HOST" 2>&1 | grep -E '^(CONNECTED|subject=)' | head -2 || true)"
 if [ -n "$TLS" ]; then
   echo "$TLS" | sed 's/^/  tls: /'
 else
@@ -235,7 +240,7 @@ echo "  sync indicator: ${STATUS:-none found}"
 read_server() {
   for _ in 1 2 3 4 5 6; do
     ui_dump || true
-    if ui_has 'lwd.swarm.green'; then return 0; fi
+    if ui_has "$DEFAULT_HOST"; then return 0; fi
     adb shell input swipe 540 1400 540 600 300
     sleep 2
   done
@@ -297,7 +302,7 @@ fi
 
 # The start menu prints the server too, and that is the screen an offline
 # fresh install stops on.
-if [ "$SERVER_SEEN" != "yes" ] && grep -q 'lwd.swarm.green' "$OUT/ui-first-screen.xml"; then
+if [ "$SERVER_SEEN" != "yes" ] && grep -q "$DEFAULT_HOST" "$OUT/ui-first-screen.xml"; then
   SERVER_SEEN=yes
   echo "  ok the first screen already showed $DEFAULT_SERVER"
 fi

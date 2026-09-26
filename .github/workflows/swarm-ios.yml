@@ -474,7 +474,7 @@ jobs:
         continue-on-error: true
         run: |
           set -uo pipefail
-          INDEXER_HOST=lwd.swarm.green
+          INDEXER_HOST=lwd-main.swarm.green
           IPS=$(dig +short "$INDEXER_HOST" A | grep -E '^[0-9.]+$' | sort -u | tr '\n' ' ')
           echo "$INDEXER_HOST resolves to: ${IPS:-(nothing)}"
           echo "indexer_host=$INDEXER_HOST" >> "$GITHUB_OUTPUT"
@@ -643,7 +643,7 @@ jobs:
       # Earlier unsigned runs reached the iOS passcode sheet, then stayed on
       # "Creating a new wallet" because keychain queries lacked simulator
       # entitlements. The TCP check in run 35909981590 reached
-      # lwd.swarm.green:443. These captures document the runner state. The composer
+      # lwd-main.swarm.green:8443. These captures document the runner state. The composer
       # can produce Apple's 6.9-inch class after real wallet screens are captured:
       #   python scripts/store/build_store_art.py --preset ios69 \
       #     --raw <captures> --out fastlane/screenshots/en-US
@@ -671,7 +671,7 @@ jobs:
           if-no-files-found: ignore
 
       # THE assertion of C9: on a fresh install, with nothing typed and nothing
-      # chosen, is the server already lwd.swarm.green on swarm-testnet, and did
+      # chosen, is the server already lwd-main.swarm.green on swarm-mainnet, and did
       # the app actually go there?
       - name: Fresh install — prove the default server and the connection
         id: freshinstall
@@ -709,15 +709,16 @@ jobs:
           print('server.uri       =', uri)
           print('server.chainName =', chain)
           bad = 0
-          if uri != 'https://lwd.swarm.green:443':
-              print("::error::the fresh install's default server is %r, expected https://lwd.swarm.green:443 — a reviewer would have to choose one" % (uri,))
+          expected_uri = 'https://lwd-main.swarm.green:8443'
+          if uri != expected_uri:
+              print("::error::the fresh install's default server is %r, expected %s. A reviewer would have to choose one" % (uri, expected_uri))
               bad = 1
-          if chain != 'swarm-testnet':
-              print('::error::the default chain is %r, expected swarm-testnet' % (chain,))
+          if chain != 'swarm-mainnet':
+              print('::error::the default chain is %r, expected swarm-mainnet' % (chain,))
               bad = 1
           sys.exit(bad)
           PY
-          echo "ok      the default server is lwd.swarm.green on swarm-testnet, with no user action"
+          echo "ok      the default server is lwd-main.swarm.green on swarm-mainnet, with no user action"
 
           WALLET="$CONTAINER/Documents/wallet.dat.txt"
           if [ -s "$WALLET" ]; then
@@ -749,7 +750,7 @@ jobs:
           sudo tcpdump -n -r "$PCAP" > "$RUNNER_TEMP/capture.txt" 2>/dev/null || true
           echo "packets captured: $(wc -l < "$RUNNER_TEMP/capture.txt" | tr -d ' ')"
 
-          DNS=$(grep -c 'lwd.swarm.green' "$RUNNER_TEMP/capture.txt" || true)
+          DNS=$(grep -c 'lwd-main.swarm.green' "$RUNNER_TEMP/capture.txt" || true)
           echo "DNS lines naming the indexer: $DNS"
 
           HITS=0
@@ -767,7 +768,7 @@ jobs:
             echo "dns lines:    $DNS"
             echo "packets:      $HITS"
             echo
-            grep -E 'lwd.swarm.green' "$RUNNER_TEMP/capture.txt" | head -40 || true
+            grep -E 'lwd-main.swarm.green' "$RUNNER_TEMP/capture.txt" | head -40 || true
           } > evidence/fresh-install-wire.txt
           if [ "$HITS" -gt 0 ]; then
             echo "ok      the fresh install really did talk to the indexer on 443"
@@ -1083,7 +1084,7 @@ jobs:
             echo "| simulator device | \`${{ steps.sim.outputs.devicetype }}\` |"
             echo "| bundle identifier | \`${{ steps.launch.outputs.bundle_id }}\` |"
             echo "| running 40 s after launch | \`${{ steps.launch.outputs.alive }}\` |"
-            echo "| default server (fresh install) | \`https://lwd.swarm.green:443\`, asserted from the app container |"
+            echo "| default server (fresh install) | \`https://lwd-main.swarm.green:8443\`, asserted from the app container |"
             echo "| wallet created with no user action | \`${{ steps.freshinstall.outputs.wallet_created }}\` |"
             echo "| reached the indexer on the wire | \`${{ steps.wire.outputs.proved }}\` |"
             echo "| Maestro walked to the home screen | \`${{ steps.maestro.outputs.ok }}\` |"

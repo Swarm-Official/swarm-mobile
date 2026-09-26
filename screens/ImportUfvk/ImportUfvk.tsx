@@ -35,6 +35,7 @@ import { ContextAppLoading } from '@app/context';
 import Header from '@ui/widgets/Header';
 import { getLatestBlockServerInfo } from '@app/walletBackend';
 import {
+  ChainNameEnum,
   GlobalConst,
   RouteEnum,
   ScreenEnum,
@@ -43,14 +44,18 @@ import {
 import { useFullSheetSnapPoints } from '@app/hooks/useFullSheetSnapPoints';
 import { useKeyboardHeight } from '@app/hooks/useKeyboardHeight';
 
-// Lowest legal wallet birthday per chain. SwarmTestnet activated Sapling at
-// its first block, so any birthday >= 1 is valid.
-const activationHeight = {
-  'swarm-testnet': 1,
-  main: 419200,
-  test: 280000,
-  regtest: 1,
-  '': 1,
+// Lowest legal wallet birthday per chain. Both SWARM networks activated
+// Sapling at their first block, so any birthday >= 1 is valid on either.
+// Typed as a total record over ChainNameEnum so a chain added without a
+// birthday floor stops compiling rather than reading as `undefined` in the
+// hint under the input.
+const activationHeight: Record<ChainNameEnum, number> = {
+  [ChainNameEnum.swarmMainnetChainName]: 1,
+  [ChainNameEnum.swarmChainName]: 1,
+  [ChainNameEnum.mainChainName]: 419200,
+  [ChainNameEnum.testChainName]: 280000,
+  [ChainNameEnum.regtestChainName]: 1,
+  [ChainNameEnum.noneChainName]: 1,
 };
 
 type ImportUfvkProps = {

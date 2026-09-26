@@ -221,9 +221,11 @@ export default class Utils {
     chainName: ChainNameEnum,
     blockExplorer: BlockExplorerEnum,
   ): string {
-    // Only SwarmTestnet is explorable. Any other chain (the unreachable
-    // upstream ones, or Offline's empty chain) has no SWARM explorer page —
-    // returning '' makes every caller hide the affordance.
+    // explore.swarm.green indexes the engineering testnet. SWARM Mainnet has
+    // no published explorer yet, and the upstream chains and Offline empty
+    // chain never had one, so every chain but the testnet returns '' and
+    // every caller hides the affordance. Inventing a mainnet URL here would
+    // ship a dead link into a live wallet; add the real one when it exists.
     if (chainName !== ChainNameEnum.swarmChainName) {
       return '';
     }
@@ -491,15 +493,15 @@ export default class Utils {
 
   /**
    * zingolib surfaces chain-mismatch errors with the raw `ChainNameEnum`
-   * values ("swarm-testnet" / "main" / "test" / "regtest") embedded in the
-   * message (e.g. "Wallet chain name main doesn't match expected
-   * swarm-testnet"). This helper rewrites any standalone occurrence of those
-   * tokens with the matching `settings.value-chainname-*` translation
-   * (SwarmTestnet / Mainnet / Testnet / Regtest) so error alerts and
-   * snackbars read naturally to the user.
+   * values ("swarm-mainnet" / "swarm-testnet" / "main" / "test" / "regtest")
+   * embedded in the message (e.g. "Wallet chain name main doesn't match
+   * expected swarm-mainnet"). This helper rewrites any standalone occurrence
+   * of those tokens with the matching `settings.value-chainname-*`
+   * translation so error alerts and snackbars read naturally to the user.
    *
-   * `swarm-testnet` is matched FIRST (alternation is ordered) so the trailing
-   * "testnet" is never chewed off by a shorter alternative, and the hyphen is
+   * The two SWARM tokens are matched FIRST (alternation is ordered) so the
+   * trailing "testnet" is never chewed off by a shorter alternative and
+   * "swarm-mainnet" is never read as "main" plus noise; the hyphen is
    * inside the match so `\b` still anchors both ends of the whole token.
    *
    * The match is word-bounded, so the substitution is safe for messages
@@ -510,7 +512,7 @@ export default class Utils {
     translate: (key: string) => TranslateType,
   ): string {
     return text.replace(
-      /\b(swarm-testnet|main|regtest|test)\b/g,
+      /\b(swarm-mainnet|swarm-testnet|main|regtest|test)\b/g,
       token => translate(`settings.value-chainname-${token}`) as string,
     );
   }

@@ -44,61 +44,6 @@ exports[`Component ChainTypeToggle - test ChainTypeToggle - snapshot 1`] = `
     style={
       {
         "alignItems": "center",
-        "backgroundColor": "#18bd18",
-        "borderColor": "#18bd18",
-        "borderRadius": 8,
-        "borderWidth": 1,
-        "flex": 1,
-        "opacity": 1,
-        "paddingVertical": 8,
-      }
-    }
-    testID="settings.custom-server-chain.mainnet"
-  >
-    <Text
-      style={
-        {
-          "color": "#011401",
-          "fontFamily": "Manrope-Regular",
-          "fontSize": 12,
-          "opacity": 1,
-        }
-      }
-    >
-      text translated
-    </Text>
-  </View>
-  <View
-    accessibilityState={
-      {
-        "busy": undefined,
-        "checked": undefined,
-        "disabled": undefined,
-        "expanded": undefined,
-        "selected": undefined,
-      }
-    }
-    accessibilityValue={
-      {
-        "max": undefined,
-        "min": undefined,
-        "now": undefined,
-        "text": undefined,
-      }
-    }
-    accessible={true}
-    collapsable={false}
-    focusable={true}
-    onClick={[Function]}
-    onResponderGrant={[Function]}
-    onResponderMove={[Function]}
-    onResponderRelease={[Function]}
-    onResponderTerminate={[Function]}
-    onResponderTerminationRequest={[Function]}
-    onStartShouldSetResponder={[Function]}
-    style={
-      {
-        "alignItems": "center",
         "backgroundColor": "transparent",
         "borderColor": "#18bd18",
         "borderRadius": 8,
@@ -108,7 +53,7 @@ exports[`Component ChainTypeToggle - test ChainTypeToggle - snapshot 1`] = `
         "paddingVertical": 8,
       }
     }
-    testID="settings.custom-server-chain.testnet"
+    testID="settings.custom-server-chain.swarm-mainnet"
   >
     <Text
       style={
@@ -163,7 +108,7 @@ exports[`Component ChainTypeToggle - test ChainTypeToggle - snapshot 1`] = `
         "paddingVertical": 8,
       }
     }
-    testID="settings.custom-server-chain.regtestnet"
+    testID="settings.custom-server-chain.swarm-testnet"
   >
     <Text
       style={

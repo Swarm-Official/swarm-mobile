@@ -8,7 +8,7 @@ import {
 //
 // SWARM has no public server registry: there is no third-party census of SWARM
 // lightwalletd instances to rank or fall back to, and upstream zingo-mobile's
-// twenty Zcash endpoints are gone — a wallet that offered them could put a
+// twenty Zcash endpoints are gone, a wallet that offered them could put a
 // SWARM recovery phrase on the public Zcash network, which is what happened to
 // the desktop wallet's first mainnet build. A user who runs their own indexer
 // types its URI into the custom-server field.
@@ -18,13 +18,13 @@ import {
 // what it is; its coins have no value.
 //
 // `translate` is kept in the signature so every caller in the upstream
-// zingo-mobile code still compiles — these entries have no region label.
+// zingo-mobile code still compiles. These entries have no region label.
 const serverUris = (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   translate: (key: string) => TranslateType | void,
 ): ServerUrisType[] => {
   return [
-    // SWARM Mainnet — the live network, and the default.
+    // SWARM Mainnet, the live network, and the default.
     {
       uri: SWARM_MAINNET_PROFILE.defaultServer,
       region: '',
@@ -33,12 +33,12 @@ const serverUris = (
       latency: null,
       obsolete: false,
     },
-    // SWARM Testnet — the engineering network. Coins here have no value.
+    // SWARM Testnet, the engineering network. Coins here have no value.
     //
     // `default: true` as well: the flag means "the default server FOR THIS
     // CHAIN", which is how `defaultServerForChain` and `SettingsFileImpl` read
-    // it. Which network a fresh install starts on is decided by the ORDER —
-    // `serverUris()[0]` — not by this flag.
+    // it. Which network a fresh install starts on is decided by the ORDER,
+    // `serverUris()[0]`, not by this flag.
     {
       uri: SWARM_TESTNET_PROFILE.defaultServer,
       region: '',

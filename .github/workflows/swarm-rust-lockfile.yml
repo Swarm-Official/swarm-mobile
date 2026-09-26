@@ -6,7 +6,7 @@ name: SWARM Rust lockfile
 # Why this exists. Every build job in `SWARM Android` and `SWARM iOS` runs cargo
 # with `--locked`, and `Check Rust dependency pins` fails any build that leaves
 # rust/Cargo.lock dirty. That is the right discipline, and it means moving the
-# SDK pin — the one change that necessarily moves the lock — cannot be done by
+# SDK pin, the one change that necessarily moves the lock , cannot be done by
 # those workflows. It has to be done once, deliberately, and the result
 # committed.
 #
@@ -18,7 +18,7 @@ name: SWARM Rust lockfile
 # It also prints where the four patched crates resolved from. If any of them
 # resolves to a crates.io version rather than to `rust/vendor/`, the SWARM
 # network identity is not in the build and the SWARM production chain would
-# silently decode as something else — see rust/vendor/README.md.
+# silently decode as something else. See rust/vendor/README.md.
 
 on:
   workflow_dispatch:

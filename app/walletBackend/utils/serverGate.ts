@@ -13,7 +13,7 @@ import {
  * the wrong chain written into this wallet's state are someone else's history
  * in the user's wallet; and again immediately before a send, because a
  * transaction built against the wrong consensus rules and broadcast cannot be
- * taken back. The second check is not redundant with the first — the server
+ * taken back. The second check is not redundant with the first, the server
  * can be changed between them, and a custom URI typed into Settings is
  * exactly how it would be.
  *

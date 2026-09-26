@@ -9,8 +9,8 @@ import {
 /**
  * Whether an address may be paid on the network the wallet is on.
  *
- * The Rust library has the authority here — it decodes the address properly,
- * against the consensus parameters of the chain — but it cannot be the only
+ * The Rust library has the authority here. It decodes the address properly,
+ * against the consensus parameters of the chain, but it cannot be the only
  * check, for two reasons. It answers over the React Native bridge, so the
  * first thing a user sees after typing an address is a round trip; and the
  * build's vendored `zcash_protocol` gives the *testnet* constants SWARM's
@@ -20,8 +20,8 @@ import {
  *
  * So this is a pre-check, in front of the FFI, that answers from the address
  * string alone: HRP for bech32/bech32m forms, version prefix for Base58Check.
- * It never widens what the library accepts — an address this file admits still
- * has to decode — it only refuses, early and with a sentence that says which
+ * It never widens what the library accepts, an address this file admits still
+ * has to decode. It only refuses, early and with a sentence that says which
  * network the address belongs to and which one the wallet is on.
  *
  * Ported from the desktop wallet's `src/utils/swarmAddress.ts` (privacy-wallet
@@ -97,7 +97,6 @@ export function bech32Shape(address: string): Bech32Shape | undefined {
     }
     data.push(index);
   }
-  // eslint-disable-next-line no-control-regex
   if (!/^[\x21-\x7e]+$/.test(hrp)) {
     return undefined;
   }
@@ -208,7 +207,7 @@ function refuse(reason: AddressRefusalEnum, message: string): AddressVerdict {
 /**
  * Whether `address` may be paid from a wallet on `profile`.
  *
- * Accepting is not a claim that the address decodes — the Rust library decides
+ * Accepting is not a claim that the address decodes, the Rust library decides
  * that. Refusing is final: no caller may pay an address this refuses.
  */
 export function checkAddressForProfile(
@@ -238,7 +237,7 @@ export function checkAddressForProfile(
       if (encoding === null) {
         return refuse(
           AddressRefusalEnum.corrupt,
-          `That ${profile.displayName} address is damaged — its checksum does not match. ` +
+          `That ${profile.displayName} address is damaged. Its checksum does not match. ` +
             'Copy it again from the sender.',
         );
       }
@@ -310,7 +309,7 @@ export function checkAddressForProfile(
 /**
  * The same check, from the chain label the rest of the app carries.
  *
- * Answers `undefined` — "no opinion" — for `main`, `test` and `regtest`, which
+ * Answers `undefined`. "no opinion" , for `main`, `test` and `regtest`, which
  * are upstream Zcash chains with no SWARM profile and whose address rules are
  * the library's business, unchanged. Only a SWARM chain gets a verdict here.
  */

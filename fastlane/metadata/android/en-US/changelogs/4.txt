@@ -1,0 +1,1 @@
+SWARM Wallet now opens on SWARM Mainnet, the live network. The engineering testnet is still available in Settings, and its coins have no value.

@@ -182,7 +182,7 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
             resizeMode="contain"
             source={
               {
-                "testUri": "../../../assets/img/zcash-yellow.png",
+                "testUri": "../../../assets/img/swarm-mark.png",
               }
             }
             style={
@@ -205,7 +205,7 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
               }
             }
           >
-            Zcash
+            SWARM
           </Text>
         </View>
         <View
@@ -454,7 +454,7 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
               resizeMode="contain"
               source={
                 {
-                  "testUri": "../../../assets/img/zcash-yellow.png",
+                  "testUri": "../../../assets/img/swarm-mark.png",
                 }
               }
               style={
@@ -483,7 +483,7 @@ exports[`NewAddressTag - snapshot NewAddressTag renders correctly 1`] = `
                   }
                 }
               >
-                Zcash
+                SWARM
               </Text>
               <Text
                 style={

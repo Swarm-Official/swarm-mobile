@@ -264,7 +264,7 @@ exports[`Component Address Book Details - test Address Book Datails - Add - snap
           resizeMode="contain"
           source={
             {
-              "testUri": "../../../assets/img/zcash-yellow.png",
+              "testUri": "../../../assets/img/swarm-mark.png",
             }
           }
           style={
@@ -287,7 +287,7 @@ exports[`Component Address Book Details - test Address Book Datails - Add - snap
             }
           }
         >
-          Zcash
+          SWARM
         </Text>
       </View>
       <View
@@ -536,7 +536,7 @@ exports[`Component Address Book Details - test Address Book Datails - Add - snap
             resizeMode="contain"
             source={
               {
-                "testUri": "../../../assets/img/zcash-yellow.png",
+                "testUri": "../../../assets/img/swarm-mark.png",
               }
             }
             style={
@@ -565,7 +565,7 @@ exports[`Component Address Book Details - test Address Book Datails - Add - snap
                 }
               }
             >
-              Zcash
+              SWARM
             </Text>
             <Text
               style={
@@ -956,7 +956,7 @@ exports[`Component Address Book Details - test Address Book Datails - Delete - s
           resizeMode="contain"
           source={
             {
-              "testUri": "../../../assets/img/zcash-yellow.png",
+              "testUri": "../../../assets/img/swarm-mark.png",
             }
           }
           style={
@@ -979,7 +979,7 @@ exports[`Component Address Book Details - test Address Book Datails - Delete - s
             }
           }
         >
-          Zcash
+          SWARM
         </Text>
       </View>
       <View
@@ -1228,7 +1228,7 @@ exports[`Component Address Book Details - test Address Book Datails - Delete - s
             resizeMode="contain"
             source={
               {
-                "testUri": "../../../assets/img/zcash-yellow.png",
+                "testUri": "../../../assets/img/swarm-mark.png",
               }
             }
             style={
@@ -1257,7 +1257,7 @@ exports[`Component Address Book Details - test Address Book Datails - Delete - s
                 }
               }
             >
-              Zcash
+              SWARM
             </Text>
             <Text
               style={
@@ -1715,7 +1715,7 @@ exports[`Component Address Book Details - test Address Book Datails - Modify - s
           resizeMode="contain"
           source={
             {
-              "testUri": "../../../assets/img/zcash-yellow.png",
+              "testUri": "../../../assets/img/swarm-mark.png",
             }
           }
           style={
@@ -1738,7 +1738,7 @@ exports[`Component Address Book Details - test Address Book Datails - Modify - s
             }
           }
         >
-          Zcash
+          SWARM
         </Text>
       </View>
       <View
@@ -1987,7 +1987,7 @@ exports[`Component Address Book Details - test Address Book Datails - Modify - s
             resizeMode="contain"
             source={
               {
-                "testUri": "../../../assets/img/zcash-yellow.png",
+                "testUri": "../../../assets/img/swarm-mark.png",
               }
             }
             style={
@@ -2016,7 +2016,7 @@ exports[`Component Address Book Details - test Address Book Datails - Modify - s
                 }
               }
             >
-              Zcash
+              SWARM
             </Text>
             <Text
               style={

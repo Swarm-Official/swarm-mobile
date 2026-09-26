@@ -122,6 +122,10 @@ import RiskNotice from '@ui/widgets/RiskNotice';
 import { acknowledgeRiskNotice, hasAcknowledgedRiskNotice } from '@app/legal';
 import { AppStackParamList } from '@app/types';
 import { openSavedWallet } from '@app/walletBackend/utils/savedWallets';
+import {
+  SWARM_MAINNET_PROFILE,
+  SWARM_TESTNET_PROFILE,
+} from '@app/utils/networkProfiles';
 
 const en = require('@app/translations/en.json');
 const es = require('@app/translations/es.json');
@@ -145,14 +149,19 @@ const SERVER_DEFAULT_0: ServerType = {
   chainName: serverUris(() => {})[0].chainName,
 } as ServerType;
 
-// Lowest legal wallet birthday per chain. SwarmTestnet activated Sapling at
-// its first block, so any birthday >= 1 is valid.
-const activationHeight = {
-  'swarm-testnet': 1,
-  main: 419200,
-  test: 280000,
-  regtest: 1,
-  '': 1,
+// Lowest legal wallet birthday per chain. Both SWARM networks activated
+// Sapling at their first block, so any birthday >= 1 is valid on either. The
+// two SWARM entries come from the profiles rather than from a literal, so a
+// network added there cannot be forgotten here. Typed as a total record over
+// ChainNameEnum for the same reason: adding a chain without a birthday floor
+// stops compiling.
+const activationHeight: Record<ChainNameEnum, number> = {
+  [ChainNameEnum.swarmMainnetChainName]: SWARM_MAINNET_PROFILE.activationHeight,
+  [ChainNameEnum.swarmChainName]: SWARM_TESTNET_PROFILE.activationHeight,
+  [ChainNameEnum.mainChainName]: 419200,
+  [ChainNameEnum.testChainName]: 280000,
+  [ChainNameEnum.regtestChainName]: 1,
+  [ChainNameEnum.noneChainName]: 1,
 };
 
 export default function LoadingApp(props: LoadingAppProps) {

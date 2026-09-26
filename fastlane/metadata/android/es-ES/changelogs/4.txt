@@ -1,0 +1,1 @@
+SWARM Wallet ahora se abre en SWARM Mainnet, la red en vivo. La red de pruebas de ingeniería sigue disponible en Ajustes, y sus monedas no tienen valor.

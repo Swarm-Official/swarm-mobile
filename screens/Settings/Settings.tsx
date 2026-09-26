@@ -2861,9 +2861,8 @@ const Settings: React.FunctionComponent<SettingsProps> = ({
         title={translate('settings.select-chain-placeholder') as string}
         items={[
           ChainNameEnum.noneChainName,
-          ChainNameEnum.mainChainName,
-          ChainNameEnum.testChainName,
-          ChainNameEnum.regtestChainName,
+          ChainNameEnum.swarmMainnetChainName,
+          ChainNameEnum.swarmChainName,
         ].map(c => ({
           label: translate(`settings.value-chainname-${c || 'none'}`) as string,
           value: c,

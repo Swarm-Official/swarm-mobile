@@ -4,7 +4,7 @@ import { ChainNameEnum } from '@app/AppState/enums/ChainNameEnum';
  * The SWARM networks this app can be pointed at, as data.
  *
  * Until now "which network am I on" was several separate facts scattered
- * across the tree — a chain label in the settings file, the single entry in
+ * across the tree, a chain label in the settings file, the single entry in
  * `app/uris/serverUris.ts`, and a string the Rust FFI turns into a
  * `ChainType`. Adding a second SWARM network to that arrangement is how a
  * wallet ends up on the wrong chain, so the facts are collected here instead,
@@ -21,7 +21,7 @@ import { ChainNameEnum } from '@app/AppState/enums/ChainNameEnum';
  * Two rules this file exists to enforce, and which its tests hold it to:
  *
  *  1. The generic word "mainnet" never reaches a SWARM profile. Upstream's
- *     `main` chain is Zcash and stays Zcash — in the SDK, in the vendored
+ *     `main` chain is Zcash and stays Zcash. In the SDK, in the vendored
  *     address crates, and in the Rust library, where `"main" => ChainType::Mainnet`
  *     still decodes `u1…`/`zs1…`/`t1…`/`t3…`. SWARM production is a separate
  *     profile with its own label, `swarm-mainnet`, and is reachable only by
@@ -193,8 +193,8 @@ export const DEFAULT_SWARM_PROFILE = MAINNET;
 /**
  * The profile a chain label names, or `undefined`.
  *
- * `undefined` for `main`, `test` and `regtest` — those are upstream Zcash
- * chains and have no SWARM profile — and for anything unrecognised. It never
+ * `undefined` for `main`, `test` and `regtest`. Those are upstream Zcash
+ * chains and have no SWARM profile, and for anything unrecognised. It never
  * falls back: a caller that cannot identify the chain must not be handed one.
  */
 export const swarmProfileFor = (
@@ -230,7 +230,7 @@ export const unselectableReason = (profile: SwarmNetworkProfile): string => {
 };
 
 /**
- * What a SWARM profile is called in the FFI's chain hint — the third argument
+ * What a SWARM profile is called in the FFI's chain hint, the third argument
  * of `createNewWallet`, `restoreWalletFromSeed`, `restoreWalletFromUfvk` and
  * `loadExistingWallet`.
  *
@@ -274,7 +274,7 @@ export const chainHintFor = (profile: SwarmNetworkProfile): string => {
  * Upstream Zcash's `main`, `test` and `regtest` pass through unchanged: their
  * hint IS the bare label, and a legacy wallet on one of them still has to be
  * loadable so it can be named and its seed exported. Anything unrecognised
- * passes through too, for the same reason — the library's own error is a
+ * passes through too, for the same reason, the library's own error is a
  * better answer than a guess made here.
  */
 export const nativeChainHint = (chain: string | undefined | null): string => {
@@ -288,7 +288,7 @@ export const nativeChainHint = (chain: string | undefined | null): string => {
 /**
  * The chain label a build may actually store and boot on.
  *
- * A settings file can hold anything — it is JSON on the user's device, it
+ * A settings file can hold anything. It is JSON on the user's device, it
  * survives downgrades, and a release that ships `swarm-mainnet` and is then
  * rolled back leaves that label behind in it. So the label is read through
  * this on the way in: an unlaunched SWARM network falls back to the one this

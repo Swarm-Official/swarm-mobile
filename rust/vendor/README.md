@@ -24,8 +24,8 @@ a difference between the two copies would be a difference in what a SWARM
 address means.
 
 The version numbers match this workspace's existing `rust/Cargo.lock` exactly
-— `zcash_protocol` 0.10.5, `zcash_address` 0.13.0, `zcash_transparent` 0.10.0,
-`zcash_primitives` 0.30.1 — so no version moved to take the patches. The
+, `zcash_protocol` 0.10.5, `zcash_address` 0.13.0, `zcash_transparent` 0.10.0,
+`zcash_primitives` 0.30.1. So no version moved to take the patches. The
 desktop copies of `zcash_protocol` and `zcash_address` were verified to be
 strict supersets of the ones this repository already carried: the SWARM
 **testnet** work (the `swarm1…` unified HRP and the typed `utest1…` legacy

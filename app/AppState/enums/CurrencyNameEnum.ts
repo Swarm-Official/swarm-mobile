@@ -1,7 +1,10 @@
 export enum CurrencyNameEnum {
   /**
-   * SwarmTestnet's coin. A TEST coin on a private proof-of-work network: it
-   * has no value and cannot be bought, sold or exchanged.
+   * SWARM's coin, on both of its networks. On SWARM Mainnet it is the live
+   * coin; on the engineering testnet it is a TEST coin with no value, which
+   * cannot be bought, sold or exchanged. The ticker is the same, and which
+   * network a wallet is on is said by the network's own name, not by a
+   * different three letters.
    */
   SWM = 'SWM',
   /**
@@ -23,14 +26,15 @@ export const currencyNameForChain = (
   chainName: string,
 ): CurrencyNameEnum => {
   switch (chainName) {
+    case 'swarm-mainnet':
     case 'swarm-testnet':
       return CurrencyNameEnum.SWM;
     case 'main':
       return CurrencyNameEnum.ZEC;
     default:
       // Zcash testnet and regtest both use TAZ. Offline (the empty chain)
-      // lands here too: this build only ever opens SwarmTestnet wallets, so
-      // the caller overrides it with the wallet's own chain when it has one.
+      // lands here too: this build only ever opens SWARM wallets, so the
+      // caller overrides it with the wallet's own chain when it has one.
       return CurrencyNameEnum.TAZ;
   }
 };

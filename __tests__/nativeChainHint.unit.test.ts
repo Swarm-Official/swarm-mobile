@@ -9,7 +9,7 @@
  * "'swarm-mainnet' does not name a network".
  *
  * The desktop wallet shipped 0.1.0-mainnet.1 with a `chainHintFor` that was
- * written, documented, unit-tested — and called by nothing. The owner pressed
+ * written, documented, unit-tested, and called by nothing. The owner pressed
  * Create and could not make a wallet. A unit test of the builder alone would
  * have passed on that build.
  *
@@ -111,11 +111,22 @@ describe('the FFI chain-hint boundary', () => {
     // wrapper, and no wrapper still taking a pre-built hint from its caller.
     const built = wrapper.match(/const chainHint = nativeChainHint\(chain\);/g);
     expect(built).toHaveLength(CHAIN_TAKING_FFI.length);
-    expect(wrapper).not.toContain('chainHint: string,');
 
-    // And each of the four passes that variable on, rather than something
-    // else that happens to be in scope.
     for (const method of CHAIN_TAKING_FFI) {
+      // Each exported wrapper takes a chain LABEL from its caller. A wrapper
+      // still declaring `chainHint: string` would be taking a pre-built hint
+      // from a caller that cannot build one. (`applyBroadcastCandidates`, a
+      // private helper further down the file, does take a real hint and is
+      // not one of these.)
+      const declaration = wrapper.slice(
+        wrapper.indexOf(`export async function ${method}(`),
+      );
+      const signature = declaration.slice(0, declaration.indexOf('): Promise'));
+      expect(signature).toContain('chain: string,');
+      expect(signature).not.toContain('chainHint: string,');
+
+      // And each passes the built variable on, rather than something else
+      // that happens to be in scope.
       const call = wrapper.slice(wrapper.indexOf(`RPCModule.${method}(`));
       const args = call.slice(0, call.indexOf(')'));
       expect(args).toContain('chainHint');

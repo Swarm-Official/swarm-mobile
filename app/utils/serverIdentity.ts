@@ -13,14 +13,14 @@ import {
  * A light wallet has no peers and no chain of its own: it believes whatever
  * its one indexer tells it. Pointed at the wrong one it will sync someone
  * else's blocks into this wallet's state, show a balance that is not the
- * user's, and — the part that is not recoverable — build and broadcast a
+ * user's, and, the part that is not recoverable , build and broadcast a
  * payment against the wrong consensus rules. Two SWARM networks make that a
  * live possibility rather than a theoretical one, so the wallet asks before it
  * syncs and before it sends, and refuses rather than guessing.
  *
  * What it checks is what `GetLightdInfo` actually carries: the chain label.
  * The genesis hash is not in that response, so when the caller can supply one
- * — a profile that has launched, and an indexer that reports one — it is
+ *, a profile that has launched, and an indexer that reports one , it is
  * compared too, and a mismatch is refused on the same terms. A profile with no
  * genesis is refused outright: it cannot hold any server to anything.
  *

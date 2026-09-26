@@ -13,10 +13,29 @@ type ChainTypeToggleProps = {
   disabled?: boolean;
 };
 
-const CHAINS: { value: ChainNameEnum; key: 'main' | 'test' | 'regtest' }[] = [
-  { value: ChainNameEnum.mainChainName, key: 'main' },
-  { value: ChainNameEnum.testChainName, key: 'test' },
-  { value: ChainNameEnum.regtestChainName, key: 'regtest' },
+/**
+ * The networks a custom server may be declared to serve.
+ *
+ * Only SWARM's two. Upstream Zcash's `main`, `test` and `regtest` used to be
+ * here, and a user who typed a server address and then touched this control
+ * could build a real Zcash wallet from a recovery phrase written down for
+ * SWARM. That is what happened to the desktop wallet's first mainnet build.
+ */
+const CHAINS: {
+  value: ChainNameEnum;
+  key: string;
+  testID: string;
+}[] = [
+  {
+    value: ChainNameEnum.swarmMainnetChainName,
+    key: 'swarm-mainnet',
+    testID: 'settings.custom-server-chain.swarm-mainnet',
+  },
+  {
+    value: ChainNameEnum.swarmChainName,
+    key: 'swarm-testnet',
+    testID: 'settings.custom-server-chain.swarm-testnet',
+  },
 ];
 
 const ChainTypeToggle: React.FunctionComponent<ChainTypeToggleProps> = ({
@@ -43,7 +62,7 @@ const ChainTypeToggle: React.FunctionComponent<ChainTypeToggleProps> = ({
         return (
           <TouchableOpacity
             key={c.value}
-            testID={`settings.custom-server-chain.${c.key}net`}
+            testID={c.testID}
             disabled={disabled}
             onPress={() => onPress(c.value)}
             style={{

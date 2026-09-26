@@ -228,6 +228,14 @@ jobs:
         working-directory: rust
         run: cargo test --locked -p zingo swarm_prefix_tests --lib
 
+      # The chain hint for SWARM production is not its chain label, and the
+      # genesis this app embeds has to be the one the network launched from.
+      # Both are host-side facts, so they are asserted here rather than on a
+      # device.
+      - name: Verify the SWARM network identity and chain hints
+        working-directory: rust
+        run: cargo test --locked -p zingo swarm_identity_tests --lib
+
       - name: Build the wallet library
         working-directory: ./rust/lib
         env:

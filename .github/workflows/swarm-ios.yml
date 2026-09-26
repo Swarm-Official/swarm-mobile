@@ -22,7 +22,7 @@ on:
         type: boolean
         default: false
   push:
-    branches: [swarm-ios]
+    branches: [swarm-ios, codex/mobile-mainnet-20260926]
 
 concurrency:
   group: swarm-ios-${{ github.ref }}
@@ -44,7 +44,9 @@ env:
   # (and of anything a local Xcode archive would produce). Both are
   # injected on the xcodebuild command line and the project file keeps its
   # own values, so opening the project in Xcode still works.
-  MARKETING_VERSION: '0.1.0'
+  # First MAINNET build: 0.2.0. The bundle identifier and the App Store
+  # record are unchanged - only the marketing version moves.
+  MARKETING_VERSION: '0.2.0'
   BUILD_NUMBER_OFFSET: '1000'
   # Keep cargo lean on a 3-core runner.
   CARGO_INCREMENTAL: '0'

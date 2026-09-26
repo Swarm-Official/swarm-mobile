@@ -12,6 +12,7 @@ import { RPCSendProposeType } from '@app/walletBackend/types/RPCSendProposeType'
 import { RPCSendType } from '@app/walletBackend/types/RPCSendType';
 import { WalletBackendConfig } from '@app/walletBackend/config/WalletBackendConfig';
 import { SyncCoordinator } from './SyncCoordinator';
+import { serverIdentityVerdict } from '@app/walletBackend/utils/serverGate';
 
 export class TransactionService {
   config: WalletBackendConfig;
@@ -40,6 +41,21 @@ export class TransactionService {
       let sendError: string = '';
       let sendTxids: string = '';
       try {
+        // Asked again, immediately before building the transaction, and not
+        // because the sync gate might have missed it: the server can be
+        // changed between the two, and a transaction built against the wrong
+        // consensus rules and broadcast cannot be taken back.
+        const verdict = await serverIdentityVerdict(
+          this.config.server.chainName,
+        );
+        if (!verdict.ok) {
+          console.log('send refused:', verdict.reason, verdict.message);
+          this.setInSend(false);
+          this.config.keepAwake(false);
+          reject(verdict.message);
+          return;
+        }
+
         // sendProcess and confirmProcess reject on failure (typed FFI
         // errors); the catch owns that path. Only an empty resolution — a
         // programming error — is classified here.

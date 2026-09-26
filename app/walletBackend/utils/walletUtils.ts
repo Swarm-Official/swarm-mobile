@@ -14,6 +14,7 @@ import { WalletType, GlobalConst } from '@app/AppState';
 import RPCModule from '@app/RPCModule';
 import { callFfi, FfiResult } from '@app/walletBackend/ffi';
 import { serverUris } from '@app/uris';
+import { nativeChainHint } from '@app/utils/networkProfiles';
 import { RPCZecPriceType } from '@app/walletBackend/types/RPCZecPriceType';
 import { RPCSeedType } from '@app/walletBackend/types/RPCSeedType';
 
@@ -103,6 +104,24 @@ async function applyBroadcastCandidates(
   }
 }
 
+
+// THE FFI CHAIN-HINT BOUNDARY.
+//
+// The library's first chain argument is a chain HINT, not a chain LABEL, and
+// for SWARM production the two differ: `ChainType::SwarmMainnet` carries the
+// genesis and the SDK gives it no default, so `swarm-mainnet` on its own is
+// refused with "does not name a network". For `main`, `test`, `regtest` and
+// `swarm-testnet` the hint and the label are the same string, which is why
+// four years of call sites passed a label and nothing noticed.
+//
+// So the four wrappers below take a chain LABEL — what the app stores, what
+// the indexer reports, what `ServerType.chainName` holds — and build the hint
+// here, in one place, with `nativeChainHint`. No caller passes a hint, and no
+// caller may call `RPCModule.createNewWallet` / `restoreWalletFromSeed` /
+// `restoreWalletFromUfvk` / `loadExistingWallet` directly:
+// `__tests__/nativeChainHint.unit.test.ts` reads the source of the whole app
+// and fails the build if one does.
+
 // Bootstraps a brand-new wallet for the given server/chain. The success value
 // is the raw JSON (parseable as RPCWalletInfoType).
 //
@@ -111,10 +130,11 @@ async function applyBroadcastCandidates(
 export async function createNewWallet(
   serverUri: string,
   birthday: string,
-  chainHint: string,
+  chain: string,
   performanceLevel: string,
   minConfirmations: string,
 ): Promise<FfiResult<string>> {
+  const chainHint = nativeChainHint(chain);
   await applyBroadcastCandidates(serverUri, chainHint);
   return callFfi(
     RPCModule.createNewWallet(
@@ -132,10 +152,11 @@ export async function restoreWalletFromSeed(
   seed: string,
   birthday: string,
   serverUri: string,
-  chainHint: string,
+  chain: string,
   performanceLevel: string,
   minConfirmations: string,
 ): Promise<FfiResult<string>> {
+  const chainHint = nativeChainHint(chain);
   await applyBroadcastCandidates(serverUri, chainHint);
   return callFfi(
     RPCModule.restoreWalletFromSeed(
@@ -154,10 +175,11 @@ export async function restoreWalletFromUfvk(
   ufvk: string,
   birthday: string,
   serverUri: string,
-  chainHint: string,
+  chain: string,
   performanceLevel: string,
   minConfirmations: string,
 ): Promise<FfiResult<string>> {
+  const chainHint = nativeChainHint(chain);
   await applyBroadcastCandidates(serverUri, chainHint);
   return callFfi(
     RPCModule.restoreWalletFromUfvk(
@@ -174,10 +196,11 @@ export async function restoreWalletFromUfvk(
 // Loads the wallet file already on disk against the given server/chain.
 export async function loadExistingWallet(
   serverUri: string,
-  chainHint: string,
+  chain: string,
   performanceLevel: string,
   minConfirmations: string,
 ): Promise<FfiResult<string>> {
+  const chainHint = nativeChainHint(chain);
   await applyBroadcastCandidates(serverUri, chainHint);
   return callFfi(
     RPCModule.loadExistingWallet(

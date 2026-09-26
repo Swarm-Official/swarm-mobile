@@ -1,2 +1,4 @@
 zcash_address/** -text
+zcash_primitives/** -text
 zcash_protocol/** -text
+zcash_transparent/** -text

@@ -1,0 +1,91 @@
+name: SWARM Rust lockfile
+
+# Resolves rust/Cargo.lock against whatever rust/Cargo.toml currently pins, and
+# uploads the resolved lockfile as an artifact.
+#
+# Why this exists. Every build job in `SWARM Android` and `SWARM iOS` runs cargo
+# with `--locked`, and `Check Rust dependency pins` fails any build that leaves
+# rust/Cargo.lock dirty. That is the right discipline, and it means moving the
+# SDK pin — the one change that necessarily moves the lock — cannot be done by
+# those workflows. It has to be done once, deliberately, and the result
+# committed.
+#
+# This job is that step. It resolves and prints the whole delta, so the commit
+# that moves the pin can be reviewed as "these crates moved, and no others".
+# It writes nothing back to the repository: the artifact is downloaded and
+# committed by a person (or an agent) who has read the diff.
+#
+# It also prints where the four patched crates resolved from. If any of them
+# resolves to a crates.io version rather than to `rust/vendor/`, the SWARM
+# network identity is not in the build and the SWARM production chain would
+# silently decode as something else — see rust/vendor/README.md.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/mobile-mainnet-20260926]
+    paths:
+      - 'rust/Cargo.toml'
+      - 'rust/vendor/**'
+      - '.github/workflows/swarm-rust-lockfile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Resolve the workspace
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        run: |
+          set -euxo pipefail
+          rustc --version
+          cargo --version
+
+      - name: The pin this resolves against
+        run: |
+          set -euo pipefail
+          grep -n 'privacy-zingolib' rust/Cargo.toml
+          echo '--- patched crates ---'
+          sed -n '/\[patch.crates-io\]/,$p' rust/Cargo.toml
+
+      - name: Resolve (no --locked, on purpose)
+        working-directory: rust
+        run: cargo fetch
+
+      - name: What moved
+        run: |
+          set -euo pipefail
+          git --no-pager diff --stat -- rust/Cargo.lock
+          git --no-pager diff -- rust/Cargo.lock | head -400
+
+      - name: Every patched crate resolves from vendor/
+        working-directory: rust
+        run: |
+          set -euo pipefail
+          fail=0
+          for crate in zcash_address zcash_primitives zcash_protocol zcash_transparent; do
+            # A path-patched crate has no `source` line in the lockfile.
+            if awk -v c="$crate" '
+                  $0 == "name = \"" c "\"" { found=1; next }
+                  found && /^source = / { print "SOURCED"; exit }
+                  found && /^\[\[package\]\]/ { exit }
+                ' Cargo.lock | grep -q SOURCED; then
+              echo "FAIL: $crate did not resolve from vendor/"
+              fail=1
+            else
+              echo "ok: $crate resolves from vendor/"
+            fi
+          done
+          exit "$fail"
+
+      - name: Upload the resolved lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-cargo-lock
+          path: rust/Cargo.lock
+          if-no-files-found: error

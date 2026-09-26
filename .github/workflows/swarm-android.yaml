@@ -33,20 +33,26 @@ on:
         type: boolean
         default: true
   push:
-    branches: [swarm-mobile, play-release]
+    branches: [swarm-mobile, play-release, codex/mobile-mainnet-20260926]
 
 concurrency:
   group: swarm-android-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  # The SWARM app version for this testnet round.
-  SWARM_VERSION: 0.1.0-testnet.3
+  # The SWARM app version. This round is the first MAINNET build: the wallet
+  # opens on SWARM Mainnet (https://lwd-main.swarm.green:8443, genesis
+  # 01c34428b9e67cdd8345e0b365aaa37dd8d2d65d3869e0e5d77d567f2c39afdd) and the
+  # engineering testnet is a second, clearly-labelled choice. See docs/MAINNET.md.
+  SWARM_VERSION: 0.2.0-mainnet.1
   # versionCode must increase for every Play upload; bump it here. Play keeps
   # every code it has ever seen and refuses a repeat, including one from a
   # release that was later deleted.
-  SWARM_ANDROID_VERSION_CODE: 3
-  SWARM_ANDROID_VERSION_NAME: "0.1.0"
+  SWARM_ANDROID_VERSION_CODE: 4
+  # Play shows this string. It stays a plain three-part version; which network
+  # the build is for is said by SWARM_VERSION, by the release notes and by the
+  # app itself, not by a suffix Play would have to parse.
+  SWARM_ANDROID_VERSION_NAME: "0.2.0"
   # Pinned so a new bundletool release cannot change what "too large" means
   # between two runs. The digest is checked before the jar runs.
   BUNDLETOOL_VERSION: 1.18.3
@@ -60,7 +66,7 @@ env:
   BUILDER_IMAGE: zingodevops/android_builder:018
   NODE_VERSION: 22.18.0
   CARGO_TERM_COLOR: always
-  # SwarmTestnet has three device ABIs. Upstream also ships 32-bit x86; no
+  # SWARM ships three device ABIs. Upstream also ships 32-bit x86; no
   # current phone or emulator image needs it, and dropping it is a third of the
   # native build time.
   RN_ARCHS: armeabi-v7a,arm64-v8a,x86_64

@@ -42,8 +42,9 @@ use zcash_protocol::memo::MemoBytes;
 use zcash_protocol::value::Zatoshis;
 use zcash_protocol::{PoolType, ShieldedPool};
 use zingolib::config::{
-    ChainType, ClientConfig, SWARM_TESTNET_GENESIS, SWARM_TESTNET_NAME, WalletConfig,
-    construct_indexer_uri, lib_birthday, swarm_testnet_genesis_is_placeholder,
+    ChainType, ClientConfig, SWARM_MAINNET_BIRTHDAY, SWARM_MAINNET_NAME, SWARM_TESTNET_GENESIS,
+    SWARM_TESTNET_NAME, SwarmMainnetGenesis, WalletConfig, construct_indexer_uri, lib_birthday,
+    swarm_testnet_genesis_is_placeholder,
 };
 use zingolib::data::PollReport;
 use zingolib::data::proposal::total_fee;
@@ -73,10 +74,54 @@ const INDEXER_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 /// string the indexer reports in `GetLightdInfo.chain_name` are all one value.
 pub const SWARM_CHAIN_HINT: &str = SWARM_TESTNET_NAME;
 
-/// SWARM: the project's own indexer, and the only server this build ships. The
-/// JS layer holds the same value and a user may type a different one; this copy
-/// exists so the native layer never has to reach for a public server registry.
-pub const SWARM_DEFAULT_SERVER_URI: &str = "https://lwd.swarm.green:443";
+/// SWARM: the engineering testnet's indexer. The JS layer holds the same value
+/// and a user may type a different one; this copy exists so the native layer
+/// never has to reach for a public server registry.
+pub const SWARM_TESTNET_SERVER_URI: &str = "https://lwd.swarm.green:443";
+
+/// Kept under its historical name for the call sites that predate the second
+/// network. It is the TESTNET indexer, and the only thing still reaching for it
+/// is the offline stand-in URI, which is never dialled.
+pub const SWARM_DEFAULT_SERVER_URI: &str = SWARM_TESTNET_SERVER_URI;
+
+/// SWARM: the chain LABEL of the production network - what an indexer reports
+/// in `GetLightdInfo.chain_name`, what `chain_name_short` returns, and what the
+/// JS layer stores. It is NOT a chain hint: see [`swarm_mainnet_chain_hint`].
+pub const SWARM_MAINNET_LABEL: &str = SWARM_MAINNET_NAME;
+
+/// SWARM: the genesis block hash of the production network, in the display
+/// order a node prints, as the launch ceremony produced it.
+///
+/// `ChainType::SwarmMainnet` carries this hash and the SDK gives it no default,
+/// deliberately: a wallet that cannot name its chain's first block cannot tell
+/// a real SWARM server from any other chain answering to the same label.
+pub const SWARM_MAINNET_GENESIS: &str =
+    "01c34428b9e67cdd8345e0b365aaa37dd8d2d65d3869e0e5d77d567f2c39afdd";
+
+/// SWARM: the production indexer, and the server a mainnet wallet starts on.
+pub const SWARM_MAINNET_SERVER_URI: &str = "https://lwd-main.swarm.green:8443";
+
+/// The chain HINT for SWARM production: the label, a colon, and the genesis.
+///
+/// For `main`, `test`, `regtest` and `swarm-testnet` the hint and the label are
+/// the same string, which is why four years of call sites could pass one where
+/// the other was meant. For SWARM production they differ, and the bare label is
+/// refused rather than guessed at - see `build_connection_params`.
+pub fn swarm_mainnet_chain_hint() -> String {
+    format!("{SWARM_MAINNET_LABEL}:{SWARM_MAINNET_GENESIS}")
+}
+
+/// The SWARM production [`ChainType`], built from the embedded genesis.
+///
+/// Panics only if [`SWARM_MAINNET_GENESIS`] is not 64 lowercase hexadecimal
+/// characters, which would be a typo in this file and is caught by the unit
+/// tests below rather than by a user.
+pub fn swarm_mainnet_chain() -> ChainType {
+    ChainType::SwarmMainnet(
+        SwarmMainnetGenesis::from_display_hex(SWARM_MAINNET_GENESIS)
+            .expect("SWARM_MAINNET_GENESIS is a 64-character lowercase display-order block hash"),
+    )
+}
 
 // Bounds the pending-URI redial in attach_pending_indexer.
 const PENDING_INDEXER_DIAL_TIMEOUT: Duration = Duration::from_secs(5);
@@ -562,6 +607,33 @@ fn build_connection_params(
         // hint suffix to parse.
         SWARM_CHAIN_HINT => ChainType::CustomTestnet,
         "regtest" => ChainType::Regtest(ActivationHeights::default()),
+        // SWARM production. The hint carries the genesis after a colon because
+        // `ChainType::SwarmMainnet` holds the hash and the SDK gives it no
+        // default: `ChainType::try_from("swarm-mainnet")` is an error there, on
+        // purpose, so a hint without a hash cannot build one. Matched before
+        // the catch-all so a malformed production hint says what is wrong with
+        // it instead of reading as a typo for some other chain.
+        hint if hint.starts_with(SWARM_MAINNET_LABEL) => {
+            let genesis = hint
+                .strip_prefix(SWARM_MAINNET_LABEL)
+                .and_then(|rest| rest.strip_prefix(':'))
+                .ok_or_else(|| {
+                    ZingolibError::init(format!(
+                        "'{hint}' does not name a network. The SWARM production network is \
+                         opened as '{SWARM_MAINNET_LABEL}:<genesis>', where <genesis> is the 64 \
+                         lowercase hexadecimal characters of the block hash the network \
+                         launched from, in the order a node prints it. The label on its own \
+                         cannot say which chain it means."
+                    ))
+                })?;
+            ChainType::SwarmMainnet(
+                SwarmMainnetGenesis::from_display_hex(genesis).map_err(|e| {
+                    ZingolibError::init(format!(
+                        "Not a valid '{SWARM_MAINNET_LABEL}' chain hint: {e}"
+                    ))
+                })?,
+            )
+        }
         hint => match hint.strip_prefix("regtest:") {
             // A regtest chain has no universal schedule: the node that was
             // launched is the only authority on its activation heights
@@ -1005,6 +1077,112 @@ mod swarm_identity_tests {
         .expect("the SWARM chain hint is accepted");
         assert!(params.chain_type == ChainType::CustomTestnet);
         assert_eq!(chain_name_short(params.chain_type), SWARM_CHAIN_HINT);
+    }
+
+    /// The SWARM production profile is reported beside the testnet one, and
+    /// its chain hint is not its chain label.
+    #[test]
+    fn the_production_profile_is_reported() {
+        let value = identity();
+        let networks = value["networks"]
+            .as_array()
+            .expect("the identity lists its networks")
+            .clone();
+        assert_eq!(networks.len(), 2, "two SWARM networks, and no others");
+
+        let mainnet = networks
+            .iter()
+            .find(|n| n["chain_label"] == SWARM_MAINNET_LABEL)
+            .expect("SWARM production is one of them");
+        assert_eq!(mainnet["chain_hint"], swarm_mainnet_chain_hint());
+        assert_ne!(
+            mainnet["chain_hint"], mainnet["chain_label"],
+            "the production hint carries the genesis; the label does not",
+        );
+        assert_eq!(mainnet["genesis"], SWARM_MAINNET_GENESIS);
+        assert_eq!(mainnet["default_server"], SWARM_MAINNET_SERVER_URI);
+        assert_eq!(mainnet["is_production"], true);
+    }
+
+    /// The assertion that stands between a SWARM payment and a Zcash
+    /// signature: the hint the app sends builds a wallet on the SWARM
+    /// production chain, carrying the genesis this build embeds.
+    #[test]
+    fn a_production_hint_carries_the_genesis_it_names() {
+        let params = build_connection_params(
+            String::new(),
+            swarm_mainnet_chain_hint(),
+            "Medium".to_string(),
+            1,
+        )
+        .expect("the SWARM production chain hint is accepted");
+
+        assert_eq!(params.chain_type, swarm_mainnet_chain());
+        assert_eq!(chain_name_short(params.chain_type), SWARM_MAINNET_LABEL);
+        match params.chain_type {
+            ChainType::SwarmMainnet(genesis) => {
+                assert_eq!(genesis.to_display_hex(), SWARM_MAINNET_GENESIS)
+            }
+            other => panic!("{other} is not the SWARM production profile"),
+        }
+
+        // Two ceremonies, two chains: the genesis is part of the identity, not
+        // decoration on a label.
+        let other = build_connection_params(
+            String::new(),
+            format!("{SWARM_MAINNET_LABEL}:{}", "ab".repeat(32)),
+            "Medium".to_string(),
+            1,
+        )
+        .expect("a well-formed hint for another genesis still parses");
+        assert_ne!(params.chain_type, other.chain_type);
+    }
+
+    /// The bare label opens nothing, and neither does a malformed genesis.
+    #[test]
+    fn the_bare_label_and_a_malformed_genesis_are_both_refused() {
+        let genesis = SWARM_MAINNET_GENESIS;
+        for refused in [
+            "swarm-mainnet".to_string(),
+            "swarm-mainnet:".to_string(),
+            "swarm-mainnet:0".to_string(),
+            format!("swarm-mainnet:{}", &genesis[..62]),
+            format!("swarm-mainnet:{genesis}00"),
+            format!("swarm-mainnet:{}", genesis.to_uppercase()),
+            format!("swarm-mainnet:{}", "z".repeat(64)),
+            format!("swarm-mainnet-{genesis}"),
+            format!("swarm-mainnetx:{genesis}"),
+            "mainnet".to_string(),
+            "swarm".to_string(),
+            String::new(),
+        ] {
+            assert!(
+                build_connection_params(String::new(), refused.clone(), "Medium".to_string(), 1)
+                    .is_err(),
+                "'{refused}' must not open a wallet",
+            );
+        }
+    }
+
+    /// The chains this build knew before production still mean what they meant.
+    #[test]
+    fn the_established_hints_keep_their_meanings() {
+        for (hint, expected) in [
+            ("main", ChainType::Mainnet),
+            ("test", ChainType::Testnet),
+            (SWARM_CHAIN_HINT, ChainType::CustomTestnet),
+        ] {
+            let params =
+                build_connection_params(String::new(), hint.to_string(), "Medium".to_string(), 1)
+                    .expect("an established hint is accepted");
+            assert_eq!(params.chain_type, expected, "{hint}");
+        }
+        assert!(matches!(
+            build_connection_params(String::new(), "regtest".to_string(), "Medium".to_string(), 1)
+                .expect("regtest is accepted")
+                .chain_type,
+            ChainType::Regtest(_),
+        ));
     }
 
     /// SwarmTestnet uses the standard Zcash TESTNET address encodings, so a
@@ -1882,8 +2060,14 @@ pub fn run_rescan() -> Result<String, ZingolibError> {
     })
 }
 
-/// SWARM: what this build believes SwarmTestnet is, as JSON, so the JS layer
-/// never carries its own copy of the network identity.
+/// SWARM: what this build believes each SWARM network is, as JSON, so the JS
+/// layer never carries its own copy of a network identity.
+///
+/// The top-level fields describe SwarmTestnet and are unchanged, because they
+/// are what every existing caller reads. `networks` is the whole picture: one
+/// object per SWARM network, each carrying the chain LABEL, the chain HINT the
+/// FFI takes (which for production is not the label), the genesis, and the
+/// indexer that network starts on.
 ///
 /// `genesis_is_placeholder` is true while [`SWARM_TESTNET_GENESIS`] still holds
 /// the stand-in that no block can hash to. While it is true the app can talk to
@@ -1893,10 +2077,34 @@ pub fn swarm_network_identity() -> Result<String, ZingolibError> {
     Ok(object! {
         "chain_name" => SWARM_CHAIN_HINT,
         "coin_ticker" => "SWM",
-        "default_server" => SWARM_DEFAULT_SERVER_URI,
+        "default_server" => SWARM_TESTNET_SERVER_URI,
         "birthday" => zingolib::config::SWARM_TESTNET_BIRTHDAY,
         "genesis" => SWARM_TESTNET_GENESIS,
         "genesis_is_placeholder" => swarm_testnet_genesis_is_placeholder(),
+        "networks" => json::array![
+            object! {
+                "chain_label" => SWARM_TESTNET_NAME,
+                "chain_hint" => SWARM_CHAIN_HINT,
+                "display_name" => "SWARM Testnet (engineering)",
+                "coin_ticker" => "SWM",
+                "default_server" => SWARM_TESTNET_SERVER_URI,
+                "birthday" => zingolib::config::SWARM_TESTNET_BIRTHDAY,
+                "genesis" => SWARM_TESTNET_GENESIS,
+                "genesis_is_placeholder" => swarm_testnet_genesis_is_placeholder(),
+                "is_production" => false,
+            },
+            object! {
+                "chain_label" => SWARM_MAINNET_LABEL,
+                "chain_hint" => swarm_mainnet_chain_hint(),
+                "display_name" => "SWARM Mainnet",
+                "coin_ticker" => "SWM",
+                "default_server" => SWARM_MAINNET_SERVER_URI,
+                "birthday" => SWARM_MAINNET_BIRTHDAY,
+                "genesis" => SWARM_MAINNET_GENESIS,
+                "genesis_is_placeholder" => false,
+                "is_production" => true,
+            },
+        ],
     }
     .pretty(2))
 }
@@ -1941,6 +2149,10 @@ fn chain_name_short(chain: ChainType) -> &'static str {
         // SWARM: reported under the SDK's own chain label, the same string the
         // indexer returns in `chain_name`, so JS compares one value everywhere.
         ChainType::CustomTestnet => SWARM_CHAIN_HINT,
+        // The LABEL, never the hint: the JS layer stores this string as the
+        // wallet's chain and compares it with what the indexer reports, and
+        // neither of those carries a genesis.
+        ChainType::SwarmMainnet(_) => SWARM_MAINNET_LABEL,
         ChainType::Regtest(_) => "regtest",
     }
 }
@@ -2228,9 +2440,14 @@ pub fn parse_address(address: String) -> Result<String, ZingolibError> {
             fn make_decoded_chain_pair(
                 address: &str,
             ) -> Option<(zcash_client_backend::address::Address, ChainType)> {
-                [ChainType::CustomTestnet]
-                    .iter()
-                    .find_map(|chain| Address::decode(chain, address).zip(Some(*chain)))
+                // Both SWARM networks, testnet first. Their encodings are
+                // disjoint by construction - `swarm1...`/`tm...`/`t2...`
+                // against `swm1...`/`s1...`/`s3...` - so an address decodes
+                // under at most one of them and the order cannot decide the
+                // answer.
+                [ChainType::CustomTestnet, swarm_mainnet_chain()]
+                    .into_iter()
+                    .find_map(|chain| Address::decode(&chain, address).zip(Some(chain)))
             }
             if let Some((recipient_address, chain_name)) = make_decoded_chain_pair(&address) {
                 let chain_name_string = chain_name_short(chain_name);
@@ -2325,6 +2542,7 @@ pub fn parse_ufvk(ufvk: String) -> Result<String, ZingolibError> {
                                 NetworkType::Main => "main",
                                 NetworkType::Test => "test",
                                 NetworkType::Regtest => "regtest",
+                                NetworkType::SwarmMain => SWARM_MAINNET_LABEL,
                             },
                             "address_kind" => "ufvk",
                             "pools_available" => pools_available,

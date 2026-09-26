@@ -21,6 +21,7 @@ import { RPCPerformanceLevelEnum } from '@app/walletBackend/enums/RPCPerformance
 import { WalletBackendConfig } from '@app/walletBackend/config/WalletBackendConfig';
 import { DataService } from './DataService';
 import { doSave } from '@app/walletBackend/utils/walletUtils';
+import { serverIdentityVerdict } from '@app/walletBackend/utils/serverGate';
 
 // Consecutive failed sync launches before onPersistentSyncFailure fires.
 // Three failures span ~15 s of the 5 s tick: long enough to ride out a
@@ -202,6 +203,16 @@ export class SyncCoordinator {
     this.refreshSyncLock = true;
     try {
       this.config.keepAwake(true);
+
+      // Which chain is on the other end? Blocks from the wrong one, written
+      // into this wallet's state, are someone else's history in the user's
+      // wallet, and a balance that is not theirs. Refuse rather than guess.
+      const verdict = await serverIdentityVerdict(this.config.server.chainName);
+      if (!verdict.ok) {
+        console.log('sync refused:', verdict.reason, verdict.message);
+        this.config.onError(verdict.message);
+        return;
+      }
 
       if (fullRescan) {
         await this.clearTimers();

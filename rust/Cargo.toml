@@ -10,17 +10,30 @@ members = [
 
 # The mixnet proxy shim resolves in its own lockfile: nym-sdk's transitive
 # graph needs `crypto-common ^0.2`, irreconcilable with this workspace's pins.
-exclude = ["nym-proxy-ffi", "vendor/zcash_address", "vendor/zcash_protocol"]
+exclude = [
+    "nym-proxy-ffi",
+    "vendor/zcash_address",
+    "vendor/zcash_primitives",
+    "vendor/zcash_protocol",
+    "vendor/zcash_transparent",
+]
 resolver = "2"
 
 [workspace.dependencies]
-# SWARM SDK with legacy unified-address decoding and canonical SWARM encoding.
-zingolib = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "ef08aa252ec55f411dc937045548cd4f3f3dc664", features = [
+# SWARM SDK with legacy unified-address decoding, canonical SWARM encoding and
+# the SWARM PRODUCTION network identity: `ChainType::SwarmMainnet(SwarmMainnetGenesis)`,
+# `NetworkType::SwarmMain` and `BranchId::SwarmMain`. The revision is the head of
+# branch `codex/mainnet-sdk-identity-20260925` in Swarm-Official/privacy-zingolib,
+# the same pin the desktop wallet's addon builds against (privacy-wallet
+# native/BUILD-NOTES-MAINNET.md). Moving this rev backwards removes SWARM
+# production from the build: the chain hint `swarm-mainnet:<genesis>` stops
+# resolving and every mainnet wallet becomes unopenable.
+zingolib = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "d9f1a5b888067724b61b2fae46307ed56b4b1e0a", features = [
     "nym",
     "perspective",
 ] }
-pepper-sync = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "ef08aa252ec55f411dc937045548cd4f3f3dc664" }
-zingolib_testutils = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "ef08aa252ec55f411dc937045548cd4f3f3dc664" }
+pepper-sync = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "d9f1a5b888067724b61b2fae46307ed56b4b1e0a" }
+zingolib_testutils = { git = "https://github.com/Swarm-Official/privacy-zingolib", rev = "d9f1a5b888067724b61b2fae46307ed56b4b1e0a" }
 regchest_utils = { git = "https://github.com/zingolabs/zingo-regchest", branch = "dev" }
 zingomobile_utils = { path = "zingomobile_utils" }
 
@@ -66,8 +79,22 @@ opt-level = 3
 debug = 1
 
 [patch.crates-io]
+# SWARM encodings. Cargo ignores a dependency's own [patch] table, so this
+# workspace has to carry the SDK's patches itself, for every crate that matches
+# `NetworkType` or `BranchId` exhaustively. Four crates, not two, since the SDK
+# pin moved to d9f1a5b8: `zcash_primitives` and `zcash_transparent` were added
+# because each of them matches one of those enums exhaustively and so does not
+# compile against the patched `zcash_protocol`. See vendor/README.md.
+#
+# If a `cargo update` pulls a crate version that matches either enum
+# exhaustively and is not vendored here, it will fail to compile. That is the
+# intended failure mode: it is how a crate that could quietly fold SWARM
+# production into Zcash Mainnet announces itself. Vendor it rather than
+# reaching for a wildcard arm.
 zcash_address = { path = "vendor/zcash_address" }
+zcash_primitives = { path = "vendor/zcash_primitives" }
 zcash_protocol = { path = "vendor/zcash_protocol" }
+zcash_transparent = { path = "vendor/zcash_transparent" }
 # Ironwood (NU6.3) proto fields (CompactTx.ironwoodActions, TreeState.ironwoodTree,
 # ShieldedProtocol.ironwood, ChainMetadata.ironwoodCommitmentTreeSize). Must match
 # the patch in zingolib (feat/ironwood) so the dependency graph resolves to a single
